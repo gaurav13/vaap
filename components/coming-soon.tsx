@@ -55,14 +55,14 @@ export function ComingSoon() {
             </span>
           </header>
 
-          <div className="flex min-h-0 flex-1 flex-col justify-start md:justify-center">
+          <div className="flex min-h-0 flex-1 flex-col justify-start">
             <div
               className="flex max-w-3xl items-start"
-              style={{ paddingTop: "clamp(1.5rem, 3vw, 3rem)" }}
+              style={{ paddingTop: "clamp(2.75rem, 5vw, 5rem)" }}
             >
               <div className="min-w-0">
                 <div className="flex items-center gap-4">
-                  <span className="text-[0.7rem] font-bold uppercase tracking-[0.4em] text-green sm:text-xs">
+                  <span className="text-[0.78rem] font-extrabold uppercase tracking-[0.4em] text-green sm:text-sm">
                     National Industry Representative
                   </span>
                   <span className="h-px flex-1 max-w-[80px]" style={{ backgroundColor: GOLD }} aria-hidden />
