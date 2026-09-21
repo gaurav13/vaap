@@ -22,6 +22,7 @@ import {
   LogOut,
   Map,
   Newspaper,
+  Percent,
   PenSquare,
   Settings,
   Users,
@@ -72,6 +73,7 @@ const GROUPS: { heading: string; links: { href: string; label: string; icon: typ
     heading: "Referrals & Rewards",
     links: [
       { href: "/admin/referrals", label: "Referral Console", icon: Share2, adminOnly: true },
+      { href: "/admin/commissions", label: "Commission & Rewards", icon: Percent, adminOnly: true },
       { href: "/admin/rewards", label: "Rewards & Payouts", icon: Coins, adminOnly: true },
     ],
   },
