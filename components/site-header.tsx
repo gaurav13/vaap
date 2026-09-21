@@ -92,7 +92,7 @@ export function SiteHeader({
       className={cn(
         overlay
           ? "absolute inset-x-0 top-0 z-50"
-          : "sticky top-0 z-50 border-b border-line bg-gradient-to-b from-mint/60 to-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/80",
+          : "relative z-50 border-b border-line bg-gradient-to-b from-mint/60 to-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/80",
       )}
     >
       <NewsAlertBar alert={newsAlert} />
