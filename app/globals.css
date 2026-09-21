@@ -1,0 +1,173 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* VAAP brand tokens */
+  --color-navy: var(--navy);
+  --color-navy-dark: var(--navy-dark);
+  --color-teal: var(--teal);
+  --color-green: var(--green);
+  --color-green-hover: var(--green-hover);
+  --color-green-light: var(--green-light);
+  --color-mint: var(--mint);
+  --color-mint-2: var(--mint-2);
+  --color-surface: var(--surface);
+  --color-heading: var(--heading);
+  --color-body: var(--body);
+  --color-muted-2: var(--muted-2);
+  --color-line: var(--line);
+  --color-line-light: var(--line-light);
+  --color-green-border: var(--green-border);
+  --color-gold: var(--gold);
+  --color-gold-tint: var(--gold-tint);
+  --color-blue-tint: var(--blue-tint);
+
+  --font-sans: var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont,
+    'Segoe UI', sans-serif;
+  --font-serif: var(--font-playfair), Georgia, 'Times New Roman', serif;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+}
+
+:root {
+  color-scheme: light;
+  --radius: 0.75rem;
+
+  --background: #ffffff;
+  --foreground: #102a36;
+  --card: #ffffff;
+  --card-foreground: #102a36;
+  --popover: #ffffff;
+  --popover-foreground: #102a36;
+  --primary: #247049;
+  --primary-foreground: #ffffff;
+  --secondary: #f7f9fa;
+  --secondary-foreground: #102a36;
+  --muted: #f7f9fa;
+  --muted-foreground: #667985;
+  --accent: #eaf8f3;
+  --accent-foreground: #00343a;
+  --destructive: #d64545;
+  --border: #dde5e7;
+  --input: #dde5e7;
+  --ring: #247049;
+
+  /* VAAP brand palette */
+  --navy: #00343a;
+  --navy-dark: #002b31;
+  --teal: #006b68;
+  --green: #247049;
+  --green-hover: #1c5a39;
+  --green-light: #58c48d;
+  --mint: #eaf8f3;
+  --mint-2: #f1faf7;
+  --surface: #f7f9fa;
+  --heading: #102a36;
+  --body: #425466;
+  --muted-2: #667985;
+  --line: #dde5e7;
+  --line-light: #e9eef0;
+  --green-border: #bce8d7;
+  --gold: #b89146;
+  --gold-tint: #f7f1e3;
+  --blue-tint: #eef4f6;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: 'liga' 1, 'calt' 1;
+  }
+  /*
+   * Unify every heading on the serif family (Playfair Display).
+   * This is the single source of truth for heading font, so individual
+   * components no longer need to repeat `font-serif`.
+   */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-serif);
+  }
+}
+
+@layer components {
+  /*
+   * VAAP global responsive system.
+   * "One viewport when possible, progressive disclosure when necessary."
+   * Content-driven spacing (never height:100vh) with fluid typography.
+   */
+
+  /* Standard horizontal gutter + max width for every section. */
+  .vaap-container {
+    width: 100%;
+    max-width: 80rem; /* 1280px */
+    margin-inline: auto;
+    padding-inline: 1.25rem; /* 20px mobile */
+  }
+  @media (min-width: 768px) {
+    .vaap-container {
+      padding-inline: 2rem; /* 32px tablet+ */
+    }
+  }
+
+  /* Content-driven vertical rhythm: ~40px mobile -> ~72px desktop. */
+  .vaap-section-y {
+    padding-block: clamp(2.5rem, 5vw, 4.5rem);
+  }
+  /* Slightly tighter rhythm for dense/secondary sections. */
+  .vaap-section-y-sm {
+    padding-block: clamp(2rem, 4vw, 3.5rem);
+  }
+
+  /* Fluid typographic scale (clamp) so headings never push content below the fold. */
+  .fluid-display {
+    font-size: clamp(2.375rem, 5vw, 4.25rem);
+    line-height: 1.05;
+  }
+  .fluid-h1 {
+    font-size: clamp(2rem, 4vw, 3.25rem);
+    line-height: 1.08;
+  }
+  .fluid-h2 {
+    font-size: clamp(1.75rem, 3.2vw, 2.75rem);
+    line-height: 1.12;
+  }
+  .fluid-h3 {
+    font-size: clamp(1.375rem, 2vw, 2rem);
+    line-height: 1.2;
+  }
+  .fluid-lead {
+    font-size: clamp(1rem, 1.2vw, 1.125rem);
+    line-height: 1.6;
+  }
+}
