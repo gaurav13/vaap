@@ -66,39 +66,41 @@ export function ComingSoon() {
 
               <div className="min-w-0">
                 <div className="flex items-center gap-4">
-                  <span className="text-xs font-semibold uppercase tracking-[0.4em] text-green">Our Platform Is</span>
+                  <span className="text-[0.7rem] font-semibold uppercase tracking-[0.4em] text-green sm:text-xs">
+                    Our Platform Is
+                  </span>
                   <span className="h-px flex-1 max-w-[80px]" style={{ backgroundColor: GOLD }} aria-hidden />
                 </div>
 
-                <h1 className="mt-3 font-serif text-5xl leading-[0.98] tracking-tight text-heading text-balance sm:text-5xl lg:text-[4rem]">
+                <h1 className="mt-4 font-serif text-[3.25rem] leading-[0.95] tracking-tight text-heading text-balance sm:text-6xl lg:text-[4.5rem]">
                   Launching
                   <br />
                   Soon
                 </h1>
 
-                <p className="mt-4 max-w-md text-base leading-relaxed text-body text-pretty lg:text-lg">
+                <p className="mt-5 max-w-md text-base leading-relaxed text-body text-pretty lg:text-lg">
                   A unified platform for a transparent, innovative and inclusive virtual asset and blockchain ecosystem
                   in Pakistan.
                 </p>
 
-                <div className="mt-6">
+                <div className="mt-7">
                   <Link
                     href="/membership/apply"
-                    className="group inline-flex w-full items-center justify-center gap-3 rounded-full bg-green px-7 py-3.5 text-sm font-semibold text-white shadow-lg shadow-green/25 ring-1 ring-inset ring-white/10 transition hover:shadow-xl hover:shadow-green/30 hover:brightness-110 sm:w-auto lg:text-base"
+                    className="group inline-flex w-full items-center justify-center gap-3 rounded-full bg-green px-8 py-4 text-sm font-semibold text-white shadow-lg shadow-green/25 ring-1 ring-inset ring-white/10 transition hover:shadow-xl hover:shadow-green/30 hover:brightness-110 sm:w-auto lg:text-base"
                   >
                     <UserPlus className="size-5" aria-hidden />
                     Pre-Register for Membership
                     <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" aria-hidden />
                   </Link>
-                  <p className="mt-3 text-sm text-muted-2 text-pretty">
+                  <p className="mt-3.5 text-sm text-muted-2 text-pretty">
                     Be the first to join. Get updates on our launch, membership and events.
                   </p>
                 </div>
 
-                <ul className="mt-8 grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-4 sm:divide-x sm:divide-line md:mt-6">
+                <ul className="mt-9 grid grid-cols-2 gap-x-4 gap-y-6 border-t border-line pt-7 lg:grid-cols-4 lg:gap-x-0 lg:divide-x lg:divide-line md:mt-7">
                   {FEATURES.map(({ icon: Icon, label }) => (
-                    <li key={label} className="flex flex-col items-center gap-2 px-2 text-center sm:px-3">
-                      <span className="flex size-10 items-center justify-center rounded-full bg-mint ring-1 ring-green/10">
+                    <li key={label} className="flex flex-col items-center gap-2.5 px-2 text-center lg:px-4">
+                      <span className="flex size-11 items-center justify-center rounded-full bg-mint ring-1 ring-green/10">
                         <Icon className="size-5 text-green" aria-hidden />
                       </span>
                       <span className="whitespace-pre-line text-[0.7rem] font-semibold uppercase leading-snug tracking-[0.12em] text-heading">
@@ -113,7 +115,7 @@ export function ComingSoon() {
         </div>
 
         {/* Right: imagery */}
-        <div className="relative order-first h-56 overflow-hidden bg-mint sm:h-72 md:order-none md:h-auto md:min-h-full">
+        <div className="relative order-first h-64 overflow-hidden bg-mint sm:h-80 md:order-none md:h-auto md:min-h-full">
           <Image
             src="/images/vaap-launch-islamabad.png"
             alt="Faisal Mosque, Minar-e-Pakistan and the mountains under a crescent moon, rendered in green"
