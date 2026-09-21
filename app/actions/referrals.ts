@@ -134,10 +134,36 @@ export async function getMyNotifications() {
 export async function markNotificationsRead(ids: number[]) {
   const current = await requireUser()
   if (!ids.length) return { ok: true as const }
+  // Only allow marking notifications the user can actually see: their own
+  // personal ones or role-broadcast ones matching their role.
   await db
-    .update(notifications)
-    .set({ read: true })
-    .where(and(eq(notifications.userId, current.id), inArray(notifications.id, ids)))
+  .update(notifications)
+  .set({ read: true })
+  .where(
+  and(
+  inArray(notifications.id, ids),
+  current.role
+  ? sql`(${notifications.userId} = ${current.id} OR ${notifications.role} = ${current.role})`
+  : eq(notifications.userId, current.id),
+  ),
+  )
   revalidatePath("/dashboard")
   return { ok: true as const }
-}
+  }
+
+export async function markAllNotificationsRead() {
+  const current = await requireUser()
+  await db
+  .update(notifications)
+  .set({ read: true })
+  .where(
+  and(
+  eq(notifications.read, false),
+  current.role
+  ? sql`(${notifications.userId} = ${current.id} OR ${notifications.role} = ${current.role})`
+  : eq(notifications.userId, current.id),
+  ),
+  )
+  revalidatePath("/dashboard")
+  return { ok: true as const }
+  }

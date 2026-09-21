@@ -29,6 +29,7 @@ import { authClient } from "@/lib/auth-client"
 import { canOwnReferralCode, isElevated } from "@/lib/permissions"
 import { cn } from "@/lib/utils"
 import { VaapLogo } from "@/components/vaap-logo"
+import { NotificationBell, type NotificationItem } from "@/components/member/notification-bell"
 
 type NavItem = { label: string; href: string; icon: typeof Home; group?: string }
 
@@ -68,7 +69,15 @@ function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(href + "/")
 }
 
-export function MemberShell({ user, children }: { user: MemberUser; children: React.ReactNode }) {
+export function MemberShell({
+  user,
+  notifications = [],
+  children,
+}: {
+  user: MemberUser
+  notifications?: NotificationItem[]
+  children: React.ReactNode
+}) {
   const pathname = usePathname()
   const [drawerOpen, setDrawerOpen] = useState(false)
 
@@ -105,7 +114,7 @@ export function MemberShell({ user, children }: { user: MemberUser; children: Re
       )}
 
       <div className="lg:pl-64">
-        <Topbar user={user} onOpenMenu={() => setDrawerOpen(true)} />
+        <Topbar user={user} notifications={notifications} onOpenMenu={() => setDrawerOpen(true)} />
         <main className="px-4 pb-24 pt-6 sm:px-6 lg:px-8 lg:pb-12">{children}</main>
       </div>
 
@@ -200,7 +209,15 @@ function SidebarContent({
   )
 }
 
-function Topbar({ user, onOpenMenu }: { user: MemberUser; onOpenMenu: () => void }) {
+function Topbar({
+  user,
+  notifications,
+  onOpenMenu,
+}: {
+  user: MemberUser
+  notifications: NotificationItem[]
+  onOpenMenu: () => void
+}) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -246,14 +263,7 @@ function Topbar({ user, onOpenMenu }: { user: MemberUser; onOpenMenu: () => void
       </div>
 
       <div className="flex items-center gap-2 sm:gap-4">
-        <button
-          type="button"
-          aria-label="Notifications"
-          className="relative flex size-10 items-center justify-center rounded-full text-body transition-colors hover:bg-mint hover:text-navy"
-        >
-          <Bell className="size-5" />
-          <span className="absolute right-2.5 top-2.5 size-2 rounded-full bg-destructive ring-2 ring-card" />
-        </button>
+        <NotificationBell initial={notifications} />
 
         <div className="relative" ref={ref}>
           <button

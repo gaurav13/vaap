@@ -7,6 +7,7 @@ import { desc, eq, gte, and, isNotNull, sql } from "drizzle-orm"
 import { headers, cookies } from "next/headers"
 import { revalidatePath } from "next/cache"
 import { createAttributionForApplication } from "@/lib/referral-engine"
+import { notify } from "@/lib/notifications"
 
 export type CryptoRates = {
   usdPerPkr: number
@@ -279,6 +280,29 @@ export async function submitMembershipApplication(formData: FormData) {
     message,
   })
 
+  await notify({
+    email,
+    type: "application",
+    title: "Membership application received",
+    body: `Thank you, ${name}. We've received your ${category} application and will be in touch shortly.`,
+    link: "/dashboard/applications",
+    emailTemplate: {
+      subject: "We received your VAAP membership application",
+      heading: "Application received",
+      intro: [
+        `Thank you for your interest in ${category} membership with the Virtual Assets Association of Pakistan.`,
+        "Our team will review your application and get back to you shortly.",
+      ],
+    },
+  })
+  await notify({
+    role: "staff",
+    type: "application",
+    title: "New membership enquiry",
+    body: `${name} submitted a ${category} membership enquiry.`,
+    link: "/admin/applications",
+  })
+
   return { ok: true }
 }
 
@@ -518,6 +542,37 @@ export async function submitFullApplication(input: ApplicationInput) {
     }
 
     revalidatePath("/admin/applications")
+
+    // Confirm submission to the applicant (email + in-app once their account
+    // exists) and alert staff to the new application. Never block on this.
+    await notify({
+      email,
+      type: "application",
+      title: "Membership application received",
+      body: `Thank you, ${name}. We've received your ${category} application${reference ? ` (ref ${reference})` : ""} and our team will review it shortly.`,
+      link: "/dashboard/applications",
+      emailTemplate: {
+        subject: "We received your VAAP membership application",
+        heading: "Application received",
+        intro: [
+          `Thank you for applying for ${category} membership with the Virtual Assets Association of Pakistan.`,
+          reference
+            ? `Your application reference is ${reference}. Please keep it for your records.`
+            : "Our team will review your application shortly.",
+          "We'll email you as soon as there's an update, and you can track the status from your member dashboard.",
+        ],
+        ctaLabel: "View my applications",
+        ctaPath: "/dashboard/applications",
+        footnote: "If you paid by crypto, approval follows once your transaction is confirmed.",
+      },
+    })
+    await notify({
+      role: "staff",
+      type: "application",
+      title: "New membership application",
+      body: `${name} applied for ${category}${reference ? ` (ref ${reference})` : ""}.`,
+      link: "/admin/applications",
+    })
 
     return { ok: true as const, reference, account }
   } catch {

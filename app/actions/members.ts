@@ -4,8 +4,73 @@ import { db } from "@/lib/db"
 import { members, auditLogs } from "@/lib/db/schema"
 import { getSession } from "@/lib/session"
 import { computeExpiry } from "@/lib/membership"
+import { notify } from "@/lib/notifications"
 import { eq, inArray } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
+
+// Human-readable copy for each member status transition, reused by the single
+// and bulk status actions.
+const MEMBER_STATUS_COPY: Record<
+  "active" | "suspended" | "expired",
+  { title: string; body: string; subject: string; intro: string[] }
+> = {
+  active: {
+    title: "Your membership is active",
+    body: "Your VAAP membership is now active and in good standing.",
+    subject: "Your VAAP membership is now active",
+    intro: [
+      "Good news — your membership with the Virtual Assets Association of Pakistan is now active and in good standing.",
+      "You have full access to member resources, events, and voting eligibility where applicable.",
+    ],
+  },
+  suspended: {
+    title: "Your membership has been suspended",
+    body: "Your VAAP membership has been suspended. Please contact us for details.",
+    subject: "Your VAAP membership has been suspended",
+    intro: [
+      "Your membership with the Virtual Assets Association of Pakistan has been suspended.",
+      "If you have questions or believe this was in error, please reply to this email and our team will assist you.",
+    ],
+  },
+  expired: {
+    title: "Your membership has expired",
+    body: "Your VAAP membership has expired. Renew from your dashboard to restore access.",
+    subject: "Your VAAP membership has expired",
+    intro: [
+      "Your membership with the Virtual Assets Association of Pakistan has expired.",
+      "You can renew from your dashboard to restore full member access and benefits.",
+    ],
+  },
+}
+
+async function notifyMemberStatus(id: number, status: "active" | "suspended" | "expired") {
+  try {
+    const [m] = await db
+      .select({ userId: members.userId, email: members.email, name: members.name })
+      .from(members)
+      .where(eq(members.id, id))
+      .limit(1)
+    if (!m) return
+    const copy = MEMBER_STATUS_COPY[status]
+    await notify({
+      userId: m.userId ?? undefined,
+      email: m.email,
+      type: "membership",
+      title: copy.title,
+      body: copy.body,
+      link: "/dashboard/membership",
+      emailTemplate: {
+        subject: copy.subject,
+        heading: copy.title,
+        intro: [`Dear ${m.name},`, ...copy.intro],
+        ctaLabel: status === "expired" ? "Renew my membership" : "View my membership",
+        ctaPath: "/dashboard/membership",
+      },
+    })
+  } catch (err) {
+    console.log("[v0] notifyMemberStatus failed:", err instanceof Error ? err.message : err)
+  }
+}
 
 async function requireStaff() {
   const session = await getSession()
@@ -99,9 +164,10 @@ export async function setMemberStatus(id: number, status: "active" | "suspended"
   const actor = await requireStaff()
   await db.update(members).set({ status }).where(eq(members.id, id))
   await log(actor, `set member ${status}`, String(id))
+  await notifyMemberStatus(id, status)
   revalidate()
   return { ok: true }
-}
+  }
 
 export async function setMemberVoting(id: number, votingEligible: boolean) {
   const actor = await requireStaff()
@@ -153,9 +219,10 @@ export async function bulkSetStatus(ids: number[], status: "active" | "suspended
   if (ids.length === 0) return { ok: true }
   await db.update(members).set({ status }).where(inArray(members.id, ids))
   await log(actor, `bulk set ${status}`, ids.join(", "))
+  await Promise.all(ids.map((memberId) => notifyMemberStatus(memberId, status)))
   revalidate()
   return { ok: true }
-}
+  }
 
 export async function importMembers(rows: MemberInput[]) {
   const actor = await requireStaff()

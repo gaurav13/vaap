@@ -11,6 +11,7 @@ import {
   rewardTransactions,
 } from "@/lib/db/schema"
 import { getSession } from "@/lib/session"
+import { notify } from "@/lib/notifications"
 import { eq, desc, or, sql, inArray } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 
@@ -131,6 +132,32 @@ export async function requestRenewal() {
     status: "pending",
   })
 
+  await notify({
+    userId: current.id,
+    email: member.email,
+    type: "application",
+    title: "Renewal request submitted",
+    body: `We've received your renewal request for ${member.membershipId}. Our team will review it shortly.`,
+    link: "/dashboard/applications",
+    emailTemplate: {
+      subject: "We received your VAAP membership renewal request",
+      heading: "Renewal request received",
+      intro: [
+        `Thank you — we've received your renewal request for membership ${member.membershipId}.`,
+        "Our team will review it and update you once it has been processed. You can track its status any time from your dashboard.",
+      ],
+      ctaLabel: "View my applications",
+      ctaPath: "/dashboard/applications",
+    },
+  })
+  await notify({
+    role: "staff",
+    type: "application",
+    title: "New renewal request",
+    body: `${member.name} (${member.membershipId}) requested a membership renewal.`,
+    link: "/admin/applications",
+  })
+
   revalidatePath("/dashboard/membership")
   return { ok: true }
 }
@@ -153,6 +180,34 @@ export async function requestUpgrade(formData: FormData) {
       : `Membership application request${targetCategory ? ` for "${targetCategory}"` : ""}.`,
     status: "pending",
     completed: true,
+  })
+
+  await notify({
+    userId: current.id,
+    email: member?.email ?? current.email,
+    type: "application",
+    title: "Application submitted",
+    body: targetCategory
+      ? `We've received your request to move to "${targetCategory}". Our team will review it shortly.`
+      : "We've received your membership application. Our team will review it shortly.",
+    link: "/dashboard/applications",
+    emailTemplate: {
+      subject: "We received your VAAP membership application",
+      heading: "Application received",
+      intro: [
+        "Thank you — we've received your membership application.",
+        "Our team will review it and let you know as soon as there's an update. You can track its status any time from your dashboard.",
+      ],
+      ctaLabel: "View my applications",
+      ctaPath: "/dashboard/applications",
+    },
+  })
+  await notify({
+    role: "staff",
+    type: "application",
+    title: "New membership application",
+    body: `${member?.name ?? current.name ?? current.email} submitted a membership application.`,
+    link: "/admin/applications",
   })
 
   revalidatePath("/dashboard/membership")
