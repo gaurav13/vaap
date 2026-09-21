@@ -13,12 +13,14 @@ import {
   ChevronDown,
   ChevronRight,
   Clock,
+  Coins,
   Copy,
   CreditCard,
   FilePlus2,
   FileText,
   Globe,
   GraduationCap,
+  Info,
   KeyRound,
   Landmark,
   Lock,
@@ -30,6 +32,8 @@ import {
   Star,
   User,
   Users,
+  Wallet,
+  Zap,
   type LucideIcon,
 } from "lucide-react"
 import {
@@ -946,12 +950,91 @@ function trimAmount(n: number, decimals: number): string {
   return fixed.includes(".") ? fixed.replace(/\.?0+$/, "") : fixed
 }
 
-function CryptoPayment({ plan }: { plan: ApplyPlan }) {
+const COIN_SUBLABEL: Record<CryptoCoinId, string> = {
+  USDT_TRC20: "TRC-20",
+  XRP: "XRP Ledger",
+  BTC: "Bitcoin",
+  ETH: "Ethereum",
+}
+
+const COIN_BRAND: Record<CryptoCoinId, string> = {
+  USDT_TRC20: "#26A17B",
+  XRP: "#23292F",
+  BTC: "#F7931A",
+  ETH: "#627EEA",
+}
+
+function CoinGlyph({ id }: { id: CryptoCoinId }) {
+  if (id === "BTC") return <Bitcoin className="size-[18px] text-white" aria-hidden="true" />
+  const common = { width: 18, height: 18, viewBox: "0 0 24 24", fill: "none", "aria-hidden": true } as const
+  if (id === "USDT_TRC20") {
+    return (
+      <svg {...common}>
+        <path d="M4 6.5h16" stroke="#fff" strokeWidth="2.1" strokeLinecap="round" />
+        <path d="M12 6.5V18.5" stroke="#fff" strokeWidth="2.1" strokeLinecap="round" />
+        <ellipse cx="12" cy="10" rx="5.4" ry="2.3" stroke="#fff" strokeWidth="1.7" />
+      </svg>
+    )
+  }
+  if (id === "XRP") {
+    return (
+      <svg {...common}>
+        <path
+          d="M5.5 6c2.2 3.2 4.3 4.8 6.5 4.8S16.3 9.2 18.5 6M5.5 18c2.2-3.2 4.3-4.8 6.5-4.8s4.3 1.6 6.5 4.8"
+          stroke="#fff"
+          strokeWidth="1.9"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    )
+  }
+  // ETH
+  return (
+    <svg {...common}>
+      <path d="M12 2.5 6.6 12 12 9.3 17.4 12 12 2.5Z" fill="#fff" fillOpacity="0.85" />
+      <path d="M12 10.5 6.6 13.1 12 21.5 17.4 13.1 12 10.5Z" fill="#fff" />
+    </svg>
+  )
+}
+
+function CryptoFeature({
+  icon: Icon,
+  title,
+  desc,
+}: {
+  icon: LucideIcon
+  title: string
+  desc: string
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-green/10">
+        <Icon className="size-4 text-green" />
+      </span>
+      <div className="min-w-0">
+        <p className="text-sm font-semibold text-heading">{title}</p>
+        <p className="text-xs text-muted-2">{desc}</p>
+      </div>
+    </div>
+  )
+}
+
+function CryptoPayment({
+  plan,
+  txid,
+  onTxid,
+}: {
+  plan: ApplyPlan
+  txid: string
+  onTxid: (value: string) => void
+}) {
   const [config, setConfig] = useState<CryptoConfig | null>(null)
   const [selected, setSelected] = useState<CryptoCoinId>("USDT_TRC20")
   const [loading, setLoading] = useState(true)
   const [qr, setQr] = useState("")
   const [copied, setCopied] = useState("")
+  const [verified, setVerified] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -986,7 +1069,7 @@ function CryptoPayment({ plan }: { plan: ApplyPlan }) {
       return
     }
     let active = true
-    QRCode.toDataURL(qrValue, { width: 240, margin: 1, errorCorrectionLevel: "M" })
+    QRCode.toDataURL(qrValue, { width: 300, margin: 1, errorCorrectionLevel: "M" })
       .then((url) => {
         if (active) setQr(url)
       })
@@ -1007,145 +1090,232 @@ function CryptoPayment({ plan }: { plan: ApplyPlan }) {
   }
 
   return (
-    <div className="mt-6 rounded-xl border border-line bg-muted/30 p-4 sm:p-5">
-      <div className="flex items-center gap-2">
-        <Bitcoin className="size-5 shrink-0 text-green" />
-        <p className="text-sm font-semibold text-heading">Pay with cryptocurrency</p>
-      </div>
-      <p className="mt-1 text-xs leading-relaxed text-muted-2">
-        Choose a coin, send the exact amount to the address shown, then paste your transaction ID below. Amounts update
-        with the live market rate.
-      </p>
-
-      {/* Coin / network selector */}
-      <div className="mt-4 grid grid-cols-4 gap-2">
-        {(config?.coins ?? []).map((c) => (
-          <button
-            key={c.id}
-            type="button"
-            onClick={() => setSelected(c.id)}
-            aria-pressed={selected === c.id}
-            className={[
-              "flex flex-col items-center justify-center rounded-lg border px-1 py-2 text-center transition-colors",
-              selected === c.id
-                ? "border-green bg-green text-white"
-                : "border-line bg-background text-heading hover:bg-muted",
-            ].join(" ")}
-          >
-            <span className="text-sm font-bold leading-none">{c.label}</span>
-            <span
-              className={[
-                "mt-1 text-[9px] leading-tight",
-                selected === c.id ? "text-white/80" : "text-muted-2",
-              ].join(" ")}
-            >
-              {c.id === "USDT_TRC20" ? "TRC-20" : c.network.split(" · ")[0].split(" ")[0]}
-            </span>
-          </button>
-        ))}
-        {loading && !config && (
-          <div className="col-span-4 py-2 text-center text-xs text-muted-2">Loading payment options…</div>
-        )}
-      </div>
-
-      {coin && !coin.address ? (
-        <div className="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-4 text-xs leading-relaxed text-amber-800">
-          <span className="font-semibold">This coin isn&apos;t configured yet.</span> Please pick another coin or use
-          card payment. If this persists, contact us and we&apos;ll share a wallet address directly.
-        </div>
-      ) : coin ? (
-        <>
-          {/* Amount due */}
-          <div className="mt-4 rounded-lg border border-line bg-background p-4">
-            <div className="flex items-center justify-between text-xs text-muted-2">
-              <span>Total ({plan.title})</span>
-              <span className="font-medium text-heading">{formatPKR(totalPkr)}</span>
-            </div>
-            <div className="mt-3 border-t border-line pt-3">
-              <span className="text-xs text-muted-2">Send exactly</span>
-              <div className="mt-1 flex items-baseline gap-2">
-                <span className="font-sans text-2xl font-bold tracking-tight text-heading">{amountStr}</span>
-                <span className="text-sm font-semibold text-green">{coin.label}</span>
-              </div>
-              <p className="mt-1 text-[11px] text-muted-2">
-                {config?.source === "live" ? "Live rate · CoinGecko" : "Indicative rate"} · 1 {coin.label} ≈{" "}
-                {formatPKR(Math.round(coin.pkrPerUnit))} · {coin.network}
-              </p>
-            </div>
+    <div className="mt-6 overflow-hidden rounded-2xl border border-line bg-background">
+      {/* Header */}
+      <div className="flex flex-col gap-4 border-b border-line p-4 sm:flex-row sm:items-start sm:justify-between sm:p-6">
+        <div className="flex items-start gap-3">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-green/10">
+            <Wallet className="size-5 text-green" />
+          </span>
+          <div>
+            <h2 className="font-serif text-xl font-bold text-heading text-balance">Pay with Cryptocurrency</h2>
+            <p className="mt-1 max-w-md text-sm leading-relaxed text-muted-2 text-pretty">
+              Choose a cryptocurrency, send the exact amount to the address below, then paste your transaction ID.
+              Amounts update automatically with the live market rate.
+            </p>
           </div>
+        </div>
+        <div className="flex items-center gap-2.5 sm:border-l sm:border-line sm:pl-4">
+          <ShieldCheck className="size-6 shrink-0 text-green" />
+          <div>
+            <p className="text-sm font-semibold text-green">Secure &amp; Encrypted</p>
+            <p className="text-xs text-muted-2">Your payment is safe with us</p>
+          </div>
+        </div>
+      </div>
 
-          {/* QR + address */}
-          <div className="mt-4 flex flex-col items-center gap-4 rounded-lg border border-line bg-background p-4">
-            {qr ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={qr || "/placeholder.svg"}
-                alt={`${coin.label} wallet QR code`}
-                width={180}
-                height={180}
-                className="size-[180px] rounded-md border border-line bg-white p-2"
-              />
-            ) : (
-              <div className="flex size-[180px] items-center justify-center rounded-md border border-dashed border-line text-xs text-muted-2">
-                Generating QR…
+      <div className="p-4 sm:p-6">
+        {/* Coin / network selector */}
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {(config?.coins ?? []).map((c) => {
+            const active = selected === c.id
+            return (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => setSelected(c.id)}
+                aria-pressed={active}
+                className={[
+                  "flex items-center gap-3 rounded-xl border px-3 py-3 text-left transition-colors",
+                  active
+                    ? "border-green bg-green text-white shadow-sm"
+                    : "border-line bg-background text-heading hover:border-green/40 hover:bg-muted/40",
+                ].join(" ")}
+              >
+                <span
+                  className="flex size-9 shrink-0 items-center justify-center rounded-full"
+                  style={{ backgroundColor: COIN_BRAND[c.id] }}
+                >
+                  <CoinGlyph id={c.id} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-bold leading-tight">{c.label}</span>
+                  <span className={["block text-xs leading-tight", active ? "text-white/80" : "text-muted-2"].join(" ")}>
+                    {COIN_SUBLABEL[c.id]}
+                  </span>
+                </span>
+                {active && (
+                  <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-white/25">
+                    <Check className="size-3.5" />
+                  </span>
+                )}
+              </button>
+            )
+          })}
+          {loading && !config && (
+            <div className="col-span-2 py-3 text-center text-sm text-muted-2 sm:col-span-4">
+              Loading payment options…
+            </div>
+          )}
+        </div>
+
+        {coin && !coin.address ? (
+          <div className="mt-5 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm leading-relaxed text-amber-800">
+            <span className="font-semibold">This coin isn&apos;t configured yet.</span> Please pick another coin or use
+            card payment. If this persists, contact us and we&apos;ll share a wallet address directly.
+          </div>
+        ) : coin ? (
+          <div className="mt-5 rounded-xl border border-line bg-muted/20 p-4 sm:p-6">
+            {/* Section header + total */}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h3 className="font-serif text-lg font-bold text-heading">Payment Details</h3>
+                <p className="mt-0.5 text-sm text-muted-2">Send the exact amount shown below to complete your payment.</p>
               </div>
-            )}
+              <div className="flex items-center gap-3 self-start rounded-lg bg-green/10 px-4 py-2.5">
+                <span className="text-xs font-medium text-heading/70">Total ({plan.title})</span>
+                <span className="font-sans text-base font-bold text-green">{formatPKR(totalPkr)}</span>
+              </div>
+            </div>
 
-            <div className="w-full">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-2">
-                {coin.label} address ({coin.network})
-              </span>
-              <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-line bg-muted/40 p-2">
-                <code className="min-w-0 flex-1 break-all font-mono text-xs text-heading">{coin.address}</code>
+            {/* Amount + QR */}
+            <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_auto]">
+              <div className="rounded-xl bg-green/5 p-4 sm:p-5">
+                <div className="flex items-center gap-2.5 text-sm font-semibold text-green">
+                  <span className="flex size-8 items-center justify-center rounded-full bg-green/10">
+                    <Coins className="size-4" />
+                  </span>
+                  Amount to Send
+                </div>
+                <div className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                  <span className="font-sans text-3xl font-extrabold tracking-tight text-heading sm:text-4xl">
+                    {amountStr}
+                  </span>
+                  <span className="text-lg font-bold text-green sm:text-xl">{coin.label}</span>
+                </div>
+                <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-2">
+                  <span className="font-medium text-heading/70">
+                    {config?.source === "live" ? "Live rate (CoinGecko)" : "Indicative rate"}
+                  </span>
+                  <span>
+                    1 {coin.label} ≈ {formatPKR(Math.round(coin.pkrPerUnit))}
+                  </span>
+                  <Info className="size-3.5" />
+                </p>
+              </div>
+
+              <div className="flex items-center gap-4 rounded-xl border border-line bg-background p-4">
+                {qr ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={qr || "/placeholder.svg"}
+                    alt={`${coin.label} wallet QR code`}
+                    width={128}
+                    height={128}
+                    className="size-32 shrink-0 rounded-md border border-line bg-white p-1.5"
+                  />
+                ) : (
+                  <div className="flex size-32 shrink-0 items-center justify-center rounded-md border border-dashed border-line text-xs text-muted-2">
+                    Generating…
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <p className="font-serif text-base font-bold text-heading">Scan QR Code</p>
+                  <p className="mt-1 text-sm leading-relaxed text-muted-2">Open your wallet and scan to pay directly.</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Wallet address */}
+            <div className="mt-5">
+              <label className="text-sm font-semibold text-heading">{coin.label} Wallet Address</label>
+              <div className="mt-1.5 flex flex-col gap-2 sm:flex-row">
+                <div className="flex min-w-0 flex-1 items-center rounded-lg border border-line bg-background px-3 py-2.5">
+                  <code className="min-w-0 flex-1 break-all font-mono text-sm text-heading">{coin.address}</code>
+                </div>
                 <button
                   type="button"
                   onClick={() => copy(coin.address, "addr")}
-                  className="inline-flex shrink-0 items-center gap-1 rounded-md bg-green px-2.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-green/90"
+                  className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-line bg-background px-4 py-2.5 text-sm font-semibold text-heading transition-colors hover:bg-muted sm:w-auto"
                 >
-                  {copied === "addr" ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+                  {copied === "addr" ? <Check className="size-4 text-green" /> : <Copy className="size-4" />}
                   {copied === "addr" ? "Copied" : "Copy"}
                 </button>
               </div>
 
               {coin.tag && (
-                <div className="mt-2">
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-2">
-                    Destination tag (required)
-                  </span>
-                  <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-line bg-muted/40 p-2">
-                    <code className="min-w-0 flex-1 break-all font-mono text-xs text-heading">{coin.tag}</code>
+                <div className="mt-3">
+                  <label className="text-sm font-semibold text-heading">Destination Tag (required)</label>
+                  <div className="mt-1.5 flex flex-col gap-2 sm:flex-row">
+                    <div className="flex min-w-0 flex-1 items-center rounded-lg border border-line bg-background px-3 py-2.5">
+                      <code className="min-w-0 flex-1 break-all font-mono text-sm text-heading">{coin.tag}</code>
+                    </div>
                     <button
                       type="button"
                       onClick={() => copy(coin.tag as string, "tag")}
-                      className="inline-flex shrink-0 items-center gap-1 rounded-md bg-green px-2.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-green/90"
+                      className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-line bg-background px-4 py-2.5 text-sm font-semibold text-heading transition-colors hover:bg-muted sm:w-auto"
                     >
-                      {copied === "tag" ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+                      {copied === "tag" ? <Check className="size-4 text-green" /> : <Copy className="size-4" />}
                       {copied === "tag" ? "Copied" : "Copy"}
                     </button>
                   </div>
+                  <p className="mt-1.5 text-xs text-muted-2">
+                    XRP sent without this destination tag may be lost. Always include it.
+                  </p>
                 </div>
               )}
 
-              <button
-                type="button"
-                onClick={() => copy(amountStr, "amt")}
-                className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-green hover:underline"
-              >
-                {copied === "amt" ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
-                {copied === "amt" ? "Amount copied" : `Copy amount (${amountStr} ${coin.label})`}
-              </button>
+              <p className="mt-2.5 flex items-start gap-1.5 text-xs leading-relaxed text-muted-2">
+                <ShieldCheck className="mt-0.5 size-3.5 shrink-0 text-green" />
+                <span>
+                  Send on the <span className="font-semibold text-heading">{coin.network}</span> network only. Sending on
+                  the wrong network or a different amount can delay or lose your payment.
+                </span>
+              </p>
+            </div>
+
+            {/* After payment */}
+            <div className="mt-5 border-t border-line pt-5">
+              <h4 className="text-sm font-semibold text-heading">After Payment</h4>
+              <p className="mt-0.5 text-xs leading-relaxed text-muted-2">
+                Once the transaction is completed, paste your Transaction ID (TxID) below so we can verify your payment.
+              </p>
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                <input
+                  className="min-w-0 flex-1 rounded-lg border border-line bg-background px-3 py-2.5 text-sm text-heading outline-none transition-colors placeholder:text-muted-2 focus:border-green"
+                  placeholder="Enter Transaction ID (TxID)"
+                  value={txid}
+                  onChange={(e) => {
+                    onTxid(e.target.value)
+                    setVerified(false)
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setVerified(!!txid.trim())}
+                  disabled={!txid.trim()}
+                  className="inline-flex shrink-0 items-center justify-center rounded-lg bg-green px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-green/90 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Verify Payment
+                </button>
+              </div>
+              {verified && (
+                <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-green">
+                  <Check className="size-3.5" />
+                  Transaction ID recorded. Click Continue below to submit your application for verification.
+                </p>
+              )}
             </div>
           </div>
+        ) : null}
 
-          <p className="mt-3 flex items-start gap-1.5 text-[11px] leading-relaxed text-muted-2">
-            <ShieldCheck className="mt-0.5 size-3.5 shrink-0 text-green" />
-            <span>
-              Send on the <span className="font-semibold text-heading">{coin.network}</span> network only. Sending on the
-              wrong network or a different amount can delay or lose your payment.
-            </span>
-          </p>
-        </>
-      ) : null}
+        {/* Footer reassurance */}
+        <div className="mt-5 grid gap-4 border-t border-line pt-5 sm:grid-cols-3">
+          <CryptoFeature icon={Zap} title="Real-time rates" desc="Auto-updated with live market data" />
+          <CryptoFeature icon={Lock} title="Secure payments" desc="Your information is protected" />
+          <CryptoFeature icon={Users} title="Transparent &amp; reliable" desc="Verified on blockchain" />
+        </div>
+      </div>
     </div>
   )
 }
@@ -1203,23 +1373,7 @@ function StepPayment({
               }}
             />
           ) : (
-            <>
-              <CryptoPayment plan={plan} />
-              <div className="mt-6">
-                <Field label="Transaction ID (TXID / Hash)" required>
-                  <input
-                    className={INPUT_CLASS}
-                    placeholder="e.g. 0x4f3c… or the hash from your wallet"
-                    value={form.txid}
-                    onChange={(e) => update("txid", e.target.value)}
-                  />
-                </Field>
-                <p className="mt-1.5 text-xs text-muted-2">
-                  After completing your crypto payment, paste the transaction ID (TXID) here so our team can verify it.
-                  This is required before you can continue.
-                </p>
-              </div>
-            </>
+            <CryptoPayment plan={plan} txid={form.txid} onTxid={(v) => update("txid", v)} />
           )}
 
           <div className="mt-6 flex items-start gap-2 text-xs text-muted-2">
