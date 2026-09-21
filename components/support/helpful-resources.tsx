@@ -47,7 +47,7 @@ export function HelpfulResources() {
               <span className="flex size-12 items-center justify-center rounded-lg bg-mint text-green">
                 <Icon className="size-6" />
               </span>
-              <h3 className="mt-4 text-base font-semibold text-heading">{title}</h3>
+              <h3 className="mt-4 font-serif text-lg text-heading">{title}</h3>
               <p className="mt-2 text-sm leading-relaxed text-body">{body}</p>
               <Link
                 href={href}
