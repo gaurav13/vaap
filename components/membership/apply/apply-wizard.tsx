@@ -16,6 +16,7 @@ import {
   CreditCard,
   FilePlus2,
   FileText,
+  Globe,
   GraduationCap,
   KeyRound,
   Landmark,
@@ -426,6 +427,11 @@ function isFeaturedPlan(icon: string): boolean {
   return ["Building2", "ShieldCheck"].includes(icon)
 }
 
+// Associate Membership is positioned for international companies and projects.
+function isInternationalPlan(title: string): boolean {
+  return title.toLowerCase().includes("associate")
+}
+
 const ELIGIBILITY_ICONS: LucideIcon[] = [Settings, FileText, ShieldCheck, User]
 
 function StepSelectType({
@@ -503,6 +509,17 @@ function StepSelectType({
                       Featured
                     </span>
                   )}
+                  {isInternationalPlan(plan.title) && (
+                    <span
+                      className={[
+                        "mt-1.5 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider",
+                        isViewing ? "border-white/40 text-white/90" : "border-green/40 text-green",
+                      ].join(" ")}
+                    >
+                      <Globe className="size-2.5" aria-hidden />
+                      International
+                    </span>
+                  )}
                 </span>
                 {isSelected && !isViewing ? (
                   <span
@@ -566,6 +583,12 @@ function PlanDetailPanel({
             <span className="hidden h-px w-10 bg-green/40 sm:block" aria-hidden />
           </div>
           <h2 className="mt-3 font-serif text-2xl font-bold leading-tight text-heading xl:text-3xl">{plan.subtitle}</h2>
+          {isInternationalPlan(plan.title) && (
+            <span className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-green/30 bg-mint/50 px-3 py-1 text-xs font-semibold text-green">
+              <Globe className="size-3.5" aria-hidden />
+              Recommended for international companies & projects
+            </span>
+          )}
         </div>
         <span className="hidden size-14 shrink-0 items-center justify-center rounded-full bg-mint text-green sm:flex">
           <Icon className="size-7" aria-hidden />
