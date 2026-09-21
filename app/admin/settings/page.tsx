@@ -2,13 +2,17 @@ import { db } from "@/lib/db"
 import { pages } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
 import { getSiteSettings, type MenuItem } from "@/lib/site-settings"
+import { getSession } from "@/lib/session"
 import { SettingsAdmin } from "@/components/admin/settings-admin"
 
 export default async function AdminSettingsPage() {
-  const [settings, publishedPages] = await Promise.all([
+  const [settings, publishedPages, session] = await Promise.all([
     getSiteSettings(),
     db.select().from(pages).where(eq(pages.status, "published")),
+    getSession(),
   ])
+
+  const canManageStatus = session?.user?.role === "admin"
 
   const pageOptions: MenuItem[] = publishedPages.map((p) => ({
     label: p.title,
@@ -30,6 +34,8 @@ export default async function AdminSettingsPage() {
         membership={settings.membership}
         footer={settings.footer}
         ctaBanner={settings.ctaBanner}
+        siteStatus={settings.siteStatus}
+        canManageStatus={canManageStatus}
         pageOptions={pageOptions}
       />
     </div>

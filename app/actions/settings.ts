@@ -5,13 +5,21 @@ import { settings, auditLogs } from "@/lib/db/schema"
 import { getSession } from "@/lib/session"
 import { sql } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
-import type { MenuItem, SocialLinks, General, Banner, NewsAlert, GovHero, GovFramework, Membership, Footer, CtaBanner, SettingKey } from "@/lib/site-settings"
+import type { MenuItem, SocialLinks, General, Banner, NewsAlert, GovHero, GovFramework, Membership, Footer, CtaBanner, SiteStatus, SettingKey } from "@/lib/site-settings"
 
 async function requireStaff() {
   const session = await getSession()
   if (!session?.user) throw new Error("Unauthorized")
   const role = session.user.role
   if (role !== "staff" && role !== "admin") throw new Error("Forbidden")
+  return session.user
+}
+
+// The website launch / maintenance control is a super-admin action.
+async function requireAdmin() {
+  const session = await getSession()
+  if (!session?.user) throw new Error("Unauthorized")
+  if (session.user.role !== "admin") throw new Error("Forbidden")
   return session.user
 }
 
@@ -254,5 +262,12 @@ export async function saveBanner(formData: FormData) {
     ctaHref: String(formData.get("ctaHref") ?? "").trim(),
   }
   await put("banner", value, actor)
+  return { ok: true as const }
+}
+
+export async function saveSiteStatus(comingSoon: boolean) {
+  const actor = await requireAdmin()
+  const value: SiteStatus = { comingSoon: Boolean(comingSoon) }
+  await put("siteStatus", value, actor)
   return { ok: true as const }
 }

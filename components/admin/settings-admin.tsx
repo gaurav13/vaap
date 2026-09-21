@@ -2,15 +2,16 @@
 
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
-import { ArrowDown, ArrowUp, Bell, Check, CornerDownRight, FilePlus2, GripVertical, Megaphone, Menu, Image as ImageIcon, Link2, Monitor, Network, PanelBottom, Plus, Settings2, Smartphone, Trash2, Wallet } from "lucide-react"
+import { ArrowDown, ArrowUp, Bell, Check, CornerDownRight, FilePlus2, GripVertical, Megaphone, Menu, Image as ImageIcon, Link2, Monitor, Network, PanelBottom, Plus, Power, Settings2, Smartphone, Trash2, Wallet } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { saveMenu, saveSocial, saveGeneral, saveBanner, saveNewsAlert, saveCtaBanner, saveGovHero, saveGovFramework, saveMembership, saveFooter } from "@/app/actions/settings"
+import { saveMenu, saveSocial, saveGeneral, saveBanner, saveNewsAlert, saveCtaBanner, saveGovHero, saveGovFramework, saveMembership, saveFooter, saveSiteStatus } from "@/app/actions/settings"
 import { deletePageByHref, createPageForMenu } from "@/app/actions/cms"
-import type { MenuItem, SocialLinks, General, Banner, NewsAlert, CtaBanner, GovHero, GovFramework, Membership, Footer } from "@/lib/site-settings"
+import type { MenuItem, SocialLinks, General, Banner, NewsAlert, CtaBanner, GovHero, GovFramework, Membership, Footer, SiteStatus } from "@/lib/site-settings"
 
-type Tab = "menu" | "alert" | "hero" | "framework" | "membership" | "banner" | "cta" | "links" | "footer" | "general"
+type Tab = "status" | "menu" | "alert" | "hero" | "framework" | "membership" | "banner" | "cta" | "links" | "footer" | "general"
 
 const TABS: { key: Tab; label: string; icon: typeof Menu }[] = [
+  { key: "status", label: "Website Status", icon: Power },
   { key: "menu", label: "Menu", icon: Menu },
   { key: "alert", label: "News Alert", icon: Bell },
   { key: "hero", label: "Governance Hero", icon: Monitor },
@@ -78,6 +79,8 @@ export function SettingsAdmin({
   membership,
   footer,
   ctaBanner,
+  siteStatus,
+  canManageStatus = false,
   pageOptions,
 }: {
   menu: MenuItem[]
@@ -90,9 +93,11 @@ export function SettingsAdmin({
   membership: Membership
   footer: Footer
   ctaBanner: CtaBanner
+  siteStatus: SiteStatus
+  canManageStatus?: boolean
   pageOptions: MenuItem[]
 }) {
-  const [tab, setTab] = useState<Tab>("menu")
+  const [tab, setTab] = useState<Tab>("status")
 
   return (
     <div className="mt-6">
@@ -117,6 +122,7 @@ export function SettingsAdmin({
       </div>
 
       <div className="mt-6">
+        {tab === "status" && <WebsiteStatusEditor initial={siteStatus} canManage={canManageStatus} />}
         {tab === "menu" && <MenuEditor initial={menu} pageOptions={pageOptions} />}
         {tab === "alert" && <NewsAlertEditor initial={newsAlert} />}
         {tab === "hero" && <HeroEditor initial={govHero} />}
@@ -128,6 +134,108 @@ export function SettingsAdmin({
         {tab === "footer" && <FooterEditor initial={footer} pageOptions={pageOptions} />}
         {tab === "general" && <GeneralEditor initial={general} />}
       </div>
+    </div>
+  )
+}
+
+function WebsiteStatusEditor({ initial, canManage }: { initial: SiteStatus; canManage: boolean }) {
+  const router = useRouter()
+  const [comingSoon, setComingSoon] = useState(initial.comingSoon)
+  const [pending, startTransition] = useTransition()
+  const [saved, setSaved] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const dirty = comingSoon !== initial.comingSoon
+  const live = !comingSoon
+
+  function onToggle(next: boolean) {
+    setComingSoon(next)
+    setSaved(false)
+    setError(null)
+  }
+
+  function onSave() {
+    startTransition(async () => {
+      try {
+        await saveSiteStatus(comingSoon)
+        setSaved(true)
+        router.refresh()
+      } catch {
+        setError("You do not have permission to change the website status.")
+      }
+    })
+  }
+
+  return (
+    <div className="rounded-xl border border-line bg-card p-6">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-bold text-heading">Website status</h2>
+          <p className="mt-1 max-w-2xl text-sm text-muted-2">
+            Control whether the public website is live or shows a &ldquo;Launching Soon&rdquo; page to visitors. Staff and
+            admins always keep full access to the site and dashboard.
+          </p>
+        </div>
+        <span
+          className={
+            "inline-flex shrink-0 items-center gap-2 rounded-full px-3 py-1.5 text-sm font-semibold " +
+            (live ? "bg-mint text-green" : "bg-[#F4E9CE] text-[#7A5B12]")
+          }
+        >
+          <span className={"size-2 rounded-full " + (live ? "bg-green" : "bg-[#C6A15B]")} aria-hidden />
+          {live ? "Website Live" : "Coming Soon Mode"}
+        </span>
+      </div>
+
+      <div className="mt-6 flex flex-col gap-4 rounded-lg border border-line bg-background p-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-4">
+          <span className={"text-sm font-semibold " + (comingSoon ? "text-muted-2" : "text-heading")}>Website Live</span>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={comingSoon}
+            aria-label="Toggle Coming Soon mode"
+            disabled={!canManage || pending}
+            onClick={() => onToggle(!comingSoon)}
+            className={
+              "relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-50 " +
+              (comingSoon ? "bg-[#C6A15B]" : "bg-green")
+            }
+          >
+            <span
+              className={
+                "inline-block size-5 transform rounded-full bg-white shadow transition-transform " +
+                (comingSoon ? "translate-x-6" : "translate-x-1")
+              }
+            />
+          </button>
+          <span className={"text-sm font-semibold " + (comingSoon ? "text-heading" : "text-muted-2")}>
+            Coming Soon Mode
+          </span>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <SavedBadge show={saved && !dirty} />
+          <Button onClick={onSave} disabled={!canManage || pending || !dirty}>
+            {pending ? "Saving…" : "Save changes"}
+          </Button>
+        </div>
+      </div>
+
+      {!canManage && (
+        <p className="mt-4 rounded-lg bg-mint/60 px-4 py-3 text-sm text-navy">
+          Only a Super Admin can change the website launch status.
+        </p>
+      )}
+      {error && (
+        <p className="mt-4 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</p>
+      )}
+
+      <p className="mt-5 text-xs leading-relaxed text-muted-2">
+        {comingSoon
+          ? "Coming Soon mode is ON: public visitors see the Launching Soon page. Turn it off to make the full website visible to everyone."
+          : "The website is live: all public pages are visible to everyone. Switch to Coming Soon mode to show the Launching Soon page instead."}
+      </p>
     </div>
   )
 }

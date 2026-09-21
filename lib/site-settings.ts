@@ -127,6 +127,12 @@ export type Footer = {
   legal: MenuItem[]
 }
 
+export type SiteStatus = {
+  // When true, public visitors see the "Launching Soon" page instead of the
+  // live site. Staff/admins always bypass this so they can keep working.
+  comingSoon: boolean
+}
+
 export type CtaBanner = {
   enabled: boolean
   eyebrow: string
@@ -332,7 +338,11 @@ export const DEFAULT_CTA_BANNER: CtaBanner = {
   imageAlt: "Faisal Mosque, the Margalla mountains and the Pakistan flag at sunrise",
 }
 
-export const SETTING_KEYS = ["menu", "social", "general", "banner", "newsAlert", "govHero", "govFramework", "membership", "footer", "ctaBanner"] as const
+export const DEFAULT_SITE_STATUS: SiteStatus = {
+  comingSoon: false,
+}
+
+export const SETTING_KEYS = ["menu", "social", "general", "banner", "newsAlert", "govHero", "govFramework", "membership", "footer", "ctaBanner", "siteStatus"] as const
 export type SettingKey = (typeof SETTING_KEYS)[number]
 
 function parse<T>(raw: string | undefined, fallback: T): T {
@@ -372,6 +382,7 @@ export type SiteSettings = {
   membership: Membership
   footer: Footer
   ctaBanner: CtaBanner
+  siteStatus: SiteStatus
 }
 
 export async function getSiteSettings(): Promise<SiteSettings> {
@@ -387,7 +398,13 @@ export async function getSiteSettings(): Promise<SiteSettings> {
     membership: parse<Membership>(map.membership, DEFAULT_MEMBERSHIP),
     footer: parse<Footer>(map.footer, DEFAULT_FOOTER),
     ctaBanner: parse<CtaBanner>(map.ctaBanner, DEFAULT_CTA_BANNER),
+    siteStatus: parse<SiteStatus>(map.siteStatus, DEFAULT_SITE_STATUS),
   }
+}
+
+export async function getSiteStatus(): Promise<SiteStatus> {
+  const map = await readAll()
+  return parse<SiteStatus>(map.siteStatus, DEFAULT_SITE_STATUS)
 }
 
 export async function getNewsAlert(): Promise<NewsAlert> {
