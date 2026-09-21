@@ -38,14 +38,14 @@ const FEATURES = [
 
 export function ComingSoon() {
   return (
-    <div className="flex min-h-screen flex-col bg-background md:h-dvh md:min-h-0 md:overflow-hidden">
+    <div className="flex min-h-screen flex-col bg-background md:min-h-dvh">
       {/* Thin gold accent line across the very top for an editorial feel */}
       <span className="h-[3px] w-full shrink-0" style={{ backgroundColor: GOLD }} aria-hidden />
 
       <div className="flex min-h-0 flex-1 flex-col md:grid md:grid-cols-[1.05fr_0.95fr]">
         {/* Left: content */}
         <div
-          className="relative flex min-h-0 flex-col md:overflow-hidden"
+          className="relative flex min-h-0 flex-col"
           style={{ padding: "clamp(1.25rem, 2.4vw, 2.75rem) clamp(1.25rem, 3.4vw, 4rem)" }}
         >
           <header className="flex shrink-0 items-center">
