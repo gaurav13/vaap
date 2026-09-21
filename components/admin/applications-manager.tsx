@@ -2,9 +2,9 @@
 
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
-import { Building2, Check, ChevronDown, CreditCard, Mail, Phone, TriangleAlert, X } from "lucide-react"
+import { Building2, Check, ChevronDown, CreditCard, Mail, Phone, Trash2, TriangleAlert, X } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { setApplicationStatus } from "@/app/actions/admin"
+import { setApplicationStatus, deleteApplication } from "@/app/actions/admin"
 
 type Application = {
   id: number
@@ -40,7 +40,7 @@ const FILTER_ACTIVE: Record<(typeof FILTERS)[number], string> = {
   rejected: "bg-destructive text-white",
 }
 
-export function ApplicationsManager({ items }: { items: Application[] }) {
+export function ApplicationsManager({ items, isAdmin = false }: { items: Application[]; isAdmin?: boolean }) {
   const router = useRouter()
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>("all")
   const [expanded, setExpanded] = useState<number | null>(null)
@@ -49,6 +49,19 @@ export function ApplicationsManager({ items }: { items: Application[] }) {
   function update(id: number, status: "pending" | "approved" | "rejected") {
     startTransition(async () => {
       await setApplicationStatus(id, status)
+      router.refresh()
+    })
+  }
+
+  function remove(id: number, name: string) {
+    if (!window.confirm(`Permanently delete ${name}'s application? This cannot be undone.`)) return
+    startTransition(async () => {
+      const res = await deleteApplication(id)
+      if (!res?.ok) {
+        window.alert(res?.error ?? "Unable to delete this application.")
+        return
+      }
+      setExpanded(null)
       router.refresh()
     })
   }
@@ -230,6 +243,16 @@ export function ApplicationsManager({ items }: { items: Application[] }) {
                     className="inline-flex items-center gap-1.5 rounded-lg border border-line px-3.5 py-2 text-sm font-semibold text-body transition-colors hover:bg-mint"
                   >
                     Reset
+                  </button>
+                )}
+                {isAdmin && (a.status === "rejected" || !a.completed) && (
+                  <button
+                    type="button"
+                    disabled={pending}
+                    onClick={() => remove(a.id, a.name)}
+                    className="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-destructive/40 px-3.5 py-2 text-sm font-semibold text-destructive transition-colors hover:bg-destructive hover:text-white disabled:opacity-40"
+                  >
+                    <Trash2 className="size-4" /> Delete
                   </button>
                 )}
               </div>
