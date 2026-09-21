@@ -58,7 +58,7 @@ export function ComingSoon() {
           <div className="flex min-h-0 flex-1 flex-col justify-start">
             <div
               className="flex max-w-3xl items-start"
-              style={{ paddingTop: "clamp(2.75rem, 5vw, 5rem)" }}
+              style={{ paddingTop: "clamp(1.5rem, 3vw, 3rem)" }}
             >
               <div className="min-w-0">
                 <div className="flex items-center gap-4">
@@ -78,7 +78,7 @@ export function ComingSoon() {
 
                 <p
                   className="max-w-xl leading-relaxed text-body text-pretty"
-                  style={{ marginTop: "clamp(1rem, 1.6vw, 1.5rem)", fontSize: "clamp(0.95rem, 1vw, 1.125rem)" }}
+                  style={{ marginTop: "clamp(0.75rem, 1.2vw, 1.1rem)", fontSize: "clamp(0.95rem, 1vw, 1.125rem)" }}
                 >
                   The{" "}
                   <span className="font-semibold" style={{ color: GOLD }}>
@@ -96,16 +96,16 @@ export function ComingSoon() {
                   in Pakistan.
                 </p>
 
-                <div style={{ marginTop: "clamp(1.25rem, 1.8vw, 1.75rem)" }}>
+                <div style={{ marginTop: "clamp(1rem, 1.5vw, 1.5rem)" }}>
                   <Link
                     href="/membership/apply"
-                    className="group inline-flex w-full items-center justify-center gap-3 rounded-full bg-green px-8 py-3.5 text-sm font-semibold text-white shadow-lg shadow-green/25 ring-1 ring-inset ring-white/10 transition hover:shadow-xl hover:shadow-green/30 hover:brightness-110 sm:w-auto lg:text-base"
+                    className="group inline-flex w-full items-center justify-center gap-3 rounded-full bg-green px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-green/25 ring-1 ring-inset ring-white/10 transition hover:shadow-xl hover:shadow-green/30 hover:brightness-110 sm:w-auto lg:text-base"
                   >
                     <UserPlus className="size-5" aria-hidden />
                     Pre-Register for Membership
                     <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" aria-hidden />
                   </Link>
-                  <p className="mt-3 text-sm text-muted-2 text-pretty">
+                  <p className="mt-2.5 text-sm text-muted-2 text-pretty">
                     Be the first to join. Get updates on our launch, membership and events.
                   </p>
                 </div>
@@ -113,10 +113,10 @@ export function ComingSoon() {
                 <ul
                   className="grid grid-cols-2 border-t border-line lg:grid-cols-4 lg:gap-x-0 lg:divide-x lg:divide-line"
                   style={{
-                    marginTop: "clamp(1.5rem, 2.4vw, 2.25rem)",
-                    paddingTop: "clamp(1.25rem, 1.8vw, 1.75rem)",
+                    marginTop: "clamp(1rem, 1.8vw, 1.75rem)",
+                    paddingTop: "clamp(1rem, 1.5vw, 1.5rem)",
                     columnGap: "1rem",
-                    rowGap: "clamp(1rem, 1.6vw, 1.5rem)",
+                    rowGap: "clamp(0.75rem, 1.2vw, 1.25rem)",
                   }}
                 >
                   {FEATURES.map(({ icon: Icon, label }) => (
