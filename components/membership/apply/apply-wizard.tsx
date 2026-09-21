@@ -13,6 +13,7 @@ import {
   ChevronDown,
   ChevronRight,
   Clock,
+  Copy,
   CreditCard,
   FilePlus2,
   FileText,
@@ -34,10 +35,12 @@ import {
 import {
   submitFullApplication,
   saveIncompleteApplication,
-  getCryptoRates,
-  type CryptoRates,
+  getCryptoConfig,
+  type CryptoConfig,
+  type CryptoCoinId,
 } from "@/app/actions/public"
 import { MembershipCardPayment } from "@/components/membership/apply/card-payment"
+import QRCode from "qrcode"
 
 const ICONS: Record<string, LucideIcon> = {
   Building2,
@@ -937,110 +940,212 @@ function SummaryRow({ label, value, strong }: { label: string; value: string; st
 }
 
 // Indicative rate shown instantly while the live rate loads (and if it fails).
-const INDICATIVE_RATES: CryptoRates = {
-  usdPerPkr: 1 / 280,
-  xrpPerPkr: 1 / (280 * 2.5),
-  source: "fallback",
+function trimAmount(n: number, decimals: number): string {
+  if (!isFinite(n) || n <= 0) return "0"
+  const fixed = n.toFixed(decimals)
+  return fixed.includes(".") ? fixed.replace(/\.?0+$/, "") : fixed
 }
 
-function CryptoConverter({ plan }: { plan: ApplyPlan }) {
-  const [currency, setCurrency] = useState<"XRP" | "USD">("XRP")
-  const [rates, setRates] = useState<CryptoRates>(INDICATIVE_RATES)
-  const [loading, setLoading] = useState(false)
+function CryptoPayment({ plan }: { plan: ApplyPlan }) {
+  const [config, setConfig] = useState<CryptoConfig | null>(null)
+  const [selected, setSelected] = useState<CryptoCoinId>("USDT_TRC20")
+  const [loading, setLoading] = useState(true)
+  const [qr, setQr] = useState("")
+  const [copied, setCopied] = useState("")
 
-  async function loadRates() {
-    if (loading) return
-    setLoading(true)
-    try {
-      const r = await getCryptoRates()
-      setRates(r)
-    } catch {
-      // keep the indicative rate already on screen
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // Upgrade the indicative rate to a live one when the panel first appears.
   useEffect(() => {
-    void loadRates()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    let active = true
+    setLoading(true)
+    getCryptoConfig()
+      .then((c) => {
+        if (active) setConfig(c)
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+    return () => {
+      active = false
+    }
   }, [])
 
   const totalPkr = totalNumberForPlan(plan)
-  const rate = currency === "USD" ? rates.usdPerPkr : rates.xrpPerPkr
-  const converted = totalPkr * rate
-  const pkrPerUnit = 1 / rate
+  const coin = config?.coins.find((c) => c.id === selected) ?? null
+  const amount = coin && coin.pkrPerUnit > 0 ? totalPkr / coin.pkrPerUnit : 0
+  const amountStr = coin ? trimAmount(amount, coin.decimals) : ""
+
+  const qrValue = useMemo(() => {
+    if (!coin?.address) return ""
+    if (coin.id === "BTC") return `bitcoin:${coin.address}?amount=${amountStr}`
+    return coin.address
+  }, [coin, amountStr])
+
+  useEffect(() => {
+    if (!qrValue) {
+      setQr("")
+      return
+    }
+    let active = true
+    QRCode.toDataURL(qrValue, { width: 240, margin: 1, errorCorrectionLevel: "M" })
+      .then((url) => {
+        if (active) setQr(url)
+      })
+      .catch(() => {
+        if (active) setQr("")
+      })
+    return () => {
+      active = false
+    }
+  }, [qrValue])
+
+  function copy(text: string, key: string) {
+    if (!text) return
+    navigator.clipboard?.writeText(text).then(() => {
+      setCopied(key)
+      setTimeout(() => setCopied((c) => (c === key ? "" : c)), 1800)
+    })
+  }
 
   return (
-    <div className="mt-6 rounded-xl border border-line bg-muted/30 p-5">
+    <div className="mt-6 rounded-xl border border-line bg-muted/30 p-4 sm:p-5">
       <div className="flex items-center gap-2">
-        <Bitcoin className="size-5 text-green" />
+        <Bitcoin className="size-5 shrink-0 text-green" />
         <p className="text-sm font-semibold text-heading">Pay with cryptocurrency</p>
       </div>
-      <p className="mt-1 text-xs text-muted-2">
-        Convert your total to its live crypto equivalent. After you submit, our team will share a verified wallet
-        address and payment instructions by email.
+      <p className="mt-1 text-xs leading-relaxed text-muted-2">
+        Choose a coin, send the exact amount to the address shown, then paste your transaction ID below. Amounts update
+        with the live market rate.
       </p>
 
-      <div className="mt-4 inline-flex rounded-lg border border-line p-1">
-        {(["XRP", "USD"] as const).map((c) => (
+      {/* Coin / network selector */}
+      <div className="mt-4 grid grid-cols-4 gap-2">
+        {(config?.coins ?? []).map((c) => (
           <button
-            key={c}
+            key={c.id}
             type="button"
-            onClick={() => setCurrency(c)}
-            aria-pressed={currency === c}
+            onClick={() => setSelected(c.id)}
+            aria-pressed={selected === c.id}
             className={[
-              "rounded-md px-4 py-1.5 text-sm font-semibold transition-colors",
-              currency === c ? "bg-green text-white" : "text-heading hover:bg-muted",
+              "flex flex-col items-center justify-center rounded-lg border px-1 py-2 text-center transition-colors",
+              selected === c.id
+                ? "border-green bg-green text-white"
+                : "border-line bg-background text-heading hover:bg-muted",
             ].join(" ")}
           >
-            {c}
+            <span className="text-sm font-bold leading-none">{c.label}</span>
+            <span
+              className={[
+                "mt-1 text-[9px] leading-tight",
+                selected === c.id ? "text-white/80" : "text-muted-2",
+              ].join(" ")}
+            >
+              {c.id === "USDT_TRC20" ? "TRC-20" : c.network.split(" · ")[0].split(" ")[0]}
+            </span>
           </button>
         ))}
+        {loading && !config && (
+          <div className="col-span-4 py-2 text-center text-xs text-muted-2">Loading payment options…</div>
+        )}
       </div>
 
-      <div className="mt-4 rounded-lg border border-line bg-background p-4">
-        <div className="flex items-center justify-between text-xs text-muted-2">
-          <span>Total ({plan.title})</span>
-          <span className="font-medium text-heading">{formatPKR(totalPkr)}</span>
+      {coin && !coin.address ? (
+        <div className="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-4 text-xs leading-relaxed text-amber-800">
+          <span className="font-semibold">This coin isn&apos;t configured yet.</span> Please pick another coin or use
+          card payment. If this persists, contact us and we&apos;ll share a wallet address directly.
         </div>
-        <div className="mt-3 flex items-baseline justify-between gap-3 border-t border-line pt-3">
-          <span className="text-sm text-muted-2">You pay approx.</span>
-          <span className="font-sans text-2xl font-bold tracking-tight text-heading">{formatCrypto(converted, currency)}</span>
-        </div>
-        <div className="mt-2 flex items-center justify-between text-[11px] text-muted-2">
-          <span>
-            {loading
-              ? "Updating live rate…"
-              : rates.source === "live"
-                ? "Live rate · CoinGecko"
-                : "Indicative rate"}
-            {` · 1 ${currency} ≈ ${formatPKR(Math.round(pkrPerUnit))}`}
-          </span>
-          <button
-            type="button"
-            onClick={() => void loadRates()}
-            className="font-semibold text-green hover:underline disabled:opacity-50"
-            disabled={loading}
-          >
-            Refresh
-          </button>
-        </div>
-      </div>
+      ) : coin ? (
+        <>
+          {/* Amount due */}
+          <div className="mt-4 rounded-lg border border-line bg-background p-4">
+            <div className="flex items-center justify-between text-xs text-muted-2">
+              <span>Total ({plan.title})</span>
+              <span className="font-medium text-heading">{formatPKR(totalPkr)}</span>
+            </div>
+            <div className="mt-3 border-t border-line pt-3">
+              <span className="text-xs text-muted-2">Send exactly</span>
+              <div className="mt-1 flex items-baseline gap-2">
+                <span className="font-sans text-2xl font-bold tracking-tight text-heading">{amountStr}</span>
+                <span className="text-sm font-semibold text-green">{coin.label}</span>
+              </div>
+              <p className="mt-1 text-[11px] text-muted-2">
+                {config?.source === "live" ? "Live rate · CoinGecko" : "Indicative rate"} · 1 {coin.label} ≈{" "}
+                {formatPKR(Math.round(coin.pkrPerUnit))} · {coin.network}
+              </p>
+            </div>
+          </div>
 
-      <a
-        href="https://s.binance.com/NZPNkx59"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-green px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-green/90"
-      >
-        <Bitcoin className="size-4" />
-        Pay with Binance
-      </a>
-      <p className="mt-2 text-[11px] text-muted-2">
-        Opens Binance Pay in a new tab. Complete your payment there, then return here to submit your application.
-      </p>
+          {/* QR + address */}
+          <div className="mt-4 flex flex-col items-center gap-4 rounded-lg border border-line bg-background p-4">
+            {qr ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={qr || "/placeholder.svg"}
+                alt={`${coin.label} wallet QR code`}
+                width={180}
+                height={180}
+                className="size-[180px] rounded-md border border-line bg-white p-2"
+              />
+            ) : (
+              <div className="flex size-[180px] items-center justify-center rounded-md border border-dashed border-line text-xs text-muted-2">
+                Generating QR…
+              </div>
+            )}
+
+            <div className="w-full">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-2">
+                {coin.label} address ({coin.network})
+              </span>
+              <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-line bg-muted/40 p-2">
+                <code className="min-w-0 flex-1 break-all font-mono text-xs text-heading">{coin.address}</code>
+                <button
+                  type="button"
+                  onClick={() => copy(coin.address, "addr")}
+                  className="inline-flex shrink-0 items-center gap-1 rounded-md bg-green px-2.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-green/90"
+                >
+                  {copied === "addr" ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+                  {copied === "addr" ? "Copied" : "Copy"}
+                </button>
+              </div>
+
+              {coin.tag && (
+                <div className="mt-2">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-2">
+                    Destination tag (required)
+                  </span>
+                  <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-line bg-muted/40 p-2">
+                    <code className="min-w-0 flex-1 break-all font-mono text-xs text-heading">{coin.tag}</code>
+                    <button
+                      type="button"
+                      onClick={() => copy(coin.tag as string, "tag")}
+                      className="inline-flex shrink-0 items-center gap-1 rounded-md bg-green px-2.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-green/90"
+                    >
+                      {copied === "tag" ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+                      {copied === "tag" ? "Copied" : "Copy"}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={() => copy(amountStr, "amt")}
+                className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-green hover:underline"
+              >
+                {copied === "amt" ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+                {copied === "amt" ? "Amount copied" : `Copy amount (${amountStr} ${coin.label})`}
+              </button>
+            </div>
+          </div>
+
+          <p className="mt-3 flex items-start gap-1.5 text-[11px] leading-relaxed text-muted-2">
+            <ShieldCheck className="mt-0.5 size-3.5 shrink-0 text-green" />
+            <span>
+              Send on the <span className="font-semibold text-heading">{coin.network}</span> network only. Sending on the
+              wrong network or a different amount can delay or lose your payment.
+            </span>
+          </p>
+        </>
+      ) : null}
     </div>
   )
 }
@@ -1099,7 +1204,7 @@ function StepPayment({
             />
           ) : (
             <>
-              <CryptoConverter plan={plan} />
+              <CryptoPayment plan={plan} />
               <div className="mt-6">
                 <Field label="Transaction ID (TXID / Hash)" required>
                   <input
