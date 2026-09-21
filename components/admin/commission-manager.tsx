@@ -26,7 +26,7 @@ type Rule = {
 }
 
 const ROLE_OPTIONS = [
-  { value: "", label: "Any team member" },
+  { value: "", label: "All staff who bring a member (overall)" },
   { value: "staff", label: "Staff" },
   { value: "committee_head", label: "Committee Head" },
   { value: "committee_member", label: "Committee Member" },
@@ -67,6 +67,16 @@ const EMPTY: CommissionRuleInput = {
   commissionableFees: ["annual"],
   status: "active",
 }
+
+// Overall commission = a catch-all rule (no role, no category) that applies to
+// every staff member who brings a member, unless a more specific rule matches.
+const EMPTY_OVERALL: CommissionRuleInput = {
+  ...EMPTY,
+  name: "Overall commission (all staff)",
+}
+
+const isOverall = (r: { referrerRole: string; membershipCategory: string }) =>
+  !r.referrerRole && !r.membershipCategory
 
 export function CommissionManager({ rules: initial }: { rules: Rule[] }) {
   const [rules, setRules] = useState<Rule[]>(initial)
@@ -124,16 +134,28 @@ export function CommissionManager({ rules: initial }: { rules: Rule[] }) {
             Allocate commission to staff and team, set or change the percentage, and control which fees it applies to.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            setError(null)
-            setEditing({ ...EMPTY })
-          }}
-          className="inline-flex items-center gap-2 rounded-lg bg-green px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-green/90"
-        >
-          <Plus className="size-4" /> New commission
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setError(null)
+              setEditing({ ...EMPTY_OVERALL })
+            }}
+            className="inline-flex items-center gap-2 rounded-lg border border-green px-4 py-2.5 text-sm font-semibold text-green transition-colors hover:bg-green/10"
+          >
+            <Users className="size-4" /> Set overall commission
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setError(null)
+              setEditing({ ...EMPTY })
+            }}
+            className="inline-flex items-center gap-2 rounded-lg bg-green px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-green/90"
+          >
+            <Plus className="size-4" /> New commission
+          </button>
+        </div>
       </header>
 
       <section className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -172,12 +194,21 @@ export function CommissionManager({ rules: initial }: { rules: Rule[] }) {
               {rules.map((r) => (
                 <tr key={r.id}>
                   <td className="px-5 py-3">
-                    <p className="font-semibold text-foreground">{r.name}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold text-foreground">{r.name}</p>
+                      {isOverall(r) && (
+                        <span className="rounded-full bg-green/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-green">
+                          Overall
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs text-muted-foreground">
                       {r.membershipCategory ? r.membershipCategory : "All membership categories"}
                     </p>
                   </td>
-                  <td className="px-5 py-3 text-foreground">{roleLabel(r.referrerRole)}</td>
+                  <td className="px-5 py-3 text-foreground">
+                    {isOverall(r) ? "All staff who bring a member" : roleLabel(r.referrerRole)}
+                  </td>
                   <td className="px-5 py-3">
                     <span className="font-semibold text-foreground">{rewardLabel(r)}</span>
                     <p className="text-xs capitalize text-muted-foreground">{r.rewardType}</p>
