@@ -57,25 +57,23 @@ export function ComingSoon() {
 
           <div className="flex min-h-0 flex-1 flex-col justify-start md:justify-center">
             <div
-              className="flex max-w-2xl items-start"
-              style={{ paddingTop: "clamp(0.5rem, 1vw, 0px)" }}
+              className="flex max-w-3xl items-start"
+              style={{ paddingTop: "clamp(1.5rem, 3vw, 3rem)" }}
             >
               <div className="min-w-0">
                 <div className="flex items-center gap-4">
                   <span className="text-[0.7rem] font-semibold uppercase tracking-[0.4em] text-green sm:text-xs">
-                    A Unified Platform
+                    National Industry Representative
                   </span>
                   <span className="h-px flex-1 max-w-[80px]" style={{ backgroundColor: GOLD }} aria-hidden />
                 </div>
 
                 <h1
-                  className="font-serif font-medium leading-[0.9] tracking-tight text-balance"
-                  style={{ marginTop: "clamp(0.75rem, 1.4vw, 1.25rem)", fontSize: "clamp(2.75rem, 4.6vw, 5rem)" }}
+                  className="font-serif font-medium leading-[0.95] tracking-tight text-balance whitespace-nowrap"
+                  style={{ marginTop: "clamp(0.75rem, 1.4vw, 1.25rem)", fontSize: "clamp(2.5rem, 4.4vw, 4.75rem)" }}
                 >
-                  <span className="block text-heading">Launching</span>
-                  <span className="block" style={{ color: GOLD }}>
-                    Soon
-                  </span>
+                  <span className="text-heading">Launching</span>{" "}
+                  <span style={{ color: GOLD }}>Soon</span>
                 </h1>
 
                 <p
