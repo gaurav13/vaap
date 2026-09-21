@@ -966,30 +966,32 @@ function StepPayment({
   return (
     <div>
       <StepHeading title="Payment Method" description="Choose your preferred payment method." />
-      <div className="grid gap-8 lg:grid-cols-[1.5fr_1fr]">
-        <div>
+      <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr] lg:gap-8">
+        <div className="order-2 min-w-0 lg:order-1">
           <div className="grid grid-cols-2 gap-2 rounded-lg border border-line p-1">
             <button
               type="button"
               onClick={() => update("paymentMethod", "card")}
               className={[
-                "inline-flex items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold transition-colors",
+                "inline-flex items-center justify-center gap-1.5 rounded-md px-2 py-2.5 text-xs font-semibold transition-colors sm:gap-2 sm:px-4 sm:text-sm",
                 form.paymentMethod === "card" ? "bg-green text-white" : "text-heading hover:bg-muted",
               ].join(" ")}
             >
-              <CreditCard className="size-4" />
-              Credit / Debit Card
+              <CreditCard className="size-4 shrink-0" />
+              <span className="sm:hidden">Card</span>
+              <span className="hidden sm:inline">Credit / Debit Card</span>
             </button>
             <button
               type="button"
               onClick={() => update("paymentMethod", "crypto")}
               className={[
-                "inline-flex items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold transition-colors",
+                "inline-flex items-center justify-center gap-1.5 rounded-md px-2 py-2.5 text-xs font-semibold transition-colors sm:gap-2 sm:px-4 sm:text-sm",
                 form.paymentMethod === "crypto" ? "bg-green text-white" : "text-heading hover:bg-muted",
               ].join(" ")}
             >
-              <Bitcoin className="size-4" />
-              Crypto Payment
+              <Bitcoin className="size-4 shrink-0" />
+              <span className="sm:hidden">Crypto</span>
+              <span className="hidden sm:inline">Crypto Payment</span>
             </button>
           </div>
 
@@ -1033,7 +1035,7 @@ function StepPayment({
           </div>
         </div>
 
-        <aside className="h-fit rounded-xl border border-line bg-muted/30 p-5">
+        <aside className="order-1 h-fit rounded-xl border border-line bg-muted/30 p-5 lg:order-2 lg:sticky lg:top-6">
           <h2 className="font-serif text-base font-bold text-heading">Order Summary</h2>
           <p className="mt-1 text-sm font-semibold text-green">{plan.title}</p>
           <div className="mt-4 flex flex-col gap-3 border-t border-line pt-4">
