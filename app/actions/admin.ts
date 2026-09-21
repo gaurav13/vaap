@@ -344,6 +344,37 @@ export async function setApplicationStatus(id: number, status: "pending" | "appr
   revalidatePath("/admin/applications")
 }
 
+// Super-admin deletes an application record. Only permitted for applications
+// that are rejected, or incomplete (never completed the payment stage). This
+// guards against accidental removal of pending or approved applications.
+export async function deleteApplication(id: number) {
+  await requireAdmin()
+
+  const [application] = await db
+    .select({
+      id: membershipApplications.id,
+      status: membershipApplications.status,
+      completed: membershipApplications.completed,
+    })
+    .from(membershipApplications)
+    .where(eq(membershipApplications.id, id))
+    .limit(1)
+
+  if (!application) {
+    return { ok: false, error: "Application not found." }
+  }
+
+  const isRejected = application.status === "rejected"
+  const isIncomplete = !application.completed
+  if (!isRejected && !isIncomplete) {
+    return { ok: false, error: "Only rejected or incomplete applications can be deleted." }
+  }
+
+  await db.delete(membershipApplications).where(eq(membershipApplications.id, id))
+  revalidatePath("/admin/applications")
+  return { ok: true }
+}
+
 // --- Contact messages ------------------------------------------------------
 
 export async function getContactMessages() {

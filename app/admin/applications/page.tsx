@@ -1,13 +1,17 @@
 import { getApplications } from "@/app/actions/admin"
+import { getSession } from "@/lib/session"
 import { ApplicationsManager } from "@/components/admin/applications-manager"
 
 export default async function AdminApplicationsPage() {
   const rows = await getApplications()
+  const session = await getSession()
+  const isAdmin = session?.user?.role === "admin"
   return (
     <div>
       <h1 className="font-serif text-2xl font-bold text-heading">Membership Applications</h1>
       <p className="mt-1 text-muted-2">Review and process applications to join VAAP.</p>
       <ApplicationsManager
+        isAdmin={isAdmin}
         items={rows.map((r) => ({
           id: r.id,
           reference: r.reference,
