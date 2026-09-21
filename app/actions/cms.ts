@@ -202,9 +202,25 @@ export async function lookupMembership(query: string) {
   if (!q) return { status: "idle" as const }
 
   const rows = await db.select().from(members).where(isNull(members.deletedAt)).limit(500)
-  const match = rows.find(
-    (m) => m.membershipId.toLowerCase() === q.toLowerCase() || m.email.toLowerCase() === q.toLowerCase(),
+
+  // Normalize by stripping everything except alphanumerics so a membership ID
+  // matches whether the user types "VAAP-2026-000008", "2026-000008", "2026 000008",
+  // or just the numeric portion. Email is matched exactly.
+  const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "")
+  const nq = norm(q)
+
+  let match = rows.find(
+    (m) => norm(m.membershipId) === nq || m.email.toLowerCase() === q.toLowerCase(),
   )
+
+  // Fall back to a suffix match (e.g. "2026-000008" against "VAAP-2026-000008"),
+  // but only when it is unambiguous (a single member matches).
+  if (!match && nq.length >= 4) {
+    const suffixMatches = rows.filter((m) => norm(m.membershipId).endsWith(nq))
+    if (suffixMatches.length === 1) {
+      match = suffixMatches[0]
+    }
+  }
 
   if (!match || match.status !== "active") {
     return { status: "not_found" as const, query: q }
