@@ -38,13 +38,13 @@ const FEATURES = [
 
 export function ComingSoon() {
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex h-screen flex-col overflow-hidden bg-background">
       {/* Thin gold accent line across the very top for an editorial feel */}
       <span className="h-[3px] w-full shrink-0" style={{ backgroundColor: GOLD }} aria-hidden />
 
-      <div className="grid flex-1 lg:grid-cols-[1.05fr_0.95fr]">
+      <div className="grid min-h-0 flex-1 md:grid-cols-[1.05fr_0.95fr]">
         {/* Left: content */}
-        <div className="relative flex flex-col px-6 py-8 sm:px-10 lg:px-16 lg:py-10">
+        <div className="relative flex min-h-0 flex-col px-6 py-6 sm:px-10 md:py-8 lg:px-16">
           <header className="flex items-center justify-between gap-4">
             <VaapLogo height={68} className="sm:hidden" />
             <VaapLogo height={84} className="hidden sm:inline-flex" />
@@ -65,10 +65,10 @@ export function ComingSoon() {
             </nav>
           </header>
 
-          <div className="flex flex-1 flex-col justify-center py-12 lg:py-6">
+          <div className="flex min-h-0 flex-1 flex-col justify-center py-6 md:py-4">
             <div className="flex max-w-2xl items-start gap-6 lg:gap-8">
               {/* Far-left stacked eyebrow with gold vertical rule */}
-              <div className="hidden shrink-0 items-stretch gap-3 pt-2 lg:flex">
+              <div className="hidden shrink-0 items-stretch gap-3 pt-2 md:flex">
                 <span className="w-px self-stretch" style={{ backgroundColor: GOLD }} aria-hidden />
                 <span className="text-xs font-semibold uppercase leading-relaxed tracking-[0.25em] text-heading">
                   People.
@@ -87,36 +87,36 @@ export function ComingSoon() {
                 <span className="h-px flex-1 max-w-[80px]" style={{ backgroundColor: GOLD }} aria-hidden />
               </div>
 
-              <h1 className="mt-5 font-serif text-[3.25rem] leading-[0.98] tracking-tight text-heading text-balance sm:text-6xl lg:text-[5rem]">
+              <h1 className="mt-3 font-serif text-4xl leading-[0.98] tracking-tight text-heading text-balance sm:text-5xl lg:text-[4rem]">
                 Launching
                 <br />
                 Soon
               </h1>
 
-              <p className="mt-7 max-w-md text-lg leading-relaxed text-body text-pretty">
+              <p className="mt-4 max-w-md text-sm leading-relaxed text-body text-pretty lg:text-lg">
                 A unified platform for a transparent, innovative and inclusive virtual asset and blockchain ecosystem in
                 Pakistan.
               </p>
 
-              <div className="mt-9">
+              <div className="mt-5">
                 <Link
                   href="/membership/apply"
-                  className="group inline-flex items-center gap-3 rounded-full bg-green px-8 py-4 text-base font-semibold text-white shadow-lg shadow-green/25 ring-1 ring-inset ring-white/10 transition hover:shadow-xl hover:shadow-green/30 hover:brightness-110"
+                  className="group inline-flex items-center gap-3 rounded-full bg-green px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-green/25 ring-1 ring-inset ring-white/10 transition hover:shadow-xl hover:shadow-green/30 hover:brightness-110 lg:text-base"
                 >
                   <UserPlus className="size-5" aria-hidden />
                   Pre-Register for Membership
                   <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" aria-hidden />
                 </Link>
-                <p className="mt-4 text-sm text-muted-2">
+                <p className="mt-3 text-sm text-muted-2">
                   Be the first to join. Get updates on our launch, membership and events.
                 </p>
               </div>
 
-              <ul className="mt-14 grid grid-cols-2 gap-x-2 gap-y-9 sm:grid-cols-4 sm:divide-x sm:divide-line">
+              <ul className="mt-6 grid grid-cols-2 gap-x-2 gap-y-4 sm:grid-cols-4 sm:divide-x sm:divide-line">
                 {FEATURES.map(({ icon: Icon, label }) => (
-                  <li key={label} className="flex flex-col items-center gap-3 px-2 text-center sm:px-3">
-                    <span className="flex size-12 items-center justify-center rounded-full bg-mint ring-1 ring-green/10">
-                      <Icon className="size-6 text-green" aria-hidden />
+                  <li key={label} className="flex flex-col items-center gap-2 px-2 text-center sm:px-3">
+                    <span className="flex size-10 items-center justify-center rounded-full bg-mint ring-1 ring-green/10">
+                      <Icon className="size-5 text-green" aria-hidden />
                     </span>
                     <span className="whitespace-pre-line text-[0.7rem] font-semibold uppercase leading-snug tracking-[0.12em] text-heading">
                       {label}
@@ -130,7 +130,7 @@ export function ComingSoon() {
         </div>
 
         {/* Right: imagery */}
-        <div className="relative min-h-[340px] overflow-hidden bg-mint lg:min-h-full">
+        <div className="relative min-h-[280px] overflow-hidden bg-mint md:min-h-full">
           <Image
             src="/images/vaap-launch-islamabad.png"
             alt="Faisal Mosque, Minar-e-Pakistan and the mountains under a crescent moon, rendered in green"
@@ -176,7 +176,7 @@ export function ComingSoon() {
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-line px-6 py-6 sm:px-10 lg:px-16">
+      <footer className="shrink-0 border-t border-line px-6 py-4 sm:px-10 lg:px-16">
         <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
           <p className="text-sm text-muted-2">
             © {new Date().getFullYear()} Virtual Assets Association of Pakistan (VAAP). All rights reserved.
