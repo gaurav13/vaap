@@ -38,32 +38,17 @@ const FEATURES = [
 
 export function ComingSoon() {
   return (
-    <div className="flex min-h-screen flex-col bg-background md:h-screen md:overflow-hidden">
+    <div className="flex min-h-screen flex-col bg-background">
       {/* Thin gold accent line across the very top for an editorial feel */}
       <span className="h-[3px] w-full shrink-0" style={{ backgroundColor: GOLD }} aria-hidden />
 
       <div className="flex min-h-0 flex-1 flex-col md:grid md:grid-cols-[1.05fr_0.95fr]">
         {/* Left: content */}
         <div className="relative flex min-h-0 flex-col px-5 py-6 sm:px-10 md:py-8 lg:px-16">
-          <header className="flex items-center justify-between gap-3">
-            <VaapLogo height={52} className="sm:hidden" />
-            <VaapLogo height={84} className="hidden sm:inline-flex" />
-            <nav aria-label="Language" className="flex items-center gap-1 text-xs sm:text-sm">
-              <span className="rounded-full bg-mint px-2.5 py-1 font-semibold text-green sm:px-3">EN</span>
-              <button
-                type="button"
-                className="rounded-full px-2.5 py-1 text-muted-2 transition hover:text-heading sm:px-3"
-              >
-                日本語
-              </button>
-              <button
-                type="button"
-                className="rounded-full px-2.5 py-1 text-muted-2 transition hover:text-heading sm:px-3"
-              >
-                اردو
-              </button>
-            </nav>
-          </header>
+        <header className="flex items-center gap-3">
+          <VaapLogo height={52} className="sm:hidden" />
+          <VaapLogo height={84} className="hidden sm:inline-flex" />
+        </header>
 
           <div className="flex min-h-0 flex-1 flex-col justify-start py-8 md:justify-center md:py-4">
             <div className="flex max-w-2xl items-start gap-6 lg:gap-8">
