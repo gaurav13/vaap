@@ -77,8 +77,20 @@ export function ComingSoon() {
                 </h1>
 
                 <p
-                  className="max-w-md leading-relaxed text-body text-pretty"
+                  className="max-w-xl leading-relaxed text-body text-pretty"
                   style={{ marginTop: "clamp(1rem, 1.6vw, 1.5rem)", fontSize: "clamp(0.95rem, 1vw, 1.125rem)" }}
+                >
+                  The{" "}
+                  <span className="font-semibold" style={{ color: GOLD }}>
+                    nationally recognized trade organization
+                  </span>{" "}
+                  representing Pakistan&apos;s virtual assets industry under the{" "}
+                  <span className="font-semibold text-heading">Ministry of Commerce</span> framework.
+                </p>
+
+                <p
+                  className="max-w-md leading-relaxed text-body text-pretty"
+                  style={{ marginTop: "clamp(0.6rem, 1vw, 0.9rem)", fontSize: "clamp(0.95rem, 1vw, 1.125rem)" }}
                 >
                   A unified platform for a transparent, innovative and inclusive virtual asset and blockchain ecosystem
                   in Pakistan.
