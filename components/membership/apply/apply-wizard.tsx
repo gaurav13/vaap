@@ -486,7 +486,7 @@ function StepSelectType({
                     <ArrowRight className="size-4" />
                   </span>
                 </div>
-                <span className="font-serif text-base font-bold leading-tight text-heading">{plan.title}</span>
+                <span className="text-base font-semibold leading-tight tracking-tight text-heading">{plan.title}</span>
                 <span className="mt-1.5 text-xs leading-relaxed text-muted-2">{plan.subtitle}</span>
                 {features.length > 0 && (
                   <ul className="mt-4 flex flex-col gap-1.5 border-t border-line pt-4">
@@ -523,7 +523,7 @@ function StepSelectType({
             </div>
           </div>
           <div className="flex flex-1 flex-col p-6">
-            <h2 className="font-serif text-xl font-bold leading-snug text-white">
+            <h2 className="text-xl font-semibold leading-snug tracking-tight text-white">
               Be Part of a Stronger Digital Pakistan
             </h2>
             <p className="mt-3 text-sm leading-relaxed text-white/80">
