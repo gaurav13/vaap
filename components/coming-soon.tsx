@@ -46,7 +46,8 @@ export function ComingSoon() {
         {/* Left: content */}
         <div className="relative flex flex-col px-6 py-8 sm:px-10 lg:px-16 lg:py-10">
           <header className="flex items-center justify-between gap-4">
-            <VaapLogo height={46} />
+            <VaapLogo height={68} className="sm:hidden" />
+            <VaapLogo height={84} className="hidden sm:inline-flex" />
             <nav aria-label="Language" className="flex items-center gap-1 text-sm">
               <span className="rounded-full bg-mint px-3 py-1 font-semibold text-green">EN</span>
               <button
@@ -65,7 +66,20 @@ export function ComingSoon() {
           </header>
 
           <div className="flex flex-1 flex-col justify-center py-12 lg:py-6">
-            <div className="max-w-xl">
+            <div className="flex max-w-2xl items-start gap-6 lg:gap-8">
+              {/* Far-left stacked eyebrow with gold vertical rule */}
+              <div className="hidden shrink-0 items-stretch gap-3 pt-2 lg:flex">
+                <span className="w-px self-stretch" style={{ backgroundColor: GOLD }} aria-hidden />
+                <span className="text-xs font-semibold uppercase leading-relaxed tracking-[0.25em] text-heading">
+                  People.
+                  <br />
+                  Industry.
+                  <br />
+                  Innovation.
+                </span>
+              </div>
+
+              <div className="min-w-0">
               <div className="flex items-center gap-4">
                 <span className="text-xs font-semibold uppercase tracking-[0.4em] text-green">
                   Our Platform Is
@@ -110,33 +124,34 @@ export function ComingSoon() {
                   </li>
                 ))}
               </ul>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Right: imagery */}
-        <div className="relative min-h-[340px] overflow-hidden lg:min-h-full">
+        <div className="relative min-h-[340px] overflow-hidden bg-mint lg:min-h-full">
           <Image
-            src="/images/hero-islamabad.png"
-            alt="Faisal Mosque and Pakistan's skyline representing a stronger digital Pakistan"
+            src="/images/vaap-pakistan-landmarks.png"
+            alt="Faisal Mosque, Minar-e-Pakistan and the mountains under a crescent moon, rendered in green"
             fill
             priority
             sizes="(max-width: 1024px) 100vw, 48vw"
             className="object-cover"
           />
-          {/* Legibility gradient — darker at the corners where text sits */}
+          {/* Subtle wash to soften the top-left where the panel meets the content column */}
           <div
             className="absolute inset-0"
             style={{
               background:
-                "linear-gradient(135deg, rgba(6,46,33,0.55) 0%, rgba(6,46,33,0.10) 40%, rgba(6,46,33,0.15) 60%, rgba(6,46,33,0.62) 100%)",
+                "linear-gradient(120deg, rgba(244,247,244,0.55) 0%, rgba(244,247,244,0.05) 32%, rgba(6,46,33,0) 70%)",
             }}
             aria-hidden
           />
 
           <div className="absolute left-6 top-8 sm:left-10">
             <div className="flex flex-col gap-2">
-              <span className="text-sm font-semibold uppercase leading-relaxed tracking-[0.35em] text-white drop-shadow-md">
+              <span className="text-sm font-semibold uppercase leading-relaxed tracking-[0.35em] text-green">
                 Blockchain
                 <br />
                 For a Brighter
@@ -148,7 +163,7 @@ export function ComingSoon() {
           </div>
 
           <div className="absolute bottom-8 right-6 flex flex-col items-end text-right sm:right-10">
-            <span className="text-sm font-semibold uppercase leading-relaxed tracking-[0.3em] text-white drop-shadow-md">
+            <span className="text-sm font-semibold uppercase leading-relaxed tracking-[0.3em] text-green">
               Trust.
               <br />
               Collaboration.
