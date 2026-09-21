@@ -140,22 +140,22 @@ export function ComingSoon() {
           </div>
         </div>
 
-        {/* Right: imagery (dark mood) */}
-        <div className="relative order-first h-64 overflow-hidden bg-[#0a1f18] sm:h-80 md:order-none md:h-auto md:min-h-full">
+        {/* Right: imagery (bright daytime mood) */}
+        <div className="relative order-first h-64 overflow-hidden bg-[#dbe7ea] sm:h-80 md:order-none md:h-auto md:min-h-full">
           <Image
-            src="/images/vaap-launch-islamabad-dark.png"
-            alt="Faisal Mosque and the Margalla Hills at night, rendered in a dark green mood with subtle blockchain network graphics in the sky"
+            src="/images/vaap-launch-islamabad-bright.png"
+            alt="Faisal Mosque and the Islamabad skyline against the green Margalla Hills at sunrise, with subtle blockchain network graphics, a glowing map of Pakistan, and the Pakistan flag in the sky"
             fill
             priority
             sizes="(max-width: 768px) 100vw, 48vw"
             className="object-cover"
           />
-          {/* Dark wash to deepen the mood and keep overlay text readable */}
+          {/* Soft washes: darken top-left and bottom corners just enough to keep overlay text readable */}
           <div
             className="absolute inset-0"
             style={{
               background:
-                "linear-gradient(120deg, rgba(6,20,15,0.72) 0%, rgba(6,20,15,0.28) 34%, rgba(6,20,15,0.15) 62%, rgba(6,20,15,0.45) 100%)",
+                "linear-gradient(150deg, rgba(6,20,15,0.42) 0%, rgba(6,20,15,0.12) 26%, rgba(6,20,15,0) 52%)",
             }}
             aria-hidden
           />
