@@ -37,6 +37,7 @@ import {
   getCryptoRates,
   type CryptoRates,
 } from "@/app/actions/public"
+import { MembershipCardPayment } from "@/components/membership/apply/card-payment"
 
 const ICONS: Record<string, LucideIcon> = {
   Building2,
@@ -142,10 +143,8 @@ type FormState = {
   phone: string
   cnic: string
   paymentMethod: "card" | "crypto"
-  cardNumber: string
-  cardName: string
-  cardExpiry: string
-  cardCvv: string
+  cardPaid: boolean
+  stripeSessionId: string
   txid: string
   agree: boolean
 }
@@ -162,10 +161,8 @@ const INITIAL: FormState = {
   phone: "",
   cnic: "",
   paymentMethod: "card",
-  cardNumber: "",
-  cardName: "",
-  cardExpiry: "",
-  cardCvv: "",
+  cardPaid: false,
+  stripeSessionId: "",
   txid: "",
   agree: false,
 }
@@ -209,8 +206,8 @@ export function ApplyWizard({
       if (!form.cnic.trim()) return "Please enter your CNIC / NIC number."
     }
     if (current === 2 && form.paymentMethod === "card") {
-      if (!form.cardNumber.trim() || !form.cardName.trim() || !form.cardExpiry.trim() || !form.cardCvv.trim())
-        return "Please complete your card details, or choose Crypto Payment."
+      if (!form.cardPaid)
+        return "Please complete your card payment to continue, or choose Crypto Payment."
     }
     if (current === 2 && form.paymentMethod === "crypto") {
       if (!form.txid.trim())
@@ -280,7 +277,7 @@ export function ApplyWizard({
       phone: form.phone ? `+92 ${form.phone}`.trim() : "",
       cnic: form.cnic,
       paymentMethod: form.paymentMethod,
-      txid: form.paymentMethod === "crypto" ? form.txid : "",
+      txid: form.paymentMethod === "crypto" ? form.txid : form.stripeSessionId,
       admissionFee: selectedPlan.admissionFee,
       annualFee: selectedPlan.annualFee,
       totalAmount: totalForPlan(selectedPlan),
@@ -352,7 +349,7 @@ export function ApplyWizard({
                 onClick={goNext}
                 className="inline-flex items-center gap-2 rounded-lg bg-green px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-green-hover"
               >
-                {step === 1 ? "Continue to Payment" : step === 2 ? "Pay and Continue" : "Continue"}
+                {step === 1 ? "Continue to Payment" : step === 2 ? "Continue to Review" : "Continue"}
                 <ArrowRight className="size-4" />
               </button>
             ) : (
@@ -997,44 +994,16 @@ function StepPayment({
           </div>
 
           {form.paymentMethod === "card" ? (
-            <div className="mt-6 grid gap-5">
-              <Field label="Card Number" required>
-                <input
-                  inputMode="numeric"
-                  className={INPUT_CLASS}
-                  placeholder="1234 5678 9012 3456"
-                  value={form.cardNumber}
-                  onChange={(e) => update("cardNumber", e.target.value)}
-                />
-              </Field>
-              <Field label="Cardholder Name" required>
-                <input
-                  className={INPUT_CLASS}
-                  placeholder="Enter name on card"
-                  value={form.cardName}
-                  onChange={(e) => update("cardName", e.target.value)}
-                />
-              </Field>
-              <div className="grid grid-cols-2 gap-5">
-                <Field label="Expiry Date" required>
-                  <input
-                    className={INPUT_CLASS}
-                    placeholder="MM / YY"
-                    value={form.cardExpiry}
-                    onChange={(e) => update("cardExpiry", e.target.value)}
-                  />
-                </Field>
-                <Field label="CVV" required>
-                  <input
-                    inputMode="numeric"
-                    className={INPUT_CLASS}
-                    placeholder="123"
-                    value={form.cardCvv}
-                    onChange={(e) => update("cardCvv", e.target.value)}
-                  />
-                </Field>
-              </div>
-            </div>
+            <MembershipCardPayment
+              planId={plan.id}
+              name={form.fullName}
+              email={form.email}
+              paid={form.cardPaid}
+              onPaid={(sessionId) => {
+                update("stripeSessionId", sessionId)
+                update("cardPaid", true)
+              }}
+            />
           ) : (
             <>
               <CryptoConverter plan={plan} />
