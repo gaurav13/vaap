@@ -2,6 +2,7 @@
 
 import { stripe } from "@/lib/stripe"
 import { getMembershipPlans } from "@/app/actions/cms"
+import { cardProcessingFee, CARD_FEE_LABEL } from "@/lib/fees"
 
 // Parse a fee label like "PKR 50,000" into an integer amount of rupees.
 function feeToNumber(value: string | null | undefined): number {
@@ -33,11 +34,17 @@ export async function createMembershipCheckout(input: {
   const plan = plans.find((p) => p.id === input.planId)
   if (!plan) return { ok: false, error: "The selected membership could not be found." }
 
-  const totalPkr = feeToNumber(plan.admissionFee) + feeToNumber(plan.annualFee)
-  if (totalPkr <= 0) {
+  const basePkr = feeToNumber(plan.admissionFee) + feeToNumber(plan.annualFee)
+  if (basePkr <= 0) {
     // Nothing to charge for a complimentary membership.
     return { ok: true, free: true, amount: 0 }
   }
+
+  // Card payments carry a processing surcharge (see lib/fees.ts). It is added as
+  // a separate, clearly labelled line item so the applicant sees exactly what
+  // it is. Crypto payments never reach this action, so they avoid the fee.
+  const feePkr = cardProcessingFee(basePkr)
+  const totalPkr = basePkr + feePkr
 
   const email = input.email.trim().toLowerCase()
   const name = input.name.trim()
@@ -56,9 +63,19 @@ export async function createMembershipCheckout(input: {
           price_data: {
             currency: "pkr",
             // PKR is a 2-decimal currency for Stripe, so send paisa.
-            unit_amount: totalPkr * 100,
+            unit_amount: basePkr * 100,
             product_data: {
               name: `${plan.title} — VAAP Membership`,
+            },
+          },
+          quantity: 1,
+        },
+        {
+          price_data: {
+            currency: "pkr",
+            unit_amount: feePkr * 100,
+            product_data: {
+              name: `Card processing fee (${CARD_FEE_LABEL})`,
             },
           },
           quantity: 1,

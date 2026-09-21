@@ -47,6 +47,7 @@ import {
   type CryptoCoinId,
 } from "@/app/actions/public"
 import { MembershipCardPayment } from "@/components/membership/apply/card-payment"
+import { cardProcessingFee, CARD_FEE_LABEL } from "@/lib/fees"
 import QRCode from "qrcode"
 
 const ICONS: Record<string, LucideIcon> = {
@@ -1339,9 +1340,9 @@ function StepPayment({
       <PaymentMethodCard
         active={!isCrypto}
         onClick={() => update("paymentMethod", "card")}
-        icon={CreditCard}
-        title="Credit / Debit Card"
-        desc="Pay securely with your card"
+          icon={CreditCard}
+          title="Credit / Debit Card"
+          desc={`Pay securely with your card (+${CARD_FEE_LABEL} fee)`}
       />
       <PaymentMethodCard
         active={isCrypto}
@@ -1443,10 +1444,26 @@ function StepPayment({
             <div className="mt-4 flex flex-col gap-3 border-t border-line pt-4">
               <SummaryRow label="Admission Fee (one-time)" value={plan.admissionFee || "—"} />
               <SummaryRow label="Annual Fee" value={plan.annualFee || "—"} />
+              {(() => {
+                const base = totalNumberForPlan(plan)
+                const fee = cardProcessingFee(base)
+                if (fee <= 0) return null
+                return <SummaryRow label={`Card processing fee (${CARD_FEE_LABEL})`} value={formatPKR(fee)} />
+              })()}
             </div>
             <div className="mt-4 border-t border-line pt-4">
-              <SummaryRow label="Total Amount" value={totalForPlan(plan)} strong />
+              {(() => {
+                const base = totalNumberForPlan(plan)
+                const fee = cardProcessingFee(base)
+                return <SummaryRow label="Total Amount" value={base > 0 ? formatPKR(base + fee) : totalForPlan(plan)} strong />
+              })()}
             </div>
+            {cardProcessingFee(totalNumberForPlan(plan)) > 0 && (
+              <p className="mt-3 text-xs leading-relaxed text-muted-2">
+                A {CARD_FEE_LABEL} card processing fee is added to card payments to cover payment-gateway charges. Prefer to
+                avoid it? Choose <span className="font-semibold text-heading">Crypto Payment</span> — no processing fee applies.
+              </p>
+            )}
           </div>
 
           <div className="flex items-start gap-3 rounded-xl border border-green/20 bg-mint/40 p-5">
@@ -1663,9 +1680,19 @@ function StepReview({
             )}
             <SummaryRow label="Admission Fee (one-time)" value={plan.admissionFee || "—"} />
             <SummaryRow label="Annual Fee" value={plan.annualFee || "—"} />
+            {form.paymentMethod === "card" &&
+              (() => {
+                const fee = cardProcessingFee(totalNumberForPlan(plan))
+                if (fee <= 0) return null
+                return <SummaryRow label={`Card processing fee (${CARD_FEE_LABEL})`} value={formatPKR(fee)} />
+              })()}
           </div>
           <div className="mt-4 border-t border-line pt-4">
-            <SummaryRow label="Total Amount" value={totalForPlan(plan)} strong />
+            {(() => {
+              const base = totalNumberForPlan(plan)
+              const fee = form.paymentMethod === "card" ? cardProcessingFee(base) : 0
+              return <SummaryRow label="Total Amount" value={base > 0 ? formatPKR(base + fee) : totalForPlan(plan)} strong />
+            })()}
           </div>
         </div>
       </div>
