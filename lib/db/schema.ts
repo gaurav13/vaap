@@ -152,6 +152,26 @@ export const contactMessages = pgTable("contact_messages", {
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 })
 
+// Support & Grievance Centre complaints submitted from the public /support page.
+// Each row carries a public case reference (VAAP-CASE-000123) that anyone can
+// use to track status without signing in. Status moves through the lifecycle
+// shown in the "How Your Case Is Handled" stepper.
+export const complaints = pgTable("complaints", {
+  id: serial("id").primaryKey(),
+  reference: text("reference").unique(),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  phone: text("phone"),
+  category: text("category").notNull().default("Complaint Assistance"),
+  description: text("description").notNull(),
+  // submitted | review | guidance | closed
+  status: text("status").notNull().default("submitted"),
+  // Optional note the team surfaces to the complainant when tracking a case.
+  statusNote: text("statusNote"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+})
+
 // --- CMS: dynamic pages (parent / child hierarchy) -------------------------
 
 export const pages = pgTable("pages", {
