@@ -34,7 +34,7 @@ export default async function ApplyPage({
     <>
       <SiteHeaderServer active="Membership" user={user} />
       <main className="bg-muted/40">
-        <div className="mx-auto max-w-5xl px-5 py-10 lg:px-8 lg:py-14">
+        <div className="mx-auto max-w-6xl px-5 py-10 lg:px-8 lg:py-14">
           <ApplyWizard plans={plans} initialPlanId={initialPlanId} />
         </div>
       </main>

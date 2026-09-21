@@ -45,6 +45,29 @@ function iconFor(name: string): LucideIcon {
   return ICONS[name] ?? Building2
 }
 
+// Highlight bullets per category. Keyed by the stored icon so it stays stable
+// even if a plan's title is edited in the CMS.
+const PLAN_FEATURES: Record<string, string[]> = {
+  Building2: ["Industry representation", "Policy engagement", "Expanded networking"],
+  Users: ["Ecosystem participation", "Access to events", "Collaborative opportunities"],
+  Rocket: ["Visibility and exposure", "Mentorship opportunities", "Access to investors & partners"],
+  ShieldCheck: ["Community access", "Educational resources", "Non-voting membership"],
+  User: ["Professional recognition", "Knowledge sharing", "Event access"],
+  GraduationCap: ["Research collaboration", "Industry insights access", "Academic engagement"],
+  Landmark: ["Research collaboration", "Industry insights access", "Academic engagement"],
+}
+
+function featuresFor(icon: string): string[] {
+  return PLAN_FEATURES[icon] ?? []
+}
+
+const PROMO_POINTS: { icon: LucideIcon; label: string }[] = [
+  { icon: Building2, label: "Industry Representation" },
+  { icon: FileText, label: "Policy Advocacy" },
+  { icon: GraduationCap, label: "Education & Awareness" },
+  { icon: Users, label: "Global Collaboration" },
+]
+
 export type ApplyPlan = {
   id: number
   icon: string
@@ -403,42 +426,126 @@ function StepSelectType({
   selectedId: number | null
   onSelect: (id: number) => void
 }) {
+  // Mark the flagship (Corporate) plan so it reads as the guided default.
+  const popularId = plans.find((p) => p.icon === "Building2")?.id ?? plans[0]?.id ?? null
+
   return (
     <div>
-      <StepHeading
-        title="Select Membership Type"
-        description="Choose the category that best describes you or your organization."
-      />
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {plans.map((plan) => {
-          const Icon = iconFor(plan.icon)
-          const selected = plan.id === selectedId
-          return (
-            <button
-              type="button"
-              key={plan.id}
-              onClick={() => onSelect(plan.id)}
-              aria-pressed={selected}
-              className={[
-                "flex flex-col items-start gap-3 rounded-xl border p-5 text-left transition-all",
-                selected
-                  ? "border-green bg-green/5 ring-2 ring-green/20"
-                  : "border-line bg-card hover:border-green/40 hover:bg-muted/40",
-              ].join(" ")}
-            >
-              <span
+      <div className="mb-8">
+        <p className="flex items-center gap-2.5 text-[11px] font-bold uppercase tracking-[0.22em] text-green">
+          <span className="h-px w-7 bg-gold" aria-hidden />
+          Join Our Ecosystem
+        </p>
+        <h1 className="mt-3 font-serif text-2xl font-bold text-heading lg:text-3xl">Select Membership Type</h1>
+        <p className="mt-1.5 text-sm text-muted-2">Choose the category that best describes you or your organization.</p>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:col-span-2">
+          {plans.map((plan) => {
+            const Icon = iconFor(plan.icon)
+            const selected = plan.id === selectedId
+            const popular = plan.id === popularId
+            const features = featuresFor(plan.icon)
+            return (
+              <button
+                type="button"
+                key={plan.id}
+                onClick={() => onSelect(plan.id)}
+                aria-pressed={selected}
                 className={[
-                  "flex size-11 items-center justify-center rounded-lg transition-colors",
-                  selected ? "bg-green text-white" : "bg-muted text-green",
+                  "group relative flex flex-col rounded-xl border p-5 pt-6 text-left transition-all",
+                  selected
+                    ? "border-green bg-green/[0.04] ring-2 ring-green/25"
+                    : "border-line bg-card hover:border-green/50 hover:shadow-sm",
                 ].join(" ")}
               >
-                <Icon className="size-5" strokeWidth={2} />
-              </span>
-              <span className="font-serif text-base font-bold leading-tight text-heading">{plan.title}</span>
-              <span className="text-xs leading-relaxed text-muted-2">{plan.subtitle}</span>
-            </button>
-          )
-        })}
+                {popular && (
+                  <span className="absolute -top-2.5 left-5 rounded-full bg-green px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm">
+                    Most Popular
+                  </span>
+                )}
+                <div className="mb-3.5 flex items-start justify-between">
+                  <span
+                    className={[
+                      "flex size-11 shrink-0 items-center justify-center rounded-xl transition-colors",
+                      selected ? "bg-green text-white" : "bg-mint text-green group-hover:bg-green group-hover:text-white",
+                    ].join(" ")}
+                  >
+                    <Icon className="size-5" strokeWidth={2} />
+                  </span>
+                  <span
+                    className={[
+                      "flex size-8 shrink-0 items-center justify-center rounded-full border transition-colors",
+                      selected
+                        ? "border-green bg-green text-white"
+                        : "border-line text-muted-2 group-hover:border-green group-hover:bg-green group-hover:text-white",
+                    ].join(" ")}
+                    aria-hidden
+                  >
+                    <ArrowRight className="size-4" />
+                  </span>
+                </div>
+                <span className="font-serif text-base font-bold leading-tight text-heading">{plan.title}</span>
+                <span className="mt-1.5 text-xs leading-relaxed text-muted-2">{plan.subtitle}</span>
+                {features.length > 0 && (
+                  <ul className="mt-4 flex flex-col gap-1.5 border-t border-line pt-4">
+                    {features.map((f) => (
+                      <li key={f} className="flex items-center gap-2 text-xs text-body">
+                        <Check className="size-3.5 shrink-0 text-green" strokeWidth={2.5} />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </button>
+            )
+          })}
+        </div>
+
+        <aside className="relative flex flex-col overflow-hidden rounded-xl bg-green text-white">
+          <div className="relative h-28 overflow-hidden">
+            <img
+              src="/images/vaap-pakistan-landmarks.png"
+              alt=""
+              className="absolute inset-0 size-full object-cover opacity-25"
+            />
+            <div className="absolute inset-0 bg-gradient-to-br from-green/70 to-green-hover" aria-hidden />
+            <div className="relative flex h-full items-center gap-3 px-6">
+              <span className="h-8 w-px bg-gold" aria-hidden />
+              <p className="text-[11px] font-bold uppercase leading-relaxed tracking-[0.18em] text-white/95">
+                People.
+                <br />
+                Industry.
+                <br />
+                Innovation.
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-1 flex-col p-6">
+            <h2 className="font-serif text-xl font-bold leading-snug text-white">
+              Be Part of a Stronger Digital Pakistan
+            </h2>
+            <p className="mt-3 text-sm leading-relaxed text-white/80">
+              Join VAAP and contribute to a transparent, innovative and inclusive virtual asset ecosystem.
+            </p>
+            <ul className="mt-5 flex flex-col gap-3.5">
+              {PROMO_POINTS.map(({ icon: PIcon, label }) => (
+                <li key={label} className="flex items-center gap-3 text-sm font-medium text-white/90">
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-white/10 text-white">
+                    <PIcon className="size-4" strokeWidth={2} />
+                  </span>
+                  {label}
+                </li>
+              ))}
+            </ul>
+            <div className="mt-auto border-t border-white/15 pt-5">
+              <p className="font-serif text-sm italic leading-relaxed text-white/90">
+                &ldquo;Together for a transparent and innovative digital Pakistan.&rdquo;
+              </p>
+            </div>
+          </div>
+        </aside>
       </div>
     </div>
   )
