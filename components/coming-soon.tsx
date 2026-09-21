@@ -132,7 +132,7 @@ export function ComingSoon() {
         {/* Right: imagery */}
         <div className="relative min-h-[340px] overflow-hidden bg-mint lg:min-h-full">
           <Image
-            src="/images/vaap-pakistan-landmarks.png"
+            src="/images/vaap-launch-islamabad.png"
             alt="Faisal Mosque, Minar-e-Pakistan and the mountains under a crescent moon, rendered in green"
             fill
             priority
