@@ -51,7 +51,7 @@ const PLAN_FEATURES: Record<string, string[]> = {
   Building2: ["Industry representation", "Policy engagement", "Expanded networking"],
   Users: ["Ecosystem participation", "Access to events", "Collaborative opportunities"],
   Rocket: ["Visibility and exposure", "Mentorship opportunities", "Access to investors & partners"],
-  ShieldCheck: ["Community access", "Educational resources", "Non-voting membership"],
+  ShieldCheck: ["Verified security & trust status", "Priority holder support", "Community & educational resources"],
   User: ["Professional recognition", "Knowledge sharing", "Event access"],
   GraduationCap: ["Research collaboration", "Industry insights access", "Academic engagement"],
   Landmark: ["Research collaboration", "Industry insights access", "Academic engagement"],
@@ -446,6 +446,7 @@ function StepSelectType({
             const Icon = iconFor(plan.icon)
             const selected = plan.id === selectedId
             const popular = plan.id === popularId
+            const international = plan.icon === "ShieldCheck"
             const features = featuresFor(plan.icon)
             return (
               <button
@@ -463,6 +464,12 @@ function StepSelectType({
                 {popular && (
                   <span className="absolute -top-2.5 left-5 rounded-full bg-green px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm">
                     Most Popular
+                  </span>
+                )}
+                {international && (
+                  <span className="absolute -top-2.5 left-5 flex items-center gap-1 rounded-full bg-gold px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm">
+                    <ShieldCheck className="size-3" strokeWidth={2.5} />
+                    Recommended for International
                   </span>
                 )}
                 <div className="mb-3.5 flex items-start justify-between">
