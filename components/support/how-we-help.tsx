@@ -26,7 +26,7 @@ const ITEMS: { icon: LucideIcon; title: string; body: string }[] = [
 
 export function HowWeHelp() {
   return (
-    <section className="mx-auto max-w-7xl px-5 py-16 lg:px-8 lg:py-20">
+    <section className="mx-auto max-w-7xl px-5 pb-16 pt-6 lg:px-8 lg:pb-20 lg:pt-8">
       <div className="max-w-2xl">
         <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-green">
           <span className="h-px w-8 bg-green/40" aria-hidden="true" />
