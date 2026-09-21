@@ -62,7 +62,7 @@ export function ComingSoon() {
             >
               <div className="min-w-0">
                 <div className="flex items-center gap-4">
-                  <span className="text-[0.7rem] font-semibold uppercase tracking-[0.4em] text-green sm:text-xs">
+                  <span className="text-[0.7rem] font-bold uppercase tracking-[0.4em] text-green sm:text-xs">
                     National Industry Representative
                   </span>
                   <span className="h-px flex-1 max-w-[80px]" style={{ backgroundColor: GOLD }} aria-hidden />
@@ -120,14 +120,14 @@ export function ComingSoon() {
                   }}
                 >
                   {FEATURES.map(({ icon: Icon, label }) => (
-                    <li key={label} className="flex flex-col items-center gap-2 px-2 text-center lg:px-4">
+                    <li key={label} className="flex flex-col items-center gap-2.5 px-2 text-center lg:px-4">
                       <span
                         className="flex items-center justify-center rounded-full bg-mint ring-1 ring-green/10"
-                        style={{ width: "clamp(2.25rem, 2.6vw, 2.75rem)", height: "clamp(2.25rem, 2.6vw, 2.75rem)" }}
+                        style={{ width: "clamp(2.75rem, 3.4vw, 3.5rem)", height: "clamp(2.75rem, 3.4vw, 3.5rem)" }}
                       >
-                        <Icon className="size-5 text-green" aria-hidden />
+                        <Icon className="text-green" style={{ width: "clamp(1.35rem, 1.7vw, 1.6rem)", height: "clamp(1.35rem, 1.7vw, 1.6rem)" }} aria-hidden />
                       </span>
-                      <span className="whitespace-pre-line text-[0.68rem] font-semibold uppercase leading-snug tracking-[0.12em] text-heading">
+                      <span className="whitespace-pre-line text-[0.72rem] font-semibold uppercase leading-snug tracking-[0.12em] text-heading sm:text-[0.78rem]">
                         {label}
                       </span>
                     </li>
