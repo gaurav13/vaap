@@ -450,6 +450,12 @@ function StepSelectType({
     onSelect(id)
   }
 
+  // Mobile accordion: tapping a header opens it (and closes any other),
+  // tapping the open one collapses it. -1 means all collapsed.
+  function toggleView(id: number) {
+    setViewId((cur) => (cur === id ? -1 : id))
+  }
+
   return (
     <div>
       <div className="mb-8">
@@ -461,7 +467,92 @@ function StepSelectType({
         <p className="mt-1.5 text-sm text-muted-2">Choose the category that best describes you or your organization.</p>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[300px_1fr]">
+      {/* MOBILE: true accordion — each plan's content opens directly beneath its own header */}
+      <div className="flex flex-col gap-2.5 lg:hidden">
+        {plans.map((plan) => {
+          const Icon = iconFor(plan.icon)
+          const isOpen = plan.id === viewId
+          const isSelected = plan.id === selectedId
+          const featured = isFeaturedPlan(plan.icon)
+          return (
+            <div
+              key={plan.id}
+              className={[
+                "overflow-hidden rounded-xl border transition-colors",
+                isOpen ? "border-green shadow-sm" : "border-line",
+                "bg-card",
+              ].join(" ")}
+            >
+              <button
+                type="button"
+                onClick={() => toggleView(plan.id)}
+                aria-expanded={isOpen}
+                className="flex w-full items-center gap-3 p-3.5 text-left"
+              >
+                <span
+                  className={[
+                    "flex size-10 shrink-0 items-center justify-center rounded-xl transition-colors",
+                    isOpen ? "bg-green text-white" : "bg-mint text-green",
+                  ].join(" ")}
+                >
+                  <Icon className="size-5" strokeWidth={2} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-semibold leading-snug tracking-tight text-heading">
+                    {plan.title}
+                  </span>
+                  {(featured || isInternationalPlan(plan.title)) && (
+                    <span className="mt-1 flex flex-wrap items-center gap-1.5">
+                      {featured && (
+                        <span className="inline-flex items-center gap-1 rounded-full border border-gold/50 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-gold">
+                          <Star className="size-2.5 fill-current" aria-hidden />
+                          Featured
+                        </span>
+                      )}
+                      {isInternationalPlan(plan.title) && (
+                        <span className="inline-flex items-center gap-1 rounded-full border border-green/40 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-green">
+                          <Globe className="size-2.5" aria-hidden />
+                          International
+                        </span>
+                      )}
+                    </span>
+                  )}
+                </span>
+                {isSelected && (
+                  <span
+                    className="flex size-5 shrink-0 items-center justify-center rounded-full bg-green text-white"
+                    aria-hidden
+                  >
+                    <Check className="size-3" strokeWidth={3} />
+                  </span>
+                )}
+                <ChevronDown
+                  className={[
+                    "size-4 shrink-0 text-muted-2 transition-transform duration-300",
+                    isOpen ? "rotate-180" : "",
+                  ].join(" ")}
+                  aria-hidden
+                />
+              </button>
+              <div
+                className={[
+                  "grid transition-all duration-300 ease-out",
+                  isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
+                ].join(" ")}
+              >
+                <div className="overflow-hidden">
+                  <div className="border-t border-line p-4">
+                    <PlanDetailPanel plan={plan} selected={isSelected} onChoose={() => choose(plan.id)} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* DESKTOP: list + detail panel (unchanged tab behavior) */}
+      <div className="hidden gap-6 lg:grid lg:grid-cols-[300px_1fr]">
         {/* Plan list */}
         <div className="flex flex-col gap-2.5" role="tablist" aria-label="Membership types">
           {plans.map((plan) => {
