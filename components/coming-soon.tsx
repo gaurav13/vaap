@@ -67,18 +67,19 @@ export function ComingSoon() {
               <div className="min-w-0">
                 <div className="flex items-center gap-4">
                   <span className="text-[0.7rem] font-semibold uppercase tracking-[0.4em] text-green sm:text-xs">
-                    Our Platform Is
+                    A Unified Platform
                   </span>
                   <span className="h-px flex-1 max-w-[80px]" style={{ backgroundColor: GOLD }} aria-hidden />
                 </div>
 
-                <h1 className="mt-4 font-serif text-[3.25rem] leading-[0.95] tracking-tight text-heading text-balance sm:text-6xl lg:text-[4.5rem]">
-                  Launching
-                  <br />
-                  Soon
+                <h1 className="mt-4 font-serif text-[3.5rem] font-medium leading-[0.9] tracking-tight text-balance sm:text-[4.25rem] lg:text-[5rem]">
+                  <span className="block text-heading">Launching</span>
+                  <span className="block" style={{ color: GOLD }}>
+                    Soon
+                  </span>
                 </h1>
 
-                <p className="mt-5 max-w-md text-base leading-relaxed text-body text-pretty lg:text-lg">
+                <p className="mt-6 max-w-md text-base leading-relaxed text-body text-pretty lg:text-lg">
                   A unified platform for a transparent, innovative and inclusive virtual asset and blockchain ecosystem
                   in Pakistan.
                 </p>
@@ -147,15 +148,31 @@ export function ComingSoon() {
             </div>
           </div>
 
-          <div className="absolute bottom-6 right-5 flex flex-col items-end text-right sm:bottom-8 sm:right-10">
-            <span className="text-xs font-semibold uppercase leading-relaxed tracking-[0.3em] text-green sm:text-sm">
+          {/* Decorative gold-edged green diagonal wedge in the bottom-right corner */}
+          <div
+            className="pointer-events-none absolute bottom-0 right-0 h-56 w-72 sm:h-72 sm:w-96"
+            style={{ clipPath: "polygon(100% 0, 100% 100%, 0 100%)", backgroundColor: GOLD }}
+            aria-hidden
+          />
+          <div
+            className="pointer-events-none absolute bottom-0 right-0 h-56 w-72 sm:h-72 sm:w-96"
+            style={{
+              clipPath: "polygon(100% 6%, 100% 100%, 8% 100%)",
+              backgroundColor: "#0d3b2a",
+            }}
+            aria-hidden
+          />
+          <div className="absolute bottom-5 right-5 flex flex-col items-end text-right sm:bottom-7 sm:right-8">
+            <span className="text-[0.7rem] font-semibold uppercase leading-relaxed tracking-[0.28em] text-white sm:text-sm">
               Trust.
               <br />
               Collaboration.
               <br />
               Opportunity.
+              <br />
+              <span style={{ color: GOLD }}>Real Impact.</span>
             </span>
-            <span className="mt-2 block h-px w-12" style={{ backgroundColor: GOLD }} aria-hidden />
+            <span className="mt-2.5 block h-px w-12" style={{ backgroundColor: GOLD }} aria-hidden />
           </div>
         </div>
       </div>
