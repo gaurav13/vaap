@@ -13,11 +13,16 @@ import {
   ChevronDown,
   ChevronRight,
   Clock,
+  Coins,
+  Copy,
   CreditCard,
+  Eye,
   FilePlus2,
   FileText,
+  Gem,
   Globe,
   GraduationCap,
+  Info,
   KeyRound,
   Landmark,
   Lock,
@@ -26,17 +31,23 @@ import {
   Rocket,
   Settings,
   ShieldCheck,
+  ShoppingCart,
   Star,
   User,
   Users,
+  Wallet,
+  Zap,
   type LucideIcon,
 } from "lucide-react"
 import {
   submitFullApplication,
   saveIncompleteApplication,
-  getCryptoRates,
-  type CryptoRates,
+  getCryptoConfig,
+  type CryptoConfig,
+  type CryptoCoinId,
 } from "@/app/actions/public"
+import { MembershipCardPayment } from "@/components/membership/apply/card-payment"
+import QRCode from "qrcode"
 
 const ICONS: Record<string, LucideIcon> = {
   Building2,
@@ -142,10 +153,8 @@ type FormState = {
   phone: string
   cnic: string
   paymentMethod: "card" | "crypto"
-  cardNumber: string
-  cardName: string
-  cardExpiry: string
-  cardCvv: string
+  cardPaid: boolean
+  stripeSessionId: string
   txid: string
   agree: boolean
 }
@@ -162,10 +171,8 @@ const INITIAL: FormState = {
   phone: "",
   cnic: "",
   paymentMethod: "card",
-  cardNumber: "",
-  cardName: "",
-  cardExpiry: "",
-  cardCvv: "",
+  cardPaid: false,
+  stripeSessionId: "",
   txid: "",
   agree: false,
 }
@@ -209,8 +216,8 @@ export function ApplyWizard({
       if (!form.cnic.trim()) return "Please enter your CNIC / NIC number."
     }
     if (current === 2 && form.paymentMethod === "card") {
-      if (!form.cardNumber.trim() || !form.cardName.trim() || !form.cardExpiry.trim() || !form.cardCvv.trim())
-        return "Please complete your card details, or choose Crypto Payment."
+      if (!form.cardPaid)
+        return "Please complete your card payment to continue, or choose Crypto Payment."
     }
     if (current === 2 && form.paymentMethod === "crypto") {
       if (!form.txid.trim())
@@ -280,7 +287,7 @@ export function ApplyWizard({
       phone: form.phone ? `+92 ${form.phone}`.trim() : "",
       cnic: form.cnic,
       paymentMethod: form.paymentMethod,
-      txid: form.paymentMethod === "crypto" ? form.txid : "",
+      txid: form.paymentMethod === "crypto" ? form.txid : form.stripeSessionId,
       admissionFee: selectedPlan.admissionFee,
       annualFee: selectedPlan.annualFee,
       totalAmount: totalForPlan(selectedPlan),
@@ -352,7 +359,7 @@ export function ApplyWizard({
                 onClick={goNext}
                 className="inline-flex items-center gap-2 rounded-lg bg-green px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-green-hover"
               >
-                {step === 1 ? "Continue to Payment" : step === 2 ? "Pay and Continue" : "Continue"}
+                {step === 1 ? "Continue to Payment" : step === 2 ? "Continue to Review" : "Continue"}
                 <ArrowRight className="size-4" />
               </button>
             ) : (
@@ -453,6 +460,12 @@ function StepSelectType({
     onSelect(id)
   }
 
+  // Mobile accordion: tapping a header opens it (and closes any other),
+  // tapping the open one collapses it. -1 means all collapsed.
+  function toggleView(id: number) {
+    setViewId((cur) => (cur === id ? -1 : id))
+  }
+
   return (
     <div>
       <div className="mb-8">
@@ -464,7 +477,92 @@ function StepSelectType({
         <p className="mt-1.5 text-sm text-muted-2">Choose the category that best describes you or your organization.</p>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[300px_1fr]">
+      {/* MOBILE: true accordion — each plan's content opens directly beneath its own header */}
+      <div className="flex flex-col gap-2.5 lg:hidden">
+        {plans.map((plan) => {
+          const Icon = iconFor(plan.icon)
+          const isOpen = plan.id === viewId
+          const isSelected = plan.id === selectedId
+          const featured = isFeaturedPlan(plan.icon)
+          return (
+            <div
+              key={plan.id}
+              className={[
+                "overflow-hidden rounded-xl border transition-colors",
+                isOpen ? "border-green shadow-sm" : "border-line",
+                "bg-card",
+              ].join(" ")}
+            >
+              <button
+                type="button"
+                onClick={() => toggleView(plan.id)}
+                aria-expanded={isOpen}
+                className="flex w-full items-center gap-3 p-3.5 text-left"
+              >
+                <span
+                  className={[
+                    "flex size-10 shrink-0 items-center justify-center rounded-xl transition-colors",
+                    isOpen ? "bg-green text-white" : "bg-mint text-green",
+                  ].join(" ")}
+                >
+                  <Icon className="size-5" strokeWidth={2} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-semibold leading-snug tracking-tight text-heading">
+                    {plan.title}
+                  </span>
+                  {(featured || isInternationalPlan(plan.title)) && (
+                    <span className="mt-1 flex flex-wrap items-center gap-1.5">
+                      {featured && (
+                        <span className="inline-flex items-center gap-1 rounded-full border border-gold/50 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-gold">
+                          <Star className="size-2.5 fill-current" aria-hidden />
+                          Featured
+                        </span>
+                      )}
+                      {isInternationalPlan(plan.title) && (
+                        <span className="inline-flex items-center gap-1 rounded-full border border-green/40 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-green">
+                          <Globe className="size-2.5" aria-hidden />
+                          International
+                        </span>
+                      )}
+                    </span>
+                  )}
+                </span>
+                {isSelected && (
+                  <span
+                    className="flex size-5 shrink-0 items-center justify-center rounded-full bg-green text-white"
+                    aria-hidden
+                  >
+                    <Check className="size-3" strokeWidth={3} />
+                  </span>
+                )}
+                <ChevronDown
+                  className={[
+                    "size-4 shrink-0 text-muted-2 transition-transform duration-300",
+                    isOpen ? "rotate-180" : "",
+                  ].join(" ")}
+                  aria-hidden
+                />
+              </button>
+              <div
+                className={[
+                  "grid transition-all duration-300 ease-out",
+                  isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
+                ].join(" ")}
+              >
+                <div className="overflow-hidden">
+                  <div className="border-t border-line p-4">
+                    <PlanDetailPanel plan={plan} selected={isSelected} onChoose={() => choose(plan.id)} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* DESKTOP: list + detail panel (unchanged tab behavior) */}
+      <div className="hidden gap-6 lg:grid lg:grid-cols-[300px_1fr]">
         {/* Plan list */}
         <div className="flex flex-col gap-2.5" role="tablist" aria-label="Membership types">
           {plans.map((plan) => {
@@ -849,110 +947,378 @@ function SummaryRow({ label, value, strong }: { label: string; value: string; st
 }
 
 // Indicative rate shown instantly while the live rate loads (and if it fails).
-const INDICATIVE_RATES: CryptoRates = {
-  usdPerPkr: 1 / 280,
-  xrpPerPkr: 1 / (280 * 2.5),
-  source: "fallback",
+function trimAmount(n: number, decimals: number): string {
+  if (!isFinite(n) || n <= 0) return "0"
+  const fixed = n.toFixed(decimals)
+  return fixed.includes(".") ? fixed.replace(/\.?0+$/, "") : fixed
 }
 
-function CryptoConverter({ plan }: { plan: ApplyPlan }) {
-  const [currency, setCurrency] = useState<"XRP" | "USD">("XRP")
-  const [rates, setRates] = useState<CryptoRates>(INDICATIVE_RATES)
-  const [loading, setLoading] = useState(false)
+const COIN_SUBLABEL: Record<CryptoCoinId, string> = {
+  USDT_TRC20: "TRC-20",
+  XRP: "XRP Ledger",
+  BTC: "Bitcoin",
+  ETH: "Ethereum",
+}
 
-  async function loadRates() {
-    if (loading) return
-    setLoading(true)
-    try {
-      const r = await getCryptoRates()
-      setRates(r)
-    } catch {
-      // keep the indicative rate already on screen
-    } finally {
-      setLoading(false)
-    }
+const COIN_BRAND: Record<CryptoCoinId, string> = {
+  USDT_TRC20: "#26A17B",
+  XRP: "#23292F",
+  BTC: "#F7931A",
+  ETH: "#627EEA",
+}
+
+function CoinGlyph({ id }: { id: CryptoCoinId }) {
+  if (id === "BTC") return <Bitcoin className="size-[18px] text-white" aria-hidden="true" />
+  const common = { width: 18, height: 18, viewBox: "0 0 24 24", fill: "none", "aria-hidden": true } as const
+  if (id === "USDT_TRC20") {
+    return (
+      <svg {...common}>
+        <path d="M4 6.5h16" stroke="#fff" strokeWidth="2.1" strokeLinecap="round" />
+        <path d="M12 6.5V18.5" stroke="#fff" strokeWidth="2.1" strokeLinecap="round" />
+        <ellipse cx="12" cy="10" rx="5.4" ry="2.3" stroke="#fff" strokeWidth="1.7" />
+      </svg>
+    )
   }
+  if (id === "XRP") {
+    return (
+      <svg {...common}>
+        <path
+          d="M5.5 6c2.2 3.2 4.3 4.8 6.5 4.8S16.3 9.2 18.5 6M5.5 18c2.2-3.2 4.3-4.8 6.5-4.8s4.3 1.6 6.5 4.8"
+          stroke="#fff"
+          strokeWidth="1.9"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    )
+  }
+  // ETH
+  return (
+    <svg {...common}>
+      <path d="M12 2.5 6.6 12 12 9.3 17.4 12 12 2.5Z" fill="#fff" fillOpacity="0.85" />
+      <path d="M12 10.5 6.6 13.1 12 21.5 17.4 13.1 12 10.5Z" fill="#fff" />
+    </svg>
+  )
+}
 
-  // Upgrade the indicative rate to a live one when the panel first appears.
+function CryptoFeature({
+  icon: Icon,
+  title,
+  desc,
+}: {
+  icon: LucideIcon
+  title: string
+  desc: string
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-green/10">
+        <Icon className="size-4 text-green" />
+      </span>
+      <div className="min-w-0">
+        <p className="text-sm font-semibold text-heading">{title}</p>
+        <p className="text-xs text-muted-2">{desc}</p>
+      </div>
+    </div>
+  )
+}
+
+function CryptoPayment({
+  plan,
+  txid,
+  onTxid,
+}: {
+  plan: ApplyPlan
+  txid: string
+  onTxid: (value: string) => void
+}) {
+  const [config, setConfig] = useState<CryptoConfig | null>(null)
+  const [selected, setSelected] = useState<CryptoCoinId>("USDT_TRC20")
+  const [loading, setLoading] = useState(true)
+  const [qr, setQr] = useState("")
+  const [copied, setCopied] = useState("")
+  const [verified, setVerified] = useState(false)
+
   useEffect(() => {
-    void loadRates()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    let active = true
+    setLoading(true)
+    getCryptoConfig()
+      .then((c) => {
+        if (active) setConfig(c)
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+    return () => {
+      active = false
+    }
   }, [])
 
   const totalPkr = totalNumberForPlan(plan)
-  const rate = currency === "USD" ? rates.usdPerPkr : rates.xrpPerPkr
-  const converted = totalPkr * rate
-  const pkrPerUnit = 1 / rate
+  const coin = config?.coins.find((c) => c.id === selected) ?? null
+  const amount = coin && coin.pkrPerUnit > 0 ? totalPkr / coin.pkrPerUnit : 0
+  const amountStr = coin ? trimAmount(amount, coin.decimals) : ""
+
+  const qrValue = useMemo(() => {
+    if (!coin?.address) return ""
+    if (coin.id === "BTC") return `bitcoin:${coin.address}?amount=${amountStr}`
+    return coin.address
+  }, [coin, amountStr])
+
+  useEffect(() => {
+    if (!qrValue) {
+      setQr("")
+      return
+    }
+    let active = true
+    QRCode.toDataURL(qrValue, { width: 300, margin: 1, errorCorrectionLevel: "M" })
+      .then((url) => {
+        if (active) setQr(url)
+      })
+      .catch(() => {
+        if (active) setQr("")
+      })
+    return () => {
+      active = false
+    }
+  }, [qrValue])
+
+  function copy(text: string, key: string) {
+    if (!text) return
+    navigator.clipboard?.writeText(text).then(() => {
+      setCopied(key)
+      setTimeout(() => setCopied((c) => (c === key ? "" : c)), 1800)
+    })
+  }
 
   return (
-    <div className="mt-6 rounded-xl border border-line bg-muted/30 p-5">
-      <div className="flex items-center gap-2">
-        <Bitcoin className="size-5 text-green" />
-        <p className="text-sm font-semibold text-heading">Pay with cryptocurrency</p>
-      </div>
-      <p className="mt-1 text-xs text-muted-2">
-        Convert your total to its live crypto equivalent. After you submit, our team will share a verified wallet
-        address and payment instructions by email.
-      </p>
-
-      <div className="mt-4 inline-flex rounded-lg border border-line p-1">
-        {(["XRP", "USD"] as const).map((c) => (
-          <button
-            key={c}
-            type="button"
-            onClick={() => setCurrency(c)}
-            aria-pressed={currency === c}
-            className={[
-              "rounded-md px-4 py-1.5 text-sm font-semibold transition-colors",
-              currency === c ? "bg-green text-white" : "text-heading hover:bg-muted",
-            ].join(" ")}
-          >
-            {c}
-          </button>
-        ))}
-      </div>
-
-      <div className="mt-4 rounded-lg border border-line bg-background p-4">
-        <div className="flex items-center justify-between text-xs text-muted-2">
-          <span>Total ({plan.title})</span>
-          <span className="font-medium text-heading">{formatPKR(totalPkr)}</span>
-        </div>
-        <div className="mt-3 flex items-baseline justify-between gap-3 border-t border-line pt-3">
-          <span className="text-sm text-muted-2">You pay approx.</span>
-          <span className="font-sans text-2xl font-bold tracking-tight text-heading">{formatCrypto(converted, currency)}</span>
-        </div>
-        <div className="mt-2 flex items-center justify-between text-[11px] text-muted-2">
-          <span>
-            {loading
-              ? "Updating live rate…"
-              : rates.source === "live"
-                ? "Live rate · CoinGecko"
-                : "Indicative rate"}
-            {` · 1 ${currency} ≈ ${formatPKR(Math.round(pkrPerUnit))}`}
+    <div className="mt-6 overflow-hidden rounded-2xl border border-line bg-background">
+      {/* Header */}
+      <div className="flex flex-col gap-4 border-b border-line p-4 sm:flex-row sm:items-start sm:justify-between sm:p-6">
+        <div className="flex items-start gap-3">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-green/10">
+            <Wallet className="size-5 text-green" />
           </span>
-          <button
-            type="button"
-            onClick={() => void loadRates()}
-            className="font-semibold text-green hover:underline disabled:opacity-50"
-            disabled={loading}
-          >
-            Refresh
-          </button>
+          <div>
+            <h2 className="font-serif text-xl font-bold text-heading text-balance">Pay with Cryptocurrency</h2>
+            <p className="mt-1 max-w-md text-sm leading-relaxed text-muted-2 text-pretty">
+              Choose a cryptocurrency, send the exact amount to the address below, then paste your transaction ID.
+              Amounts update automatically with the live market rate.
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2.5 sm:border-l sm:border-line sm:pl-4">
+          <ShieldCheck className="size-6 shrink-0 text-green" />
+          <div>
+            <p className="text-sm font-semibold text-green">Secure &amp; Encrypted</p>
+            <p className="text-xs text-muted-2">Your payment is safe with us</p>
+          </div>
         </div>
       </div>
 
-      <a
-        href="https://s.binance.com/NZPNkx59"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-green px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-green/90"
-      >
-        <Bitcoin className="size-4" />
-        Pay with Binance
-      </a>
-      <p className="mt-2 text-[11px] text-muted-2">
-        Opens Binance Pay in a new tab. Complete your payment there, then return here to submit your application.
-      </p>
+      <div className="p-4 sm:p-6">
+        {/* Coin / network selector */}
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {(config?.coins ?? []).map((c) => {
+            const active = selected === c.id
+            return (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => setSelected(c.id)}
+                aria-pressed={active}
+                className={[
+                  "flex items-center gap-3 rounded-xl border px-3 py-3 text-left transition-colors",
+                  active
+                    ? "border-green bg-green text-white shadow-sm"
+                    : "border-line bg-background text-heading hover:border-green/40 hover:bg-muted/40",
+                ].join(" ")}
+              >
+                <span
+                  className="flex size-9 shrink-0 items-center justify-center rounded-full"
+                  style={{ backgroundColor: COIN_BRAND[c.id] }}
+                >
+                  <CoinGlyph id={c.id} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-bold leading-tight">{c.label}</span>
+                  <span className={["block text-xs leading-tight", active ? "text-white/80" : "text-muted-2"].join(" ")}>
+                    {COIN_SUBLABEL[c.id]}
+                  </span>
+                </span>
+                {active && (
+                  <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-white/25">
+                    <Check className="size-3.5" />
+                  </span>
+                )}
+              </button>
+            )
+          })}
+          {loading && !config && (
+            <div className="col-span-2 py-3 text-center text-sm text-muted-2 sm:col-span-4">
+              Loading payment options…
+            </div>
+          )}
+        </div>
+
+        {coin && !coin.address ? (
+          <div className="mt-5 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm leading-relaxed text-amber-800">
+            <span className="font-semibold">This coin isn&apos;t configured yet.</span> Please pick another coin or use
+            card payment. If this persists, contact us and we&apos;ll share a wallet address directly.
+          </div>
+        ) : coin ? (
+          <div className="mt-5 rounded-xl border border-line bg-muted/20 p-4 sm:p-6">
+            {/* Section header + total */}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h3 className="font-serif text-lg font-bold text-heading">Payment Details</h3>
+                <p className="mt-0.5 text-sm text-muted-2">Send the exact amount shown below to complete your payment.</p>
+              </div>
+              <div className="flex items-center gap-3 self-start rounded-lg bg-green/10 px-4 py-2.5">
+                <span className="text-xs font-medium text-heading/70">Total ({plan.title})</span>
+                <span className="font-sans text-base font-bold text-green">{formatPKR(totalPkr)}</span>
+              </div>
+            </div>
+
+            {/* Amount + QR */}
+            <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_auto]">
+              <div className="rounded-xl bg-green/5 p-4 sm:p-5">
+                <div className="flex items-center gap-2.5 text-sm font-semibold text-green">
+                  <span className="flex size-8 items-center justify-center rounded-full bg-green/10">
+                    <Coins className="size-4" />
+                  </span>
+                  Amount to Send
+                </div>
+                <div className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                  <span className="font-sans text-3xl font-extrabold tracking-tight text-heading sm:text-4xl">
+                    {amountStr}
+                  </span>
+                  <span className="text-lg font-bold text-green sm:text-xl">{coin.label}</span>
+                </div>
+                <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-2">
+                  <span className="font-medium text-heading/70">
+                    {config?.source === "live" ? "Live rate (CoinGecko)" : "Indicative rate"}
+                  </span>
+                  <span>
+                    1 {coin.label} ≈ {formatPKR(Math.round(coin.pkrPerUnit))}
+                  </span>
+                  <Info className="size-3.5" />
+                </p>
+              </div>
+
+              <div className="flex items-center gap-4 rounded-xl border border-line bg-background p-4">
+                {qr ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={qr || "/placeholder.svg"}
+                    alt={`${coin.label} wallet QR code`}
+                    width={128}
+                    height={128}
+                    className="size-32 shrink-0 rounded-md border border-line bg-white p-1.5"
+                  />
+                ) : (
+                  <div className="flex size-32 shrink-0 items-center justify-center rounded-md border border-dashed border-line text-xs text-muted-2">
+                    Generating…
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <p className="font-serif text-base font-bold text-heading">Scan QR Code</p>
+                  <p className="mt-1 text-sm leading-relaxed text-muted-2">Open your wallet and scan to pay directly.</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Wallet address */}
+            <div className="mt-5">
+              <label className="text-sm font-semibold text-heading">{coin.label} Wallet Address</label>
+              <div className="mt-1.5 flex flex-col gap-2 sm:flex-row">
+                <div className="flex min-w-0 flex-1 items-center rounded-lg border border-line bg-background px-3 py-2.5">
+                  <code className="min-w-0 flex-1 break-all font-mono text-sm text-heading">{coin.address}</code>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => copy(coin.address, "addr")}
+                  className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-line bg-background px-4 py-2.5 text-sm font-semibold text-heading transition-colors hover:bg-muted sm:w-auto"
+                >
+                  {copied === "addr" ? <Check className="size-4 text-green" /> : <Copy className="size-4" />}
+                  {copied === "addr" ? "Copied" : "Copy"}
+                </button>
+              </div>
+
+              {coin.tag && (
+                <div className="mt-3">
+                  <label className="text-sm font-semibold text-heading">Destination Tag (required)</label>
+                  <div className="mt-1.5 flex flex-col gap-2 sm:flex-row">
+                    <div className="flex min-w-0 flex-1 items-center rounded-lg border border-line bg-background px-3 py-2.5">
+                      <code className="min-w-0 flex-1 break-all font-mono text-sm text-heading">{coin.tag}</code>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => copy(coin.tag as string, "tag")}
+                      className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-line bg-background px-4 py-2.5 text-sm font-semibold text-heading transition-colors hover:bg-muted sm:w-auto"
+                    >
+                      {copied === "tag" ? <Check className="size-4 text-green" /> : <Copy className="size-4" />}
+                      {copied === "tag" ? "Copied" : "Copy"}
+                    </button>
+                  </div>
+                  <p className="mt-1.5 text-xs text-muted-2">
+                    XRP sent without this destination tag may be lost. Always include it.
+                  </p>
+                </div>
+              )}
+
+              <p className="mt-2.5 flex items-start gap-1.5 text-xs leading-relaxed text-muted-2">
+                <ShieldCheck className="mt-0.5 size-3.5 shrink-0 text-green" />
+                <span>
+                  Send on the <span className="font-semibold text-heading">{coin.network}</span> network only. Sending on
+                  the wrong network or a different amount can delay or lose your payment.
+                </span>
+              </p>
+            </div>
+
+            {/* After payment */}
+            <div className="mt-5 border-t border-line pt-5">
+              <h4 className="text-sm font-semibold text-heading">After Payment</h4>
+              <p className="mt-0.5 text-xs leading-relaxed text-muted-2">
+                Once the transaction is completed, paste your Transaction ID (TxID) below so we can verify your payment.
+              </p>
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                <input
+                  className="min-w-0 flex-1 rounded-lg border border-line bg-background px-3 py-2.5 text-sm text-heading outline-none transition-colors placeholder:text-muted-2 focus:border-green"
+                  placeholder="Enter Transaction ID (TxID)"
+                  value={txid}
+                  onChange={(e) => {
+                    onTxid(e.target.value)
+                    setVerified(false)
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setVerified(!!txid.trim())}
+                  disabled={!txid.trim()}
+                  className="inline-flex shrink-0 items-center justify-center rounded-lg bg-green px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-green/90 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Verify Payment
+                </button>
+              </div>
+              {verified && (
+                <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-green">
+                  <Check className="size-3.5" />
+                  Transaction ID recorded. Click Continue below to submit your application for verification.
+                </p>
+              )}
+            </div>
+          </div>
+        ) : null}
+
+        {/* Footer reassurance */}
+        <div className="mt-5 grid gap-4 border-t border-line pt-5 sm:grid-cols-3">
+          <CryptoFeature icon={Zap} title="Real-time rates" desc="Auto-updated with live market data" />
+          <CryptoFeature icon={Lock} title="Secure payments" desc="Your information is protected" />
+          <CryptoFeature icon={Users} title="Transparent &amp; reliable" desc="Verified on blockchain" />
+        </div>
+      </div>
     </div>
   )
 }
@@ -966,116 +1332,230 @@ function StepPayment({
   form: FormState
   update: <K extends keyof FormState>(key: K, value: FormState[K]) => void
 }) {
+  const isCrypto = form.paymentMethod === "crypto"
+
+  const methodToggle = (
+    <div className="grid gap-3 sm:grid-cols-2">
+      <PaymentMethodCard
+        active={!isCrypto}
+        onClick={() => update("paymentMethod", "card")}
+        icon={CreditCard}
+        title="Credit / Debit Card"
+        desc="Pay securely with your card"
+      />
+      <PaymentMethodCard
+        active={isCrypto}
+        onClick={() => update("paymentMethod", "crypto")}
+        icon={Bitcoin}
+        title="Crypto Payment"
+        desc="Pay with USDT, XRP, BTC, ETH"
+      />
+    </div>
+  )
+
+  const paymentHeader = (
+    <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <div>
+        <h1 className="font-serif text-2xl font-bold text-heading lg:text-3xl">Payment Method</h1>
+        <p className="mt-1.5 text-sm text-muted-2">Choose your preferred method to complete your membership.</p>
+      </div>
+      <div className="flex items-center gap-2.5">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-green/10">
+          <Lock className="size-4 text-green" />
+        </span>
+        <p className="max-w-[13rem] text-xs leading-snug text-muted-2">
+          Your payment information is secure and encrypted.
+        </p>
+      </div>
+    </div>
+  )
+
+  const secureNote = (
+    <div className="mt-6 flex items-start gap-2 text-xs text-muted-2">
+      <Lock className="mt-0.5 size-4 shrink-0 text-green" />
+      <p>
+        <span className="font-semibold text-heading">Secure Payment.</span> Your payment information is encrypted and
+        never stored on our servers.
+      </p>
+    </div>
+  )
+
+  if (isCrypto) {
+    return (
+      <div>
+        {paymentHeader}
+        <div className="mx-auto max-w-3xl">
+          {methodToggle}
+          <CryptoPayment plan={plan} txid={form.txid} onTxid={(v) => update("txid", v)} />
+          {secureNote}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div>
-      <StepHeading title="Payment Method" description="Choose your preferred payment method." />
-      <div className="grid gap-8 lg:grid-cols-[1.5fr_1fr]">
-        <div>
-          <div className="grid grid-cols-2 gap-2 rounded-lg border border-line p-1">
-            <button
-              type="button"
-              onClick={() => update("paymentMethod", "card")}
-              className={[
-                "inline-flex items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold transition-colors",
-                form.paymentMethod === "card" ? "bg-green text-white" : "text-heading hover:bg-muted",
-              ].join(" ")}
-            >
-              <CreditCard className="size-4" />
-              Credit / Debit Card
-            </button>
-            <button
-              type="button"
-              onClick={() => update("paymentMethod", "crypto")}
-              className={[
-                "inline-flex items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold transition-colors",
-                form.paymentMethod === "crypto" ? "bg-green text-white" : "text-heading hover:bg-muted",
-              ].join(" ")}
-            >
-              <Bitcoin className="size-4" />
-              Crypto Payment
-            </button>
+      {paymentHeader}
+      <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr] lg:gap-8">
+        <div className="order-2 min-w-0 lg:order-1">
+          {methodToggle}
+
+          <div className="mt-6 rounded-xl border border-line bg-card p-5 sm:p-6">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 className="font-serif text-lg font-bold text-heading">Card Details</h2>
+                <p className="mt-1 text-sm text-muted-2">Enter your card information securely.</p>
+              </div>
+              <CardBrands />
+            </div>
+
+            <MembershipCardPayment
+              planId={plan.id}
+              name={form.fullName}
+              email={form.email}
+              paid={form.cardPaid}
+              onPaid={(sessionId) => {
+                update("stripeSessionId", sessionId)
+                update("cardPaid", true)
+              }}
+            />
           </div>
 
-          {form.paymentMethod === "card" ? (
-            <div className="mt-6 grid gap-5">
-              <Field label="Card Number" required>
-                <input
-                  inputMode="numeric"
-                  className={INPUT_CLASS}
-                  placeholder="1234 5678 9012 3456"
-                  value={form.cardNumber}
-                  onChange={(e) => update("cardNumber", e.target.value)}
-                />
-              </Field>
-              <Field label="Cardholder Name" required>
-                <input
-                  className={INPUT_CLASS}
-                  placeholder="Enter name on card"
-                  value={form.cardName}
-                  onChange={(e) => update("cardName", e.target.value)}
-                />
-              </Field>
-              <div className="grid grid-cols-2 gap-5">
-                <Field label="Expiry Date" required>
-                  <input
-                    className={INPUT_CLASS}
-                    placeholder="MM / YY"
-                    value={form.cardExpiry}
-                    onChange={(e) => update("cardExpiry", e.target.value)}
-                  />
-                </Field>
-                <Field label="CVV" required>
-                  <input
-                    inputMode="numeric"
-                    className={INPUT_CLASS}
-                    placeholder="123"
-                    value={form.cardCvv}
-                    onChange={(e) => update("cardCvv", e.target.value)}
-                  />
-                </Field>
-              </div>
-            </div>
-          ) : (
-            <>
-              <CryptoConverter plan={plan} />
-              <div className="mt-6">
-                <Field label="Transaction ID (TXID / Hash)" required>
-                  <input
-                    className={INPUT_CLASS}
-                    placeholder="e.g. 0x4f3c… or the hash from your wallet"
-                    value={form.txid}
-                    onChange={(e) => update("txid", e.target.value)}
-                  />
-                </Field>
-                <p className="mt-1.5 text-xs text-muted-2">
-                  After completing your crypto payment, paste the transaction ID (TXID) here so our team can verify it.
-                  This is required before you can continue.
-                </p>
-              </div>
-            </>
-          )}
-
-          <div className="mt-6 flex items-start gap-2 text-xs text-muted-2">
-            <Lock className="mt-0.5 size-4 shrink-0 text-green" />
-            <p>
-              <span className="font-semibold text-heading">Secure Payment.</span> Your payment information is encrypted
-              and never stored on our servers.
-            </p>
+          <div className="mt-5 flex flex-col gap-2 border-t border-line pt-4 text-xs text-muted-2 sm:flex-row sm:items-center sm:justify-between">
+            <span className="inline-flex items-center gap-1.5">
+              <ShieldCheck className="size-3.5 shrink-0 text-green" />
+              SSL Encrypted &middot; Powered by Stripe &middot; Your information is never shared
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <Lock className="size-3.5 shrink-0 text-green" />
+              Secure. Transparent. Stronger Together.
+            </span>
           </div>
         </div>
 
-        <aside className="h-fit rounded-xl border border-line bg-muted/30 p-5">
-          <h2 className="font-serif text-base font-bold text-heading">Order Summary</h2>
-          <p className="mt-1 text-sm font-semibold text-green">{plan.title}</p>
-          <div className="mt-4 flex flex-col gap-3 border-t border-line pt-4">
-            <SummaryRow label="Admission Fee (one-time)" value={plan.admissionFee || "—"} />
-            <SummaryRow label="Annual Fee" value={plan.annualFee || "—"} />
+        <aside className="order-1 flex h-fit flex-col gap-4 lg:order-2 lg:sticky lg:top-6">
+          <div className="rounded-xl border border-line bg-muted/30 p-5">
+            <div className="flex items-center gap-2">
+              <ShoppingCart className="size-5 text-green" />
+              <h2 className="font-serif text-base font-bold text-heading">Order Summary</h2>
+            </div>
+            <p className="mt-2 text-sm font-semibold text-green">{plan.title}</p>
+            <div className="mt-4 flex flex-col gap-3 border-t border-line pt-4">
+              <SummaryRow label="Admission Fee (one-time)" value={plan.admissionFee || "—"} />
+              <SummaryRow label="Annual Fee" value={plan.annualFee || "—"} />
+            </div>
+            <div className="mt-4 border-t border-line pt-4">
+              <SummaryRow label="Total Amount" value={totalForPlan(plan)} strong />
+            </div>
           </div>
-          <div className="mt-4 border-t border-line pt-4">
-            <SummaryRow label="Total Amount" value={totalForPlan(plan)} strong />
+
+          <div className="flex items-start gap-3 rounded-xl border border-green/20 bg-mint/40 p-5">
+            <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full bg-green/10">
+              <Gem className="size-4 text-green" />
+            </span>
+            <div>
+              <p className="text-sm font-bold text-green">Join a Trusted Community</p>
+              <p className="mt-1 text-xs leading-relaxed text-body">
+                Support the growth of a regulated and transparent virtual asset industry in Pakistan.
+              </p>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-line bg-card p-5">
+            <h3 className="font-serif text-base font-bold text-heading">Why Join?</h3>
+            <ul className="mt-3 flex flex-col gap-2.5">
+              <WhyJoinItem>Be part of Pakistan&apos;s official industry body</WhyJoinItem>
+              <WhyJoinItem>Network with industry leaders &amp; innovators</WhyJoinItem>
+              <WhyJoinItem>Access to exclusive events and resources</WhyJoinItem>
+              <WhyJoinItem>Support a safe and compliant ecosystem</WhyJoinItem>
+            </ul>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2 rounded-xl border border-line bg-card p-5 text-center">
+            <TrustItem icon={ShieldCheck} label="Secure Payments" />
+            <TrustItem icon={Eye} label="Your Data is Protected" />
+            <TrustItem icon={Users} label="Trusted Community" />
           </div>
         </aside>
       </div>
+    </div>
+  )
+}
+
+function PaymentMethodCard({
+  active,
+  onClick,
+  icon: Icon,
+  title,
+  desc,
+}: {
+  active: boolean
+  onClick: () => void
+  icon: LucideIcon
+  title: string
+  desc: string
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={[
+        "flex items-center gap-3 rounded-xl border p-4 text-left transition-colors",
+        active
+          ? "border-green bg-green text-white"
+          : "border-line bg-card hover:border-green/40 hover:bg-muted/40",
+      ].join(" ")}
+    >
+      <span
+        className={[
+          "flex size-11 shrink-0 items-center justify-center rounded-full",
+          active ? "bg-white/15 text-white" : "bg-green/10 text-green",
+        ].join(" ")}
+      >
+        <Icon className="size-5" />
+      </span>
+      <div className="min-w-0">
+        <p className={active ? "text-sm font-bold text-white" : "text-sm font-bold text-heading"}>{title}</p>
+        <p className={active ? "text-xs text-white/80" : "text-xs text-muted-2"}>{desc}</p>
+      </div>
+    </button>
+  )
+}
+
+function CardBrands() {
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      {["VISA", "Mastercard", "AMEX", "JCB"].map((brand) => (
+        <span
+          key={brand}
+          className="rounded-md border border-line bg-muted/50 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-muted-2"
+        >
+          {brand}
+        </span>
+      ))}
+    </div>
+  )
+}
+
+function WhyJoinItem({ children }: { children: React.ReactNode }) {
+  return (
+    <li className="flex items-start gap-2.5 text-sm text-body">
+      <span className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full bg-green/10">
+        <Check className="size-3 text-green" strokeWidth={3} />
+      </span>
+      {children}
+    </li>
+  )
+}
+
+function TrustItem({ icon: Icon, label }: { icon: LucideIcon; label: string }) {
+  return (
+    <div className="flex flex-col items-center gap-1.5">
+      <span className="flex size-9 items-center justify-center rounded-full bg-green/10">
+        <Icon className="size-4 text-green" />
+      </span>
+      <span className="text-[11px] font-medium leading-tight text-muted-2">{label}</span>
     </div>
   )
 }

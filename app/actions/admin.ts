@@ -6,6 +6,7 @@ import { getSession } from "@/lib/session"
 import { auth } from "@/lib/auth"
 import { computeExpiry } from "@/lib/membership"
 import { processMembershipApproval } from "@/lib/referral-engine"
+import { notify } from "@/lib/notifications"
 import { and, desc, eq } from "drizzle-orm"
 import { randomUUID } from "crypto"
 import { revalidatePath } from "next/cache"
@@ -195,6 +196,46 @@ export async function setApplicationStatus(id: number, status: "pending" | "appr
   await requireStaff()
   await db.update(membershipApplications).set({ status }).where(eq(membershipApplications.id, id))
 
+  // Notify the applicant of the status change (email + in-app if they have an
+  // account). Approval details are enriched further down after promotion.
+  const [statusApp] = await db
+    .select({ name: membershipApplications.name, email: membershipApplications.email })
+    .from(membershipApplications)
+    .where(eq(membershipApplications.id, id))
+    .limit(1)
+
+  if (statusApp) {
+    if (status === "rejected") {
+      await notify({
+        email: statusApp.email,
+        type: "membership",
+        title: "Update on your membership application",
+        body: "After review, your membership application was not approved at this time. Please contact us if you'd like more information.",
+        link: "/dashboard/applications",
+        emailTemplate: {
+          subject: "Update on your VAAP membership application",
+          heading: "Application update",
+          intro: [
+            `Dear ${statusApp.name},`,
+            "Thank you for your interest in the Virtual Assets Association of Pakistan. After careful review, we're unable to approve your membership application at this time.",
+            "If you believe this was in error or would like guidance on reapplying, simply reply to this email and our team will be glad to help.",
+          ],
+          footnote: "This decision does not prevent you from applying again in the future.",
+        },
+      })
+    } else if (status === "pending") {
+      await notify({
+        email: statusApp.email,
+        type: "membership",
+        title: "Your application is under review",
+        body: "Your membership application status is now 'under review'. We'll update you once a decision is made.",
+        link: "/dashboard/applications",
+      })
+    }
+    // The "approved" case is notified below, after the member record and
+    // membership ID are created, so the email can include those details.
+  }
+
   // Approving an application promotes the applicant to an active member record.
   // Idempotent: skip if a member with the same email already exists.
   if (status === "approved") {
@@ -279,6 +320,24 @@ export async function setApplicationStatus(id: number, status: "pending" | "appr
         // A referral-engine failure must never block membership approval.
         console.log("[v0] reward engine error on approval:", err instanceof Error ? err.message : err)
       }
+
+      await notify({
+        email: application.email,
+        type: "membership",
+        title: "Your membership is approved",
+        body: `Congratulations! Your ${application.category} membership (${membershipId}) is now active. Welcome to VAAP.`,
+        link: "/dashboard/membership",
+        emailTemplate: {
+          subject: "Your VAAP membership is approved",
+          heading: `Welcome to VAAP, ${application.name}`,
+          intro: [
+            `Congratulations — your ${application.category} membership has been approved and is now active.`,
+            `Your membership ID is ${membershipId}. You can view your membership card, register to vote, and access member resources from your dashboard.`,
+          ],
+          ctaLabel: "Go to my membership",
+          ctaPath: "/dashboard/membership",
+        },
+      })
     }
   }
 

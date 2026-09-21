@@ -7,6 +7,7 @@ import { desc, eq, gte, and, isNotNull, sql } from "drizzle-orm"
 import { headers, cookies } from "next/headers"
 import { revalidatePath } from "next/cache"
 import { createAttributionForApplication } from "@/lib/referral-engine"
+import { notify } from "@/lib/notifications"
 
 export type CryptoRates = {
   usdPerPkr: number
@@ -44,6 +45,122 @@ export async function getCryptoRates(): Promise<CryptoRates> {
     xrpPerPkr: 1 / (FALLBACK_PKR_PER_USD * FALLBACK_XRP_USD),
     source: "fallback",
   }
+}
+
+// Dynamic, self-serve crypto payment: each membership converts its PKR total
+// into the live amount for the coin the applicant chooses, shown alongside the
+// receiving wallet address and a QR code. Addresses live in env vars so they
+// are never hard-coded and can be rotated without a redeploy.
+export type CryptoCoinId = "USDT_TRC20" | "XRP" | "BTC" | "ETH"
+
+export type CryptoCoinConfig = {
+  id: CryptoCoinId
+  label: string
+  network: string
+  address: string
+  tag: string | null
+  pkrPerUnit: number
+  decimals: number
+}
+
+export type CryptoConfig = {
+  coins: CryptoCoinConfig[]
+  source: "live" | "fallback"
+}
+
+// Indicative USD prices used only when the live rate service is unreachable.
+const CRYPTO_FALLBACK_PKR_PER_USD = 280
+const CRYPTO_FALLBACK_USD: Record<string, number> = {
+  tether: 1,
+  ripple: 2.5,
+  bitcoin: 95000,
+  ethereum: 3500,
+}
+
+export async function getCryptoConfig(): Promise<CryptoConfig> {
+  const addresses = {
+    USDT_TRC20: (process.env.CRYPTO_WALLET_USDT_TRC20 || "").trim(),
+    XRP: (process.env.CRYPTO_WALLET_XRP || "").trim(),
+    BTC: (process.env.CRYPTO_WALLET_BTC || "").trim(),
+    ETH: (process.env.CRYPTO_WALLET_ETH || "").trim(),
+  }
+  const xrpTag = (process.env.CRYPTO_XRP_TAG || "").trim() || null
+
+  let source: "live" | "fallback" = "fallback"
+  let prices: Record<string, number> = {
+    tether: CRYPTO_FALLBACK_PKR_PER_USD * CRYPTO_FALLBACK_USD.tether,
+    ripple: CRYPTO_FALLBACK_PKR_PER_USD * CRYPTO_FALLBACK_USD.ripple,
+    bitcoin: CRYPTO_FALLBACK_PKR_PER_USD * CRYPTO_FALLBACK_USD.bitcoin,
+    ethereum: CRYPTO_FALLBACK_PKR_PER_USD * CRYPTO_FALLBACK_USD.ethereum,
+  }
+
+  try {
+    const res = await fetch(
+      "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,ripple,tether&vs_currencies=pkr",
+      { next: { revalidate: 300 }, signal: AbortSignal.timeout(4000) },
+    )
+    if (res.ok) {
+      const data = (await res.json()) as Record<string, { pkr?: number }>
+      const live = {
+        tether: data?.tether?.pkr,
+        ripple: data?.ripple?.pkr,
+        bitcoin: data?.bitcoin?.pkr,
+        ethereum: data?.ethereum?.pkr,
+      }
+      if (live.tether && live.ripple && live.bitcoin && live.ethereum) {
+        prices = {
+          tether: live.tether,
+          ripple: live.ripple,
+          bitcoin: live.bitcoin,
+          ethereum: live.ethereum,
+        }
+        source = "live"
+      }
+    }
+  } catch {
+    // keep indicative prices
+  }
+
+  const coins: CryptoCoinConfig[] = [
+    {
+      id: "USDT_TRC20",
+      label: "USDT",
+      network: "TRC-20 · Tron",
+      address: addresses.USDT_TRC20,
+      tag: null,
+      pkrPerUnit: prices.tether,
+      decimals: 2,
+    },
+    {
+      id: "XRP",
+      label: "XRP",
+      network: "XRP Ledger",
+      address: addresses.XRP,
+      tag: xrpTag,
+      pkrPerUnit: prices.ripple,
+      decimals: 4,
+    },
+    {
+      id: "BTC",
+      label: "BTC",
+      network: "Bitcoin",
+      address: addresses.BTC,
+      tag: null,
+      pkrPerUnit: prices.bitcoin,
+      decimals: 8,
+    },
+    {
+      id: "ETH",
+      label: "ETH",
+      network: "Ethereum · ERC-20",
+      address: addresses.ETH,
+      tag: null,
+      pkrPerUnit: prices.ethereum,
+      decimals: 6,
+    },
+  ]
+
+  return { coins, source }
 }
 
 export async function getPublishedNews(limit?: number) {
@@ -161,6 +278,29 @@ export async function submitMembershipApplication(formData: FormData) {
     organization: organization || null,
     category,
     message,
+  })
+
+  await notify({
+    email,
+    type: "application",
+    title: "Membership application received",
+    body: `Thank you, ${name}. We've received your ${category} application and will be in touch shortly.`,
+    link: "/dashboard/applications",
+    emailTemplate: {
+      subject: "We received your VAAP membership application",
+      heading: "Application received",
+      intro: [
+        `Thank you for your interest in ${category} membership with the Virtual Assets Association of Pakistan.`,
+        "Our team will review your application and get back to you shortly.",
+      ],
+    },
+  })
+  await notify({
+    role: "staff",
+    type: "application",
+    title: "New membership enquiry",
+    body: `${name} submitted a ${category} membership enquiry.`,
+    link: "/admin/applications",
   })
 
   return { ok: true }
@@ -402,6 +542,37 @@ export async function submitFullApplication(input: ApplicationInput) {
     }
 
     revalidatePath("/admin/applications")
+
+    // Confirm submission to the applicant (email + in-app once their account
+    // exists) and alert staff to the new application. Never block on this.
+    await notify({
+      email,
+      type: "application",
+      title: "Membership application received",
+      body: `Thank you, ${name}. We've received your ${category} application${reference ? ` (ref ${reference})` : ""} and our team will review it shortly.`,
+      link: "/dashboard/applications",
+      emailTemplate: {
+        subject: "We received your VAAP membership application",
+        heading: "Application received",
+        intro: [
+          `Thank you for applying for ${category} membership with the Virtual Assets Association of Pakistan.`,
+          reference
+            ? `Your application reference is ${reference}. Please keep it for your records.`
+            : "Our team will review your application shortly.",
+          "We'll email you as soon as there's an update, and you can track the status from your member dashboard.",
+        ],
+        ctaLabel: "View my applications",
+        ctaPath: "/dashboard/applications",
+        footnote: "If you paid by crypto, approval follows once your transaction is confirmed.",
+      },
+    })
+    await notify({
+      role: "staff",
+      type: "application",
+      title: "New membership application",
+      body: `${name} applied for ${category}${reference ? ` (ref ${reference})` : ""}.`,
+      link: "/admin/applications",
+    })
 
     return { ok: true as const, reference, account }
   } catch {
