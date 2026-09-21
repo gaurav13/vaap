@@ -2,25 +2,32 @@ import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { Inter, Playfair_Display } from 'next/font/google'
 import { headers } from 'next/headers'
+import { redirect } from 'next/navigation'
 import { getSiteStatus } from '@/lib/site-settings'
 import { getSession } from '@/lib/session'
+import { isElevated } from '@/lib/permissions'
 import { ComingSoon } from '@/components/coming-soon'
 import './globals.css'
 
-// Paths that stay reachable even while the site is in "Coming Soon" mode, so
-// admins can sign in and manage the launch toggle.
-const EXEMPT_PREFIXES = ['/admin', '/dashboard', '/sign-in', '/sign-up', '/forgot-password', '/reset-password', '/api']
+// While the site is in "Coming Soon" mode the public can only reach the launch
+// page ("/") and the membership application ("/membership/apply"). Every other
+// public route redirects to the launch page. These prefixes stay reachable so
+// staff/committee can sign in and manage the launch toggle, and so the app's
+// own API/auth endpoints keep working.
+const EXEMPT_PREFIXES = ['/admin', '/dashboard', '/sign-in', '/sign-up', '/forgot-password', '/reset-password', '/api', '/membership/apply']
 
-async function isComingSoonGated(pathname: string): Promise<boolean> {
+type GateDecision = 'allow' | 'coming-soon' | 'redirect'
+
+async function resolveGate(pathname: string): Promise<GateDecision> {
   const exempt = EXEMPT_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))
-  if (exempt) return false
+  if (exempt) return 'allow'
   const { comingSoon } = await getSiteStatus()
-  if (!comingSoon) return false
-  // Staff and super-admins always see the live site.
+  if (!comingSoon) return 'allow'
+  // Signed-in staff and committee members always see the full live site.
   const session = await getSession()
-  const role = session?.user?.role
-  if (role === 'staff' || role === 'admin') return false
-  return true
+  if (isElevated(session?.user?.role)) return 'allow'
+  // The launch page itself renders inline; anything else redirects to it.
+  return pathname === '/' ? 'coming-soon' : 'redirect'
 }
 
 const inter = Inter({
@@ -54,11 +61,12 @@ export default async function RootLayout({
   children: React.ReactNode
 }>) {
   const pathname = (await headers()).get('x-pathname') ?? ''
-  const gated = await isComingSoonGated(pathname)
+  const gate = await resolveGate(pathname)
+  if (gate === 'redirect') redirect('/')
   return (
     <html lang="en" className={`${inter.variable} ${playfair.variable} bg-background`}>
       <body className="font-sans antialiased">
-        {gated ? <ComingSoon /> : children}
+        {gate === 'coming-soon' ? <ComingSoon /> : children}
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>

@@ -39,92 +39,104 @@ const FEATURES = [
 export function ComingSoon() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <div className="grid flex-1 lg:grid-cols-[1.05fr_0.95fr]">
+      {/* Thin gold accent line across the very top for an editorial feel */}
+      <span className="h-[3px] w-full shrink-0" style={{ backgroundColor: GOLD }} aria-hidden />
+
+      <div className="flex min-h-0 flex-1 flex-col md:grid md:grid-cols-[1.05fr_0.95fr]">
         {/* Left: content */}
-        <div className="relative flex flex-col px-6 py-8 sm:px-10 lg:px-16 lg:py-12">
-          <header className="flex items-center justify-between">
-            <VaapLogo height={44} />
-            <nav aria-label="Language" className="flex items-center gap-3 text-sm">
-              <span className="font-medium text-heading">EN</span>
-              <span className="text-line">|</span>
-              <span className="text-muted-2">日本語</span>
-              <span className="text-line">|</span>
-              <span className="text-muted-2">اردو</span>
-            </nav>
-          </header>
+        <div className="relative flex min-h-0 flex-col px-5 py-6 sm:px-10 md:py-8 lg:px-16">
+        <header className="flex items-center gap-3">
+          <VaapLogo height={52} className="sm:hidden" />
+          <VaapLogo height={84} className="hidden sm:inline-flex" />
+        </header>
 
-          <div className="flex flex-1 flex-col justify-center py-12 lg:py-0">
-            <div className="max-w-xl">
-              <div className="flex items-center gap-4">
-                <span className="text-sm font-semibold uppercase tracking-[0.35em] text-green">
-                  Our Platform Is
+          <div className="flex min-h-0 flex-1 flex-col justify-start py-8 md:justify-center md:py-4">
+            <div className="flex max-w-2xl items-start gap-6 lg:gap-8">
+              {/* Far-left stacked eyebrow with gold vertical rule */}
+              <div className="hidden shrink-0 items-stretch gap-3 pt-2 md:flex">
+                <span className="w-px self-stretch" style={{ backgroundColor: GOLD }} aria-hidden />
+                <span className="text-xs font-semibold uppercase leading-relaxed tracking-[0.25em] text-heading">
+                  People.
+                  <br />
+                  Industry.
+                  <br />
+                  Innovation.
                 </span>
-                <span className="h-px w-16" style={{ backgroundColor: GOLD }} aria-hidden />
               </div>
 
-              <h1 className="mt-4 font-serif text-5xl leading-[1.05] tracking-tight text-heading text-balance sm:text-6xl lg:text-7xl">
-                Launching Soon
-              </h1>
+              <div className="min-w-0">
+                <div className="flex items-center gap-4">
+                  <span className="text-[0.7rem] font-semibold uppercase tracking-[0.4em] text-green sm:text-xs">
+                    Our Platform Is
+                  </span>
+                  <span className="h-px flex-1 max-w-[80px]" style={{ backgroundColor: GOLD }} aria-hidden />
+                </div>
 
-              <p className="mt-6 text-lg leading-relaxed text-body text-pretty">
-                A unified platform for a transparent, innovative and inclusive virtual asset and blockchain ecosystem in
-                Pakistan.
-              </p>
+                <h1 className="mt-4 font-serif text-[3.25rem] leading-[0.95] tracking-tight text-heading text-balance sm:text-6xl lg:text-[4.5rem]">
+                  Launching
+                  <br />
+                  Soon
+                </h1>
 
-              <div className="mt-8">
-                <Link
-                  href="/sign-up"
-                  className="inline-flex items-center gap-3 rounded-full bg-green px-8 py-4 text-base font-semibold text-white shadow-lg shadow-green/20 transition hover:brightness-110"
-                >
-                  <UserPlus className="size-5" aria-hidden />
-                  Pre-Register for Membership
-                  <ArrowRight className="size-5" aria-hidden />
-                </Link>
-                <p className="mt-3 text-sm text-muted-2">
-                  Be the first to join. Get updates on our launch, membership and events.
+                <p className="mt-5 max-w-md text-base leading-relaxed text-body text-pretty lg:text-lg">
+                  A unified platform for a transparent, innovative and inclusive virtual asset and blockchain ecosystem
+                  in Pakistan.
                 </p>
-              </div>
 
-              <ul className="mt-12 grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-4 sm:divide-x sm:divide-line">
-                {FEATURES.map(({ icon: Icon, label }) => (
-                  <li key={label} className="flex flex-col items-center gap-3 px-2 text-center sm:px-4">
-                    <span className="flex size-12 items-center justify-center rounded-full bg-mint">
-                      <Icon className="size-6 text-green" aria-hidden />
-                    </span>
-                    <span className="whitespace-pre-line text-xs font-semibold uppercase tracking-wider text-heading">
-                      {label}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+                <div className="mt-7">
+                  <Link
+                    href="/membership/apply"
+                    className="group inline-flex w-full items-center justify-center gap-3 rounded-full bg-green px-8 py-4 text-sm font-semibold text-white shadow-lg shadow-green/25 ring-1 ring-inset ring-white/10 transition hover:shadow-xl hover:shadow-green/30 hover:brightness-110 sm:w-auto lg:text-base"
+                  >
+                    <UserPlus className="size-5" aria-hidden />
+                    Pre-Register for Membership
+                    <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" aria-hidden />
+                  </Link>
+                  <p className="mt-3.5 text-sm text-muted-2 text-pretty">
+                    Be the first to join. Get updates on our launch, membership and events.
+                  </p>
+                </div>
+
+                <ul className="mt-9 grid grid-cols-2 gap-x-4 gap-y-6 border-t border-line pt-7 lg:grid-cols-4 lg:gap-x-0 lg:divide-x lg:divide-line md:mt-7">
+                  {FEATURES.map(({ icon: Icon, label }) => (
+                    <li key={label} className="flex flex-col items-center gap-2.5 px-2 text-center lg:px-4">
+                      <span className="flex size-11 items-center justify-center rounded-full bg-mint ring-1 ring-green/10">
+                        <Icon className="size-5 text-green" aria-hidden />
+                      </span>
+                      <span className="whitespace-pre-line text-[0.7rem] font-semibold uppercase leading-snug tracking-[0.12em] text-heading">
+                        {label}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
           </div>
-
-          <span
-            className="pointer-events-none absolute left-0 top-1/3 hidden h-24 w-1 lg:block"
-            style={{ backgroundColor: GOLD }}
-            aria-hidden
-          />
         </div>
 
         {/* Right: imagery */}
-        <div className="relative min-h-[320px] overflow-hidden lg:min-h-full">
+        <div className="relative order-first h-64 overflow-hidden bg-mint sm:h-80 md:order-none md:h-auto md:min-h-full">
           <Image
-            src="/images/hero-islamabad.png"
-            alt="Faisal Mosque and Pakistan's skyline representing a stronger digital Pakistan"
+            src="/images/vaap-launch-islamabad.png"
+            alt="Faisal Mosque, Minar-e-Pakistan and the mountains under a crescent moon, rendered in green"
             fill
             priority
-            sizes="(max-width: 1024px) 100vw, 48vw"
+            sizes="(max-width: 768px) 100vw, 48vw"
             className="object-cover"
           />
+          {/* Subtle wash to soften the top-left where the panel meets the content column */}
           <div
             className="absolute inset-0"
-            style={{ background: "linear-gradient(135deg, rgba(6,46,33,0.35) 0%, rgba(6,46,33,0.05) 45%, rgba(6,46,33,0.55) 100%)" }}
+            style={{
+              background:
+                "linear-gradient(120deg, rgba(244,247,244,0.55) 0%, rgba(244,247,244,0.05) 32%, rgba(6,46,33,0) 70%)",
+            }}
             aria-hidden
           />
-          <div className="absolute left-6 top-8 sm:left-10">
+
+          <div className="absolute left-5 top-6 sm:left-10 sm:top-8">
             <div className="flex flex-col gap-2">
-              <span className="text-sm font-semibold uppercase tracking-[0.35em] text-white drop-shadow">
+              <span className="text-xs font-semibold uppercase leading-relaxed tracking-[0.35em] text-green sm:text-sm">
                 Blockchain
                 <br />
                 For a Brighter
@@ -134,27 +146,28 @@ export function ComingSoon() {
               <span className="h-px w-12" style={{ backgroundColor: GOLD }} aria-hidden />
             </div>
           </div>
-          <div className="absolute bottom-8 right-6 text-right sm:right-10">
-            <span className="text-sm font-semibold uppercase leading-relaxed tracking-[0.3em] text-white drop-shadow">
+
+          <div className="absolute bottom-6 right-5 flex flex-col items-end text-right sm:bottom-8 sm:right-10">
+            <span className="text-xs font-semibold uppercase leading-relaxed tracking-[0.3em] text-green sm:text-sm">
               Trust.
               <br />
               Collaboration.
               <br />
               Opportunity.
             </span>
-            <span className="mt-2 block h-px w-12 self-end justify-self-end" style={{ backgroundColor: GOLD, marginLeft: "auto" }} aria-hidden />
+            <span className="mt-2 block h-px w-12" style={{ backgroundColor: GOLD }} aria-hidden />
           </div>
         </div>
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-line px-6 py-6 sm:px-10 lg:px-16">
+      <footer className="shrink-0 border-t border-line px-5 py-5 sm:px-10 lg:px-16">
         <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
-          <p className="text-sm text-muted-2">
+          <p className="order-2 text-center text-xs text-muted-2 sm:order-1 sm:text-left sm:text-sm">
             © {new Date().getFullYear()} Virtual Assets Association of Pakistan (VAAP). All rights reserved.
           </p>
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-4 text-heading">
+          <div className="order-1 flex flex-col items-center gap-4 sm:order-2 sm:flex-row sm:gap-6">
+            <div className="flex items-center gap-5 text-heading sm:gap-4">
               <Link href="#" aria-label="LinkedIn" className="transition hover:text-green">
                 <LinkedinIcon className="size-5" />
               </Link>
@@ -169,7 +182,7 @@ export function ComingSoon() {
               </Link>
             </div>
             <span className="hidden h-4 w-px bg-line sm:block" aria-hidden />
-            <nav className="flex items-center gap-5 text-sm text-body">
+            <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-sm text-body">
               <Link href="/contact" className="transition hover:text-green">
                 Contact Us
               </Link>

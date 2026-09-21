@@ -7,11 +7,16 @@ import {
   ArrowRight,
   Bitcoin,
   Building2,
+  CalendarClock,
+  CalendarDays,
   Check,
   ChevronDown,
+  ChevronRight,
   Clock,
   CreditCard,
+  FilePlus2,
   FileText,
+  Globe,
   GraduationCap,
   KeyRound,
   Landmark,
@@ -19,7 +24,9 @@ import {
   Mail,
   Pencil,
   Rocket,
+  Settings,
   ShieldCheck,
+  Star,
   User,
   Users,
   type LucideIcon,
@@ -45,14 +52,35 @@ function iconFor(name: string): LucideIcon {
   return ICONS[name] ?? Building2
 }
 
+// Highlight bullets per category. Keyed by the stored icon so it stays stable
+// even if a plan's title is edited in the CMS.
+const PLAN_FEATURES: Record<string, string[]> = {
+  Building2: ["Industry representation", "Policy engagement", "Expanded networking"],
+  Users: ["Ecosystem participation", "Access to events", "Collaborative opportunities"],
+  Rocket: ["Visibility and exposure", "Mentorship opportunities", "Access to investors & partners"],
+  ShieldCheck: ["Verified security & trust status", "Priority holder support", "Community & educational resources"],
+  User: ["Professional recognition", "Knowledge sharing", "Event access"],
+  GraduationCap: ["Research collaboration", "Industry insights access", "Academic engagement"],
+  Landmark: ["Research collaboration", "Industry insights access", "Academic engagement"],
+}
+
+function featuresFor(icon: string): string[] {
+  return PLAN_FEATURES[icon] ?? []
+}
+
 export type ApplyPlan = {
   id: number
   icon: string
   title: string
   subtitle: string
+  description: string
   admissionFee: string
+  admissionFeeNote: string
   annualFee: string
+  annualFeeNote: string
   term: string
+  benefits: string[]
+  eligibility: string[]
 }
 
 const STEPS = ["Select Membership", "Information", "Payment", "Review", "Complete"] as const
@@ -394,6 +422,18 @@ function StepHeading({ title, description }: { title: string; description: strin
   )
 }
 
+// Flagship plans (Corporate + the two Verified memberships) carry a gold badge.
+function isFeaturedPlan(icon: string): boolean {
+  return ["Building2", "ShieldCheck"].includes(icon)
+}
+
+// Associate Membership is positioned for international companies and projects.
+function isInternationalPlan(title: string): boolean {
+  return title.toLowerCase().includes("associate")
+}
+
+const ELIGIBILITY_ICONS: LucideIcon[] = [Settings, FileText, ShieldCheck, User]
+
 function StepSelectType({
   plans,
   selectedId,
@@ -403,42 +443,240 @@ function StepSelectType({
   selectedId: number | null
   onSelect: (id: number) => void
 }) {
+  // Which plan's detail is shown. Browsing and choosing are the same action:
+  // clicking a plan both reveals its detail and selects it for the application.
+  const [viewId, setViewId] = useState<number>(selectedId ?? plans[0]?.id ?? 0)
+  const viewed = plans.find((p) => p.id === viewId) ?? plans[0] ?? null
+
+  function choose(id: number) {
+    setViewId(id)
+    onSelect(id)
+  }
+
   return (
     <div>
-      <StepHeading
-        title="Select Membership Type"
-        description="Choose the category that best describes you or your organization."
-      />
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {plans.map((plan) => {
-          const Icon = iconFor(plan.icon)
-          const selected = plan.id === selectedId
-          return (
-            <button
-              type="button"
-              key={plan.id}
-              onClick={() => onSelect(plan.id)}
-              aria-pressed={selected}
-              className={[
-                "flex flex-col items-start gap-3 rounded-xl border p-5 text-left transition-all",
-                selected
-                  ? "border-green bg-green/5 ring-2 ring-green/20"
-                  : "border-line bg-card hover:border-green/40 hover:bg-muted/40",
-              ].join(" ")}
-            >
-              <span
+      <div className="mb-8">
+        <p className="flex items-center gap-2.5 text-[11px] font-bold uppercase tracking-[0.22em] text-green">
+          <span className="h-px w-7 bg-gold" aria-hidden />
+          Join Our Ecosystem
+        </p>
+        <h1 className="mt-3 font-serif text-2xl font-bold text-heading lg:text-3xl">Select Membership Type</h1>
+        <p className="mt-1.5 text-sm text-muted-2">Choose the category that best describes you or your organization.</p>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-[300px_1fr]">
+        {/* Plan list */}
+        <div className="flex flex-col gap-2.5" role="tablist" aria-label="Membership types">
+          {plans.map((plan) => {
+            const Icon = iconFor(plan.icon)
+            const isViewing = plan.id === viewId
+            const isSelected = plan.id === selectedId
+            const featured = isFeaturedPlan(plan.icon)
+            return (
+              <button
+                type="button"
+                key={plan.id}
+                role="tab"
+                aria-selected={isViewing}
+                onClick={() => choose(plan.id)}
                 className={[
-                  "flex size-11 items-center justify-center rounded-lg transition-colors",
-                  selected ? "bg-green text-white" : "bg-muted text-green",
+                  "group relative flex items-center gap-3 rounded-xl border p-3.5 text-left transition-all",
+                  isViewing
+                    ? "border-green bg-green text-white shadow-md"
+                    : featured
+                      ? "border-gold/40 bg-card text-heading hover:border-green/50 hover:bg-mint/40"
+                      : "border-line bg-card text-heading hover:border-green/50 hover:bg-mint/40",
                 ].join(" ")}
               >
-                <Icon className="size-5" strokeWidth={2} />
-              </span>
-              <span className="font-serif text-base font-bold leading-tight text-heading">{plan.title}</span>
-              <span className="text-xs leading-relaxed text-muted-2">{plan.subtitle}</span>
-            </button>
-          )
-        })}
+                <span
+                  className={[
+                    "flex size-11 shrink-0 items-center justify-center rounded-xl transition-colors",
+                    isViewing ? "bg-white/15 text-white" : "bg-mint text-green group-hover:bg-white",
+                  ].join(" ")}
+                >
+                  <Icon className="size-5" strokeWidth={2} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-semibold leading-snug tracking-tight">{plan.title}</span>
+                  {featured && (
+                    <span
+                      className={[
+                        "mt-1.5 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider",
+                        isViewing ? "border-white/40 text-white/90" : "border-gold/50 text-gold",
+                      ].join(" ")}
+                    >
+                      <Star className="size-2.5 fill-current" aria-hidden />
+                      Featured
+                    </span>
+                  )}
+                  {isInternationalPlan(plan.title) && (
+                    <span
+                      className={[
+                        "mt-1.5 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider",
+                        isViewing ? "border-white/40 text-white/90" : "border-green/40 text-green",
+                      ].join(" ")}
+                    >
+                      <Globe className="size-2.5" aria-hidden />
+                      International
+                    </span>
+                  )}
+                </span>
+                {isSelected && !isViewing ? (
+                  <span
+                    className="flex size-6 shrink-0 items-center justify-center rounded-full bg-green text-white"
+                    aria-hidden
+                  >
+                    <Check className="size-3.5" strokeWidth={3} />
+                  </span>
+                ) : (
+                  <ChevronRight
+                    className={["size-4 shrink-0", isViewing ? "text-white" : "text-muted-2"].join(" ")}
+                    aria-hidden
+                  />
+                )}
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Detail panel */}
+        {viewed && (
+          <div className="rounded-2xl border border-line bg-card p-6 lg:p-8">
+            <PlanDetailPanel plan={viewed} selected={viewed.id === selectedId} onChoose={() => choose(viewed.id)} />
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function PlanDetailPanel({
+  plan,
+  selected,
+  onChoose,
+}: {
+  plan: ApplyPlan
+  selected: boolean
+  onChoose: () => void
+}) {
+  const Icon = iconFor(plan.icon)
+  const benefits = plan.benefits.length > 0 ? plan.benefits : featuresFor(plan.icon)
+
+  const fees: { label: string; value: string; note?: string; icon: LucideIcon }[] = []
+  if (plan.annualFee)
+    fees.push({ label: "Annual Fee", value: plan.annualFee, note: plan.annualFeeNote || undefined, icon: CalendarDays })
+  if (plan.admissionFee)
+    fees.push({
+      label: "Admission Fee (One-time)",
+      value: plan.admissionFee,
+      note: plan.admissionFeeNote || undefined,
+      icon: FilePlus2,
+    })
+  if (plan.term) fees.push({ label: "Membership Term", value: plan.term, icon: CalendarClock })
+
+  return (
+    <div>
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <div className="flex items-center gap-3">
+            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-green">{plan.title}</p>
+            <span className="hidden h-px w-10 bg-green/40 sm:block" aria-hidden />
+          </div>
+          <h2 className="mt-3 font-serif text-2xl font-bold leading-tight text-heading xl:text-3xl">{plan.subtitle}</h2>
+          {isInternationalPlan(plan.title) && (
+            <span className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-green/30 bg-mint/50 px-3 py-1 text-xs font-semibold text-green">
+              <Globe className="size-3.5" aria-hidden />
+              Recommended for international companies & projects
+            </span>
+          )}
+        </div>
+        <span className="hidden size-14 shrink-0 items-center justify-center rounded-full bg-mint text-green sm:flex">
+          <Icon className="size-7" aria-hidden />
+        </span>
+      </div>
+
+      {plan.description && <p className="mt-5 leading-relaxed text-body">{plan.description}</p>}
+
+      {fees.length > 0 && (
+        <div className="mt-6 grid gap-4 sm:grid-cols-3">
+          {fees.map((fee) => {
+            const FeeIcon = fee.icon
+            return (
+              <div key={fee.label} className="flex items-center gap-3 rounded-xl border border-line bg-muted/40 p-4">
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-mint text-green">
+                  <FeeIcon className="size-5" aria-hidden />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-medium leading-tight text-body">{fee.label}</p>
+                  <p className="font-serif text-lg font-bold leading-tight text-heading">{fee.value}</p>
+                  {fee.note && <p className="text-[11px] leading-tight text-muted-2">({fee.note})</p>}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      <div className="mt-8 grid gap-8 md:grid-cols-2">
+        {benefits.length > 0 && (
+          <div>
+            <h3 className="font-serif text-xl font-bold text-green">Key Benefits</h3>
+            <ul className="mt-4 space-y-3">
+              {benefits.map((benefit) => (
+                <li key={benefit} className="flex gap-3 text-sm leading-relaxed text-body">
+                  <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-green text-white">
+                    <Check className="size-3" aria-hidden />
+                  </span>
+                  <span>{benefit}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {plan.eligibility.length > 0 && (
+          <div className="md:border-l md:border-line md:pl-8">
+            <h3 className="font-serif text-xl font-bold text-green">Eligibility Criteria</h3>
+            <ul className="mt-4 space-y-4">
+              {plan.eligibility.map((text, i) => {
+                const EligIcon = ELIGIBILITY_ICONS[i % ELIGIBILITY_ICONS.length]
+                return (
+                  <li key={text} className="flex items-center gap-3 text-sm leading-relaxed text-body">
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-mint text-green">
+                      <EligIcon className="size-5" aria-hidden />
+                    </span>
+                    <span>{text}</span>
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+        )}
+      </div>
+
+      <div className="mt-8 border-t border-line pt-6">
+        <button
+          type="button"
+          onClick={onChoose}
+          aria-pressed={selected}
+          className={[
+            "inline-flex w-full items-center justify-center gap-2 rounded-lg px-6 py-3 text-sm font-semibold transition-colors sm:w-auto",
+            selected
+              ? "bg-green/10 text-green ring-1 ring-green/30"
+              : "bg-green text-white hover:bg-green-hover",
+          ].join(" ")}
+        >
+          {selected ? (
+            <>
+              <Check className="size-4" strokeWidth={2.5} />
+              Selected
+            </>
+          ) : (
+            <>
+              Choose this membership
+              <ArrowRight className="size-4" />
+            </>
+          )}
+        </button>
       </div>
     </div>
   )
