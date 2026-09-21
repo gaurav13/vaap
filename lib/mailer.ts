@@ -2,7 +2,10 @@ import "server-only"
 import nodemailer, { type Transporter } from "nodemailer"
 
 const GMAIL_USER = process.env.GMAIL_USER
-const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD
+// Prefer GMAIL_SMTP_PASSWORD (a fresh variable that saves cleanly); fall back to
+// the legacy GMAIL_APP_PASSWORD. Whitespace is stripped so the 4x4 App Password
+// format ("abcd efgh ijkl mnop") can be pasted as-is.
+const GMAIL_APP_PASSWORD = (process.env.GMAIL_SMTP_PASSWORD || process.env.GMAIL_APP_PASSWORD || "").replace(/\s+/g, "")
 
 // Official sender identity for every outgoing VAAP email. Overridable via
 // EMAIL_FROM, but defaults to the association's support mailbox. Note: Gmail
