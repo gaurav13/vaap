@@ -7,7 +7,10 @@ import { Check, CreditCard, Loader2, RefreshCw } from "lucide-react"
 
 import { createMembershipCheckout, getMembershipPaymentStatus } from "@/app/actions/stripe"
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY as string)
+// Publishable keys are designed to be exposed in client code. This live account
+// uses legacy short-format keys; the NEXT_PUBLIC_ env var still holds a test key,
+// so we use the live publishable key directly to match the live secret server-side.
+const stripePromise = loadStripe("pk_live_k2wNTpGomfGlfPJY0DDdNVm2")
 
 type Status = "loading" | "ready" | "verifying" | "paid" | "free" | "error"
 
