@@ -10,11 +10,13 @@ import { ComingSoon } from '@/components/coming-soon'
 import './globals.css'
 
 // While the site is in "Coming Soon" mode the public can only reach the launch
-// page ("/") and the membership application ("/membership/apply"). Every other
-// public route redirects to the launch page. These prefixes stay reachable so
-// staff/committee can sign in and manage the launch toggle, and so the app's
-// own API/auth endpoints keep working.
-const EXEMPT_PREFIXES = ['/admin', '/dashboard', '/sign-in', '/sign-up', '/forgot-password', '/reset-password', '/api', '/membership/apply']
+// page ("/"), the membership application ("/membership/apply") and the public
+// membership verification tool ("/membership/verify" — certificates carry a QR
+// code that deep-links here, so it must resolve even before launch). Every
+// other public route redirects to the launch page. These prefixes stay
+// reachable so staff/committee can sign in and manage the launch toggle, and so
+// the app's own API/auth endpoints keep working.
+const EXEMPT_PREFIXES = ['/admin', '/dashboard', '/sign-in', '/sign-up', '/forgot-password', '/reset-password', '/api', '/membership/apply', '/membership/verify']
 
 type GateDecision = 'allow' | 'coming-soon' | 'redirect'
 
