@@ -9,10 +9,13 @@ import {
   referralClicks,
   commissionRules,
   notifications,
+  settings,
   user,
 } from "@/lib/db/schema"
 import { getSession } from "@/lib/session"
 import { canManageRewards } from "@/lib/permissions"
+import { getRewardPayout } from "@/lib/site-settings"
+import { evaluatePayoutThreshold } from "@/lib/referral-engine"
 import { and, desc, eq, inArray, sql } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 
@@ -86,7 +89,45 @@ export async function getRewardsQueue() {
   await requireRewardManager()
   const rewards = await db.select().from(rewardTransactions).orderBy(desc(rewardTransactions.createdAt)).limit(200)
   const payments = await db.select().from(rewardPayments).orderBy(desc(rewardPayments.createdAt)).limit(200)
-  return { rewards, payments }
+  const payout = await getRewardPayout()
+  return { rewards, payments, payout }
+}
+
+// Update the referral payout threshold — the collected amount a referrer must
+// reach before their rewards become eligible for payout.
+export async function savePayoutThreshold(threshold: number) {
+  const current = await requireRewardManager()
+  const value = Math.max(0, Math.round(Number(threshold) || 0))
+  const existing = await getRewardPayout()
+  const json = JSON.stringify({ ...existing, threshold: value })
+  await db
+    .insert(settings)
+    .values({ key: "rewardPayout", value: json })
+    .onConflictDoUpdate({ target: settings.key, set: { value: json, updatedAt: new Date() } })
+
+  await db.insert(notifications).values({
+    role: "admin",
+    type: "info",
+    title: "Payout threshold updated",
+    body: `${current.name ?? "An admin"} set the referral payout threshold to ${existing.currency} ${value.toLocaleString("en-PK")}.`,
+    link: "/admin/rewards",
+  })
+  revalidatePath("/admin/rewards")
+  return { ok: true as const }
+}
+
+// Admin override: release a referrer's collecting rewards to "eligible" now,
+// regardless of whether the threshold has been reached.
+export async function releaseCollectedRewards(input: { referrerUserId: string | null; partnerId: number | null }) {
+  await requireRewardManager()
+  const res = await evaluatePayoutThreshold({
+    referrerUserId: input.referrerUserId,
+    partnerId: input.partnerId,
+    force: true,
+  })
+  revalidatePath("/admin/rewards")
+  revalidatePath("/dashboard/referrals")
+  return { ok: true as const, released: res.released, count: res.count }
 }
 
 // Approve a reward that is eligible/under_review, moving it to `approved`.
@@ -178,6 +219,105 @@ export async function payReward(input: { rewardId: number; method: string; refer
 export async function getCommissionRules() {
   await requireRewardManager()
   return db.select().from(commissionRules).orderBy(desc(commissionRules.createdAt))
+}
+
+const ALLOWED_FEES = ["admission", "annual", "renewal"] as const
+const ALLOWED_REWARD_TYPES = ["percentage", "fixed", "none"] as const
+const ALLOWED_STATUSES = ["draft", "active", "paused", "archived"] as const
+
+export type CommissionRuleInput = {
+  id?: number
+  name: string
+  referrerRole: string
+  membershipCategory: string
+  rewardType: string
+  commissionPercent: string
+  fixedAmount: number
+  currency: string
+  commissionableFees: string[]
+  status: string
+}
+
+// Create or update a commission rule — the "allocate / change commission %"
+// control used by super admins. New rewards created after this point pick up
+// the change; already-created rewards keep their snapshotted rate.
+export async function saveCommissionRule(input: CommissionRuleInput) {
+  const current = await requireRewardManager()
+
+  const name = (input.name ?? "").trim()
+  if (!name) return { ok: false as const, error: "Give the commission a name." }
+
+  const rewardType = ALLOWED_REWARD_TYPES.includes(input.rewardType as never) ? input.rewardType : "percentage"
+  const status = ALLOWED_STATUSES.includes(input.status as never) ? input.status : "draft"
+
+  let commissionPercent = "0"
+  let fixedAmount = 0
+  if (rewardType === "percentage") {
+    const pct = Number.parseFloat(String(input.commissionPercent ?? "0"))
+    if (!Number.isFinite(pct) || pct < 0 || pct > 100) {
+      return { ok: false as const, error: "Commission percent must be between 0 and 100." }
+    }
+    commissionPercent = String(pct)
+  } else if (rewardType === "fixed") {
+    const amt = Math.round(Number(input.fixedAmount ?? 0))
+    if (!Number.isFinite(amt) || amt < 0) {
+      return { ok: false as const, error: "Fixed amount must be zero or more." }
+    }
+    fixedAmount = amt
+  }
+
+  const fees = (input.commissionableFees ?? []).filter((f) => ALLOWED_FEES.includes(f as never))
+  const commissionableFees = fees.length > 0 ? fees.join(",") : "annual"
+  const currency = (input.currency ?? "PKR").trim() || "PKR"
+  const referrerRole = (input.referrerRole ?? "").trim()
+  const membershipCategory = (input.membershipCategory ?? "").trim()
+
+  const values = {
+    name,
+    referrerRole,
+    membershipCategory,
+    rewardType,
+    commissionPercent,
+    fixedAmount,
+    currency,
+    commissionableFees,
+    status,
+    updatedAt: new Date(),
+  }
+
+  if (input.id) {
+    await db.update(commissionRules).set(values).where(eq(commissionRules.id, input.id))
+  } else {
+    await db.insert(commissionRules).values(values)
+  }
+
+  await db.insert(notifications).values({
+    role: "admin",
+    type: "info",
+    title: input.id ? "Commission rule updated" : "Commission rule created",
+    body: `${current.name ?? "An admin"} ${input.id ? "updated" : "created"} the "${name}" commission (${
+      rewardType === "percentage" ? `${commissionPercent}%` : rewardType === "fixed" ? `${currency} ${fixedAmount}` : "no reward"
+    }).`,
+    link: "/admin/commissions",
+  })
+
+  revalidatePath("/admin/commissions")
+  return { ok: true as const }
+}
+
+export async function setCommissionRuleStatus(id: number, status: string) {
+  await requireRewardManager()
+  if (!ALLOWED_STATUSES.includes(status as never)) return { ok: false as const, error: "Invalid status." }
+  await db.update(commissionRules).set({ status, updatedAt: new Date() }).where(eq(commissionRules.id, id))
+  revalidatePath("/admin/commissions")
+  return { ok: true as const }
+}
+
+export async function deleteCommissionRule(id: number) {
+  await requireRewardManager()
+  await db.delete(commissionRules).where(eq(commissionRules.id, id))
+  revalidatePath("/admin/commissions")
+  return { ok: true as const, error: undefined }
 }
 
 export async function toggleReferralCode(codeId: number, active: boolean) {

@@ -15,13 +15,14 @@ import {
   membershipApplications,
   user,
 } from "@/lib/db/schema"
-import { and, desc, eq, isNull, or, lte, gte } from "drizzle-orm"
+import { and, desc, eq, isNull, or, lte, gte, inArray } from "drizzle-orm"
 import {
   parseMoney,
   computeReward,
   type ApplicationFees,
   type CommissionRuleLike,
 } from "@/lib/referral"
+import { getRewardPayout } from "@/lib/site-settings"
 
 // --- Click tracking ---------------------------------------------------------
 
@@ -244,7 +245,9 @@ export async function processMembershipApproval(params: {
       ruleId: rule.id,
       // Snapshot the rule so future edits never rewrite this reward.
       ruleSnapshot: JSON.stringify(rule),
-      status: "eligible",
+      // Rewards start "collecting": they accumulate per referrer until the
+      // configured payout threshold is reached (see evaluatePayoutThreshold).
+      status: "pending_eligibility",
     })
     .returning({ id: rewardTransactions.id })
 
@@ -253,8 +256,8 @@ export async function processMembershipApproval(params: {
     await db.insert(notifications).values({
       userId: attr.referrerUserId,
       type: "reward",
-      title: "Referral reward is now eligible",
-      body: `A membership you referred was approved. Reward ${rule.currency} ${calc.rewardAmount.toLocaleString("en-PK")} is pending review.`,
+      title: "Referral reward added",
+      body: `A membership you referred was approved. ${rule.currency} ${calc.rewardAmount.toLocaleString("en-PK")} has been added to your collecting rewards toward the payout threshold.`,
       link: "/dashboard/rewards",
     })
   }
@@ -268,10 +271,72 @@ export async function processMembershipApproval(params: {
       role: "admin",
       type: "alert",
       title: "Large referral reward created",
-      body: `A reward of ${rule.currency} ${calc.rewardAmount.toLocaleString("en-PK")} became eligible for ${referrer.name || email}.`,
+      body: `A reward of ${rule.currency} ${calc.rewardAmount.toLocaleString("en-PK")} was added for ${referrer.name || email}.`,
       link: "/admin/referrals/rewards",
     })
   }
 
+  // Re-evaluate the referrer's collected total; auto-release to "eligible" if
+  // they have now crossed the payout threshold.
+  await evaluatePayoutThreshold({ referrerUserId: attr.referrerUserId, partnerId: attr.partnerId })
+
   return { ok: true as const, reward: calc.rewardAmount }
+}
+
+// --- Payout threshold accumulation -----------------------------------------
+// Rewards accumulate per referrer while in `pending_eligibility` (collecting).
+// Once the referrer's collected total reaches the configured threshold — or an
+// admin forces a release — every collecting reward for that referrer flips to
+// `eligible`, making it available for review & payout.
+
+function referrerCondition(referrerUserId: string | null, partnerId: number | null) {
+  if (referrerUserId) return eq(rewardTransactions.referrerUserId, referrerUserId)
+  if (partnerId) return eq(rewardTransactions.partnerId, partnerId)
+  return null
+}
+
+export async function evaluatePayoutThreshold(params: {
+  referrerUserId: string | null
+  partnerId: number | null
+  force?: boolean
+}) {
+  const cond = referrerCondition(params.referrerUserId, params.partnerId)
+  if (!cond) return { released: false as const, total: 0, threshold: 0, count: 0 }
+
+  const { threshold } = await getRewardPayout()
+  const collecting = await db
+    .select()
+    .from(rewardTransactions)
+    .where(and(cond, eq(rewardTransactions.status, "pending_eligibility")))
+
+  const total = collecting.reduce((sum, r) => sum + (r.rewardAmount ?? 0), 0)
+  const shouldRelease = params.force === true || total >= threshold
+
+  if (collecting.length > 0 && shouldRelease) {
+    const ids = collecting.map((r) => r.id)
+    await db
+      .update(rewardTransactions)
+      .set({ status: "eligible", updatedAt: new Date() })
+      .where(inArray(rewardTransactions.id, ids))
+
+    const referrerUserId = collecting[0]?.referrerUserId ?? null
+    const currency = collecting[0]?.currency ?? "PKR"
+    if (referrerUserId) {
+      await db.insert(notifications).values({
+        userId: referrerUserId,
+        type: "reward",
+        title: "Referral rewards ready for payout",
+        body: `Your collected referral rewards (${currency} ${total.toLocaleString("en-PK")}) reached the payout threshold and are now under review.`,
+        link: "/dashboard/rewards",
+      })
+    }
+    await db.insert(auditLogs).values({
+      actorName: "System",
+      action: "reward.threshold_released",
+      target: `${ids.length} reward(s) ${currency} ${total} for referrer ${referrerUserId ?? `partner#${params.partnerId}`}`,
+    })
+    return { released: true as const, total, threshold, count: ids.length }
+  }
+
+  return { released: false as const, total, threshold, count: collecting.length }
 }

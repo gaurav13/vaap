@@ -342,7 +342,21 @@ export const DEFAULT_SITE_STATUS: SiteStatus = {
   comingSoon: false,
 }
 
-export const SETTING_KEYS = ["menu", "social", "general", "banner", "newsAlert", "govHero", "govFramework", "membership", "footer", "ctaBanner", "siteStatus"] as const
+export type RewardPayout = {
+  // Referral rewards accumulate per referrer while "collecting". Only once a
+  // referrer's collected total reaches this threshold do their rewards become
+  // eligible for review & payout. Set to 0 to make every reward eligible
+  // immediately (no accumulation).
+  threshold: number
+  currency: string
+}
+
+export const DEFAULT_REWARD_PAYOUT: RewardPayout = {
+  threshold: 30000,
+  currency: "PKR",
+}
+
+export const SETTING_KEYS = ["menu", "social", "general", "banner", "newsAlert", "govHero", "govFramework", "membership", "footer", "ctaBanner", "siteStatus", "rewardPayout"] as const
 export type SettingKey = (typeof SETTING_KEYS)[number]
 
 function parse<T>(raw: string | undefined, fallback: T): T {
@@ -383,6 +397,7 @@ export type SiteSettings = {
   footer: Footer
   ctaBanner: CtaBanner
   siteStatus: SiteStatus
+  rewardPayout: RewardPayout
 }
 
 export async function getSiteSettings(): Promise<SiteSettings> {
@@ -399,7 +414,13 @@ export async function getSiteSettings(): Promise<SiteSettings> {
     footer: parse<Footer>(map.footer, DEFAULT_FOOTER),
     ctaBanner: parse<CtaBanner>(map.ctaBanner, DEFAULT_CTA_BANNER),
     siteStatus: parse<SiteStatus>(map.siteStatus, DEFAULT_SITE_STATUS),
+    rewardPayout: parse<RewardPayout>(map.rewardPayout, DEFAULT_REWARD_PAYOUT),
   }
+}
+
+export async function getRewardPayout(): Promise<RewardPayout> {
+  const map = await readAll()
+  return parse<RewardPayout>(map.rewardPayout, DEFAULT_REWARD_PAYOUT)
 }
 
 export async function getSiteStatus(): Promise<SiteStatus> {

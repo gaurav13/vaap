@@ -4,6 +4,6 @@ import { RewardsManager } from "@/components/admin/rewards-manager"
 export const dynamic = "force-dynamic"
 
 export default async function AdminRewardsPage() {
-  const { rewards, payments } = await getRewardsQueue()
-  return <RewardsManager rewards={rewards} payments={payments} />
+  const { rewards, payments, payout } = await getRewardsQueue()
+  return <RewardsManager rewards={rewards} payments={payments} payout={payout} />
 }
