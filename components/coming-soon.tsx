@@ -58,20 +58,8 @@ export function ComingSoon() {
           <div className="flex min-h-0 flex-1 flex-col justify-start md:justify-center">
             <div
               className="flex max-w-2xl items-start"
-              style={{ gap: "clamp(1rem, 1.6vw, 2rem)", paddingTop: "clamp(1rem, 2vw, 0px)" }}
+              style={{ paddingTop: "clamp(0.5rem, 1vw, 0px)" }}
             >
-              {/* Far-left stacked eyebrow with gold vertical rule */}
-              <div className="hidden shrink-0 items-stretch gap-3 pt-1 md:flex">
-                <span className="w-px self-stretch" style={{ backgroundColor: GOLD }} aria-hidden />
-                <span className="text-[0.7rem] font-semibold uppercase leading-relaxed tracking-[0.25em] text-heading">
-                  People.
-                  <br />
-                  Industry.
-                  <br />
-                  Innovation.
-                </span>
-              </div>
-
               <div className="min-w-0">
                 <div className="flex items-center gap-4">
                   <span className="text-[0.7rem] font-semibold uppercase tracking-[0.4em] text-green sm:text-xs">
