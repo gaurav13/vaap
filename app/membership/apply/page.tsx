@@ -4,6 +4,13 @@ import { ApplyWizard, type ApplyPlan } from "@/components/membership/apply/apply
 import { getHeaderUser } from "@/lib/header-user"
 import { getMembershipPlans } from "@/app/actions/cms"
 
+function toLines(value: string | null): string[] {
+  return (value ?? "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+}
+
 export const metadata = {
   title: "Apply for Membership | VAAP",
   description:
@@ -22,9 +29,14 @@ export default async function ApplyPage({
     icon: row.icon,
     title: row.title,
     subtitle: row.subtitle,
+    description: row.description,
     admissionFee: row.admissionFee,
+    admissionFeeNote: row.admissionFeeNote,
     annualFee: row.annualFee,
+    annualFeeNote: row.annualFeeNote,
     term: row.term,
+    benefits: toLines(row.benefits),
+    eligibility: toLines(row.eligibility),
   }))
 
   const parsedPlanId = sp.plan ? Number.parseInt(sp.plan, 10) : NaN

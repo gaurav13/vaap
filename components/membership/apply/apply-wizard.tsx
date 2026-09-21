@@ -7,10 +7,14 @@ import {
   ArrowRight,
   Bitcoin,
   Building2,
+  CalendarClock,
+  CalendarDays,
   Check,
   ChevronDown,
+  ChevronRight,
   Clock,
   CreditCard,
+  FilePlus2,
   FileText,
   GraduationCap,
   KeyRound,
@@ -19,7 +23,9 @@ import {
   Mail,
   Pencil,
   Rocket,
+  Settings,
   ShieldCheck,
+  Star,
   User,
   Users,
   type LucideIcon,
@@ -61,21 +67,19 @@ function featuresFor(icon: string): string[] {
   return PLAN_FEATURES[icon] ?? []
 }
 
-const PROMO_POINTS: { icon: LucideIcon; label: string }[] = [
-  { icon: Building2, label: "Industry Representation" },
-  { icon: FileText, label: "Policy Advocacy" },
-  { icon: GraduationCap, label: "Education & Awareness" },
-  { icon: Users, label: "Global Collaboration" },
-]
-
 export type ApplyPlan = {
   id: number
   icon: string
   title: string
   subtitle: string
+  description: string
   admissionFee: string
+  admissionFeeNote: string
   annualFee: string
+  annualFeeNote: string
   term: string
+  benefits: string[]
+  eligibility: string[]
 }
 
 const STEPS = ["Select Membership", "Information", "Payment", "Review", "Complete"] as const
@@ -417,6 +421,13 @@ function StepHeading({ title, description }: { title: string; description: strin
   )
 }
 
+// Flagship plans (Corporate + the two Verified memberships) carry a gold badge.
+function isFeaturedPlan(icon: string): boolean {
+  return ["Building2", "ShieldCheck"].includes(icon)
+}
+
+const ELIGIBILITY_ICONS: LucideIcon[] = [Settings, FileText, ShieldCheck, User]
+
 function StepSelectType({
   plans,
   selectedId,
@@ -426,8 +437,15 @@ function StepSelectType({
   selectedId: number | null
   onSelect: (id: number) => void
 }) {
-  // Mark the flagship (Corporate) plan so it reads as the guided default.
-  const popularId = plans.find((p) => p.icon === "Building2")?.id ?? plans[0]?.id ?? null
+  // Which plan's detail is shown. Browsing and choosing are the same action:
+  // clicking a plan both reveals its detail and selects it for the application.
+  const [viewId, setViewId] = useState<number>(selectedId ?? plans[0]?.id ?? 0)
+  const viewed = plans.find((p) => p.id === viewId) ?? plans[0] ?? null
+
+  function choose(id: number) {
+    setViewId(id)
+    onSelect(id)
+  }
 
   return (
     <div>
@@ -440,119 +458,202 @@ function StepSelectType({
         <p className="mt-1.5 text-sm text-muted-2">Choose the category that best describes you or your organization.</p>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="grid gap-4 sm:grid-cols-2 lg:col-span-2">
+      <div className="grid gap-6 lg:grid-cols-[300px_1fr]">
+        {/* Plan list */}
+        <div className="flex flex-col gap-2.5" role="tablist" aria-label="Membership types">
           {plans.map((plan) => {
             const Icon = iconFor(plan.icon)
-            const selected = plan.id === selectedId
-            const popular = plan.id === popularId
-            const international = plan.icon === "ShieldCheck"
-            const features = featuresFor(plan.icon)
+            const isViewing = plan.id === viewId
+            const isSelected = plan.id === selectedId
+            const featured = isFeaturedPlan(plan.icon)
             return (
               <button
                 type="button"
                 key={plan.id}
-                onClick={() => onSelect(plan.id)}
-                aria-pressed={selected}
+                role="tab"
+                aria-selected={isViewing}
+                onClick={() => choose(plan.id)}
                 className={[
-                  "group relative flex flex-col rounded-xl border p-5 pt-6 text-left transition-all",
-                  selected
-                    ? "border-green bg-green/[0.04] ring-2 ring-green/25"
-                    : "border-line bg-card hover:border-green/50 hover:shadow-sm",
+                  "group relative flex items-center gap-3 rounded-xl border p-3.5 text-left transition-all",
+                  isViewing
+                    ? "border-green bg-green text-white shadow-md"
+                    : featured
+                      ? "border-gold/40 bg-card text-heading hover:border-green/50 hover:bg-mint/40"
+                      : "border-line bg-card text-heading hover:border-green/50 hover:bg-mint/40",
                 ].join(" ")}
               >
-                {popular && (
-                  <span className="absolute -top-2.5 left-5 rounded-full bg-green px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm">
-                    Most Popular
-                  </span>
-                )}
-                {international && (
-                  <span className="absolute -top-2.5 left-5 flex items-center gap-1 rounded-full bg-gold px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm">
-                    <ShieldCheck className="size-3" strokeWidth={2.5} />
-                    Recommended for International
-                  </span>
-                )}
-                <div className="mb-3.5 flex items-start justify-between">
+                <span
+                  className={[
+                    "flex size-11 shrink-0 items-center justify-center rounded-xl transition-colors",
+                    isViewing ? "bg-white/15 text-white" : "bg-mint text-green group-hover:bg-white",
+                  ].join(" ")}
+                >
+                  <Icon className="size-5" strokeWidth={2} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-semibold leading-snug tracking-tight">{plan.title}</span>
+                  {featured && (
+                    <span
+                      className={[
+                        "mt-1.5 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider",
+                        isViewing ? "border-white/40 text-white/90" : "border-gold/50 text-gold",
+                      ].join(" ")}
+                    >
+                      <Star className="size-2.5 fill-current" aria-hidden />
+                      Featured
+                    </span>
+                  )}
+                </span>
+                {isSelected && !isViewing ? (
                   <span
-                    className={[
-                      "flex size-11 shrink-0 items-center justify-center rounded-xl transition-colors",
-                      selected ? "bg-green text-white" : "bg-mint text-green group-hover:bg-green group-hover:text-white",
-                    ].join(" ")}
-                  >
-                    <Icon className="size-5" strokeWidth={2} />
-                  </span>
-                  <span
-                    className={[
-                      "flex size-8 shrink-0 items-center justify-center rounded-full border transition-colors",
-                      selected
-                        ? "border-green bg-green text-white"
-                        : "border-line text-muted-2 group-hover:border-green group-hover:bg-green group-hover:text-white",
-                    ].join(" ")}
+                    className="flex size-6 shrink-0 items-center justify-center rounded-full bg-green text-white"
                     aria-hidden
                   >
-                    <ArrowRight className="size-4" />
+                    <Check className="size-3.5" strokeWidth={3} />
                   </span>
-                </div>
-                <span className="text-base font-semibold leading-tight tracking-tight text-heading">{plan.title}</span>
-                <span className="mt-1.5 text-xs leading-relaxed text-muted-2">{plan.subtitle}</span>
-                {features.length > 0 && (
-                  <ul className="mt-4 flex flex-col gap-1.5 border-t border-line pt-4">
-                    {features.map((f) => (
-                      <li key={f} className="flex items-center gap-2 text-xs text-body">
-                        <Check className="size-3.5 shrink-0 text-green" strokeWidth={2.5} />
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
+                ) : (
+                  <ChevronRight
+                    className={["size-4 shrink-0", isViewing ? "text-white" : "text-muted-2"].join(" ")}
+                    aria-hidden
+                  />
                 )}
               </button>
             )
           })}
         </div>
 
-        <aside className="relative flex flex-col overflow-hidden rounded-xl bg-green text-white">
-          <div className="relative h-28 overflow-hidden">
-            <img
-              src="/images/vaap-pakistan-landmarks.png"
-              alt=""
-              className="absolute inset-0 size-full object-cover opacity-25"
-            />
-            <div className="absolute inset-0 bg-gradient-to-br from-green/70 to-green-hover" aria-hidden />
-            <div className="relative flex h-full items-center gap-3 px-6">
-              <span className="h-8 w-px bg-gold" aria-hidden />
-              <p className="text-[11px] font-bold uppercase leading-relaxed tracking-[0.18em] text-white/95">
-                People.
-                <br />
-                Industry.
-                <br />
-                Innovation.
-              </p>
-            </div>
+        {/* Detail panel */}
+        {viewed && (
+          <div className="rounded-2xl border border-line bg-card p-6 lg:p-8">
+            <PlanDetailPanel plan={viewed} selected={viewed.id === selectedId} onChoose={() => choose(viewed.id)} />
           </div>
-          <div className="flex flex-1 flex-col p-6">
-            <h2 className="text-xl font-semibold leading-snug tracking-tight text-white">
-              Be Part of a Stronger Digital Pakistan
-            </h2>
-            <p className="mt-3 text-sm leading-relaxed text-white/80">
-              Join VAAP and contribute to a transparent, innovative and inclusive virtual asset ecosystem.
-            </p>
-            <ul className="mt-5 flex flex-col gap-3.5">
-              {PROMO_POINTS.map(({ icon: PIcon, label }) => (
-                <li key={label} className="flex items-center gap-3 text-sm font-medium text-white/90">
-                  <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-white/10 text-white">
-                    <PIcon className="size-4" strokeWidth={2} />
+        )}
+      </div>
+    </div>
+  )
+}
+
+function PlanDetailPanel({
+  plan,
+  selected,
+  onChoose,
+}: {
+  plan: ApplyPlan
+  selected: boolean
+  onChoose: () => void
+}) {
+  const Icon = iconFor(plan.icon)
+  const benefits = plan.benefits.length > 0 ? plan.benefits : featuresFor(plan.icon)
+
+  const fees: { label: string; value: string; note?: string; icon: LucideIcon }[] = []
+  if (plan.annualFee)
+    fees.push({ label: "Annual Fee", value: plan.annualFee, note: plan.annualFeeNote || undefined, icon: CalendarDays })
+  if (plan.admissionFee)
+    fees.push({
+      label: "Admission Fee (One-time)",
+      value: plan.admissionFee,
+      note: plan.admissionFeeNote || undefined,
+      icon: FilePlus2,
+    })
+  if (plan.term) fees.push({ label: "Membership Term", value: plan.term, icon: CalendarClock })
+
+  return (
+    <div>
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <div className="flex items-center gap-3">
+            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-green">{plan.title}</p>
+            <span className="hidden h-px w-10 bg-green/40 sm:block" aria-hidden />
+          </div>
+          <h2 className="mt-3 font-serif text-2xl font-bold leading-tight text-heading xl:text-3xl">{plan.subtitle}</h2>
+        </div>
+        <span className="hidden size-14 shrink-0 items-center justify-center rounded-full bg-mint text-green sm:flex">
+          <Icon className="size-7" aria-hidden />
+        </span>
+      </div>
+
+      {plan.description && <p className="mt-5 leading-relaxed text-body">{plan.description}</p>}
+
+      {fees.length > 0 && (
+        <div className="mt-6 grid gap-4 sm:grid-cols-3">
+          {fees.map((fee) => {
+            const FeeIcon = fee.icon
+            return (
+              <div key={fee.label} className="flex items-center gap-3 rounded-xl border border-line bg-muted/40 p-4">
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-mint text-green">
+                  <FeeIcon className="size-5" aria-hidden />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-medium leading-tight text-body">{fee.label}</p>
+                  <p className="font-serif text-lg font-bold leading-tight text-heading">{fee.value}</p>
+                  {fee.note && <p className="text-[11px] leading-tight text-muted-2">({fee.note})</p>}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      <div className="mt-8 grid gap-8 md:grid-cols-2">
+        {benefits.length > 0 && (
+          <div>
+            <h3 className="font-serif text-xl font-bold text-green">Key Benefits</h3>
+            <ul className="mt-4 space-y-3">
+              {benefits.map((benefit) => (
+                <li key={benefit} className="flex gap-3 text-sm leading-relaxed text-body">
+                  <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-green text-white">
+                    <Check className="size-3" aria-hidden />
                   </span>
-                  {label}
+                  <span>{benefit}</span>
                 </li>
               ))}
             </ul>
-            <div className="mt-auto border-t border-white/15 pt-5">
-              <p className="font-serif text-sm italic leading-relaxed text-white/90">
-                &ldquo;Together for a transparent and innovative digital Pakistan.&rdquo;
-              </p>
-            </div>
           </div>
-        </aside>
+        )}
+        {plan.eligibility.length > 0 && (
+          <div className="md:border-l md:border-line md:pl-8">
+            <h3 className="font-serif text-xl font-bold text-green">Eligibility Criteria</h3>
+            <ul className="mt-4 space-y-4">
+              {plan.eligibility.map((text, i) => {
+                const EligIcon = ELIGIBILITY_ICONS[i % ELIGIBILITY_ICONS.length]
+                return (
+                  <li key={text} className="flex items-center gap-3 text-sm leading-relaxed text-body">
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-mint text-green">
+                      <EligIcon className="size-5" aria-hidden />
+                    </span>
+                    <span>{text}</span>
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+        )}
+      </div>
+
+      <div className="mt-8 border-t border-line pt-6">
+        <button
+          type="button"
+          onClick={onChoose}
+          aria-pressed={selected}
+          className={[
+            "inline-flex w-full items-center justify-center gap-2 rounded-lg px-6 py-3 text-sm font-semibold transition-colors sm:w-auto",
+            selected
+              ? "bg-green/10 text-green ring-1 ring-green/30"
+              : "bg-green text-white hover:bg-green-hover",
+          ].join(" ")}
+        >
+          {selected ? (
+            <>
+              <Check className="size-4" strokeWidth={2.5} />
+              Selected
+            </>
+          ) : (
+            <>
+              Choose this membership
+              <ArrowRight className="size-4" />
+            </>
+          )}
+        </button>
       </div>
     </div>
   )
