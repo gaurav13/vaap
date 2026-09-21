@@ -9,10 +9,13 @@ import {
   referralClicks,
   commissionRules,
   notifications,
+  settings,
   user,
 } from "@/lib/db/schema"
 import { getSession } from "@/lib/session"
 import { canManageRewards } from "@/lib/permissions"
+import { getRewardPayout } from "@/lib/site-settings"
+import { evaluatePayoutThreshold } from "@/lib/referral-engine"
 import { and, desc, eq, inArray, sql } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 
@@ -86,7 +89,45 @@ export async function getRewardsQueue() {
   await requireRewardManager()
   const rewards = await db.select().from(rewardTransactions).orderBy(desc(rewardTransactions.createdAt)).limit(200)
   const payments = await db.select().from(rewardPayments).orderBy(desc(rewardPayments.createdAt)).limit(200)
-  return { rewards, payments }
+  const payout = await getRewardPayout()
+  return { rewards, payments, payout }
+}
+
+// Update the referral payout threshold — the collected amount a referrer must
+// reach before their rewards become eligible for payout.
+export async function savePayoutThreshold(threshold: number) {
+  const current = await requireRewardManager()
+  const value = Math.max(0, Math.round(Number(threshold) || 0))
+  const existing = await getRewardPayout()
+  const json = JSON.stringify({ ...existing, threshold: value })
+  await db
+    .insert(settings)
+    .values({ key: "rewardPayout", value: json })
+    .onConflictDoUpdate({ target: settings.key, set: { value: json, updatedAt: new Date() } })
+
+  await db.insert(notifications).values({
+    role: "admin",
+    type: "info",
+    title: "Payout threshold updated",
+    body: `${current.name ?? "An admin"} set the referral payout threshold to ${existing.currency} ${value.toLocaleString("en-PK")}.`,
+    link: "/admin/rewards",
+  })
+  revalidatePath("/admin/rewards")
+  return { ok: true as const }
+}
+
+// Admin override: release a referrer's collecting rewards to "eligible" now,
+// regardless of whether the threshold has been reached.
+export async function releaseCollectedRewards(input: { referrerUserId: string | null; partnerId: number | null }) {
+  await requireRewardManager()
+  const res = await evaluatePayoutThreshold({
+    referrerUserId: input.referrerUserId,
+    partnerId: input.partnerId,
+    force: true,
+  })
+  revalidatePath("/admin/rewards")
+  revalidatePath("/dashboard/referrals")
+  return { ok: true as const, released: res.released, count: res.count }
 }
 
 // Approve a reward that is eligible/under_review, moving it to `approved`.
