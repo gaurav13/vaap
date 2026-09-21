@@ -1329,60 +1329,79 @@ function StepPayment({
   form: FormState
   update: <K extends keyof FormState>(key: K, value: FormState[K]) => void
 }) {
+  const isCrypto = form.paymentMethod === "crypto"
+
+  const methodToggle = (
+    <div className="grid grid-cols-2 gap-2 rounded-lg border border-line p-1">
+      <button
+        type="button"
+        onClick={() => update("paymentMethod", "card")}
+        className={[
+          "inline-flex items-center justify-center gap-1.5 rounded-md px-2 py-2.5 text-xs font-semibold transition-colors sm:gap-2 sm:px-4 sm:text-sm",
+          form.paymentMethod === "card" ? "bg-green text-white" : "text-heading hover:bg-muted",
+        ].join(" ")}
+      >
+        <CreditCard className="size-4 shrink-0" />
+        <span className="sm:hidden">Card</span>
+        <span className="hidden sm:inline">Credit / Debit Card</span>
+      </button>
+      <button
+        type="button"
+        onClick={() => update("paymentMethod", "crypto")}
+        className={[
+          "inline-flex items-center justify-center gap-1.5 rounded-md px-2 py-2.5 text-xs font-semibold transition-colors sm:gap-2 sm:px-4 sm:text-sm",
+          form.paymentMethod === "crypto" ? "bg-green text-white" : "text-heading hover:bg-muted",
+        ].join(" ")}
+      >
+        <Bitcoin className="size-4 shrink-0" />
+        <span className="sm:hidden">Crypto</span>
+        <span className="hidden sm:inline">Crypto Payment</span>
+      </button>
+    </div>
+  )
+
+  const secureNote = (
+    <div className="mt-6 flex items-start gap-2 text-xs text-muted-2">
+      <Lock className="mt-0.5 size-4 shrink-0 text-green" />
+      <p>
+        <span className="font-semibold text-heading">Secure Payment.</span> Your payment information is encrypted and
+        never stored on our servers.
+      </p>
+    </div>
+  )
+
+  if (isCrypto) {
+    return (
+      <div>
+        <StepHeading title="Payment Method" description="Choose your preferred payment method." />
+        <div className="mx-auto max-w-3xl">
+          {methodToggle}
+          <CryptoPayment plan={plan} txid={form.txid} onTxid={(v) => update("txid", v)} />
+          {secureNote}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div>
       <StepHeading title="Payment Method" description="Choose your preferred payment method." />
       <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr] lg:gap-8">
         <div className="order-2 min-w-0 lg:order-1">
-          <div className="grid grid-cols-2 gap-2 rounded-lg border border-line p-1">
-            <button
-              type="button"
-              onClick={() => update("paymentMethod", "card")}
-              className={[
-                "inline-flex items-center justify-center gap-1.5 rounded-md px-2 py-2.5 text-xs font-semibold transition-colors sm:gap-2 sm:px-4 sm:text-sm",
-                form.paymentMethod === "card" ? "bg-green text-white" : "text-heading hover:bg-muted",
-              ].join(" ")}
-            >
-              <CreditCard className="size-4 shrink-0" />
-              <span className="sm:hidden">Card</span>
-              <span className="hidden sm:inline">Credit / Debit Card</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => update("paymentMethod", "crypto")}
-              className={[
-                "inline-flex items-center justify-center gap-1.5 rounded-md px-2 py-2.5 text-xs font-semibold transition-colors sm:gap-2 sm:px-4 sm:text-sm",
-                form.paymentMethod === "crypto" ? "bg-green text-white" : "text-heading hover:bg-muted",
-              ].join(" ")}
-            >
-              <Bitcoin className="size-4 shrink-0" />
-              <span className="sm:hidden">Crypto</span>
-              <span className="hidden sm:inline">Crypto Payment</span>
-            </button>
-          </div>
+          {methodToggle}
 
-          {form.paymentMethod === "card" ? (
-            <MembershipCardPayment
-              planId={plan.id}
-              name={form.fullName}
-              email={form.email}
-              paid={form.cardPaid}
-              onPaid={(sessionId) => {
-                update("stripeSessionId", sessionId)
-                update("cardPaid", true)
-              }}
-            />
-          ) : (
-            <CryptoPayment plan={plan} txid={form.txid} onTxid={(v) => update("txid", v)} />
-          )}
+          <MembershipCardPayment
+            planId={plan.id}
+            name={form.fullName}
+            email={form.email}
+            paid={form.cardPaid}
+            onPaid={(sessionId) => {
+              update("stripeSessionId", sessionId)
+              update("cardPaid", true)
+            }}
+          />
 
-          <div className="mt-6 flex items-start gap-2 text-xs text-muted-2">
-            <Lock className="mt-0.5 size-4 shrink-0 text-green" />
-            <p>
-              <span className="font-semibold text-heading">Secure Payment.</span> Your payment information is encrypted
-              and never stored on our servers.
-            </p>
-          </div>
+          {secureNote}
         </div>
 
         <aside className="order-1 h-fit rounded-xl border border-line bg-muted/30 p-5 lg:order-2 lg:sticky lg:top-6">
