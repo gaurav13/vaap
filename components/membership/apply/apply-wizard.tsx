@@ -16,8 +16,10 @@ import {
   Coins,
   Copy,
   CreditCard,
+  Eye,
   FilePlus2,
   FileText,
+  Gem,
   Globe,
   GraduationCap,
   Info,
@@ -29,6 +31,7 @@ import {
   Rocket,
   Settings,
   ShieldCheck,
+  ShoppingCart,
   Star,
   User,
   Users,
@@ -1332,31 +1335,38 @@ function StepPayment({
   const isCrypto = form.paymentMethod === "crypto"
 
   const methodToggle = (
-    <div className="grid grid-cols-2 gap-2 rounded-lg border border-line p-1">
-      <button
-        type="button"
+    <div className="grid gap-3 sm:grid-cols-2">
+      <PaymentMethodCard
+        active={!isCrypto}
         onClick={() => update("paymentMethod", "card")}
-        className={[
-          "inline-flex items-center justify-center gap-1.5 rounded-md px-2 py-2.5 text-xs font-semibold transition-colors sm:gap-2 sm:px-4 sm:text-sm",
-          form.paymentMethod === "card" ? "bg-green text-white" : "text-heading hover:bg-muted",
-        ].join(" ")}
-      >
-        <CreditCard className="size-4 shrink-0" />
-        <span className="sm:hidden">Card</span>
-        <span className="hidden sm:inline">Credit / Debit Card</span>
-      </button>
-      <button
-        type="button"
+        icon={CreditCard}
+        title="Credit / Debit Card"
+        desc="Pay securely with your card"
+      />
+      <PaymentMethodCard
+        active={isCrypto}
         onClick={() => update("paymentMethod", "crypto")}
-        className={[
-          "inline-flex items-center justify-center gap-1.5 rounded-md px-2 py-2.5 text-xs font-semibold transition-colors sm:gap-2 sm:px-4 sm:text-sm",
-          form.paymentMethod === "crypto" ? "bg-green text-white" : "text-heading hover:bg-muted",
-        ].join(" ")}
-      >
-        <Bitcoin className="size-4 shrink-0" />
-        <span className="sm:hidden">Crypto</span>
-        <span className="hidden sm:inline">Crypto Payment</span>
-      </button>
+        icon={Bitcoin}
+        title="Crypto Payment"
+        desc="Pay with USDT, XRP, BTC, ETH"
+      />
+    </div>
+  )
+
+  const paymentHeader = (
+    <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <div>
+        <h1 className="font-serif text-2xl font-bold text-heading lg:text-3xl">Payment Method</h1>
+        <p className="mt-1.5 text-sm text-muted-2">Choose your preferred method to complete your membership.</p>
+      </div>
+      <div className="flex items-center gap-2.5">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-green/10">
+          <Lock className="size-4 text-green" />
+        </span>
+        <p className="max-w-[13rem] text-xs leading-snug text-muted-2">
+          Your payment information is secure and encrypted.
+        </p>
+      </div>
     </div>
   )
 
@@ -1373,7 +1383,7 @@ function StepPayment({
   if (isCrypto) {
     return (
       <div>
-        <StepHeading title="Payment Method" description="Choose your preferred payment method." />
+        {paymentHeader}
         <div className="mx-auto max-w-3xl">
           {methodToggle}
           <CryptoPayment plan={plan} txid={form.txid} onTxid={(v) => update("txid", v)} />
@@ -1385,37 +1395,167 @@ function StepPayment({
 
   return (
     <div>
-      <StepHeading title="Payment Method" description="Choose your preferred payment method." />
-      <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr] lg:gap-8">
+      {paymentHeader}
+      <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr] lg:gap-8">
         <div className="order-2 min-w-0 lg:order-1">
           {methodToggle}
 
-          <MembershipCardPayment
-            planId={plan.id}
-            name={form.fullName}
-            email={form.email}
-            paid={form.cardPaid}
-            onPaid={(sessionId) => {
-              update("stripeSessionId", sessionId)
-              update("cardPaid", true)
-            }}
-          />
+          <div className="mt-6 rounded-xl border border-line bg-card p-5 sm:p-6">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 className="font-serif text-lg font-bold text-heading">Card Details</h2>
+                <p className="mt-1 text-sm text-muted-2">Enter your card information securely.</p>
+              </div>
+              <CardBrands />
+            </div>
 
-          {secureNote}
+            <MembershipCardPayment
+              planId={plan.id}
+              name={form.fullName}
+              email={form.email}
+              paid={form.cardPaid}
+              onPaid={(sessionId) => {
+                update("stripeSessionId", sessionId)
+                update("cardPaid", true)
+              }}
+            />
+          </div>
+
+          <div className="mt-5 flex flex-col gap-2 border-t border-line pt-4 text-xs text-muted-2 sm:flex-row sm:items-center sm:justify-between">
+            <span className="inline-flex items-center gap-1.5">
+              <ShieldCheck className="size-3.5 shrink-0 text-green" />
+              SSL Encrypted &middot; Powered by Stripe &middot; Your information is never shared
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <Lock className="size-3.5 shrink-0 text-green" />
+              Secure. Transparent. Stronger Together.
+            </span>
+          </div>
         </div>
 
-        <aside className="order-1 h-fit rounded-xl border border-line bg-muted/30 p-5 lg:order-2 lg:sticky lg:top-6">
-          <h2 className="font-serif text-base font-bold text-heading">Order Summary</h2>
-          <p className="mt-1 text-sm font-semibold text-green">{plan.title}</p>
-          <div className="mt-4 flex flex-col gap-3 border-t border-line pt-4">
-            <SummaryRow label="Admission Fee (one-time)" value={plan.admissionFee || "—"} />
-            <SummaryRow label="Annual Fee" value={plan.annualFee || "—"} />
+        <aside className="order-1 flex h-fit flex-col gap-4 lg:order-2 lg:sticky lg:top-6">
+          <div className="rounded-xl border border-line bg-muted/30 p-5">
+            <div className="flex items-center gap-2">
+              <ShoppingCart className="size-5 text-green" />
+              <h2 className="font-serif text-base font-bold text-heading">Order Summary</h2>
+            </div>
+            <p className="mt-2 text-sm font-semibold text-green">{plan.title}</p>
+            <div className="mt-4 flex flex-col gap-3 border-t border-line pt-4">
+              <SummaryRow label="Admission Fee (one-time)" value={plan.admissionFee || "—"} />
+              <SummaryRow label="Annual Fee" value={plan.annualFee || "—"} />
+            </div>
+            <div className="mt-4 border-t border-line pt-4">
+              <SummaryRow label="Total Amount" value={totalForPlan(plan)} strong />
+            </div>
           </div>
-          <div className="mt-4 border-t border-line pt-4">
-            <SummaryRow label="Total Amount" value={totalForPlan(plan)} strong />
+
+          <div className="flex items-start gap-3 rounded-xl border border-green/20 bg-mint/40 p-5">
+            <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full bg-green/10">
+              <Gem className="size-4 text-green" />
+            </span>
+            <div>
+              <p className="text-sm font-bold text-green">Join a Trusted Community</p>
+              <p className="mt-1 text-xs leading-relaxed text-body">
+                Support the growth of a regulated and transparent virtual asset industry in Pakistan.
+              </p>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-line bg-card p-5">
+            <h3 className="font-serif text-base font-bold text-heading">Why Join?</h3>
+            <ul className="mt-3 flex flex-col gap-2.5">
+              <WhyJoinItem>Be part of Pakistan&apos;s official industry body</WhyJoinItem>
+              <WhyJoinItem>Network with industry leaders &amp; innovators</WhyJoinItem>
+              <WhyJoinItem>Access to exclusive events and resources</WhyJoinItem>
+              <WhyJoinItem>Support a safe and compliant ecosystem</WhyJoinItem>
+            </ul>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2 rounded-xl border border-line bg-card p-5 text-center">
+            <TrustItem icon={ShieldCheck} label="Secure Payments" />
+            <TrustItem icon={Eye} label="Your Data is Protected" />
+            <TrustItem icon={Users} label="Trusted Community" />
           </div>
         </aside>
       </div>
+    </div>
+  )
+}
+
+function PaymentMethodCard({
+  active,
+  onClick,
+  icon: Icon,
+  title,
+  desc,
+}: {
+  active: boolean
+  onClick: () => void
+  icon: LucideIcon
+  title: string
+  desc: string
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={[
+        "flex items-center gap-3 rounded-xl border p-4 text-left transition-colors",
+        active
+          ? "border-green bg-green text-white"
+          : "border-line bg-card hover:border-green/40 hover:bg-muted/40",
+      ].join(" ")}
+    >
+      <span
+        className={[
+          "flex size-11 shrink-0 items-center justify-center rounded-full",
+          active ? "bg-white/15 text-white" : "bg-green/10 text-green",
+        ].join(" ")}
+      >
+        <Icon className="size-5" />
+      </span>
+      <div className="min-w-0">
+        <p className={active ? "text-sm font-bold text-white" : "text-sm font-bold text-heading"}>{title}</p>
+        <p className={active ? "text-xs text-white/80" : "text-xs text-muted-2"}>{desc}</p>
+      </div>
+    </button>
+  )
+}
+
+function CardBrands() {
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      {["VISA", "Mastercard", "AMEX", "JCB"].map((brand) => (
+        <span
+          key={brand}
+          className="rounded-md border border-line bg-muted/50 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-muted-2"
+        >
+          {brand}
+        </span>
+      ))}
+    </div>
+  )
+}
+
+function WhyJoinItem({ children }: { children: React.ReactNode }) {
+  return (
+    <li className="flex items-start gap-2.5 text-sm text-body">
+      <span className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full bg-green/10">
+        <Check className="size-3 text-green" strokeWidth={3} />
+      </span>
+      {children}
+    </li>
+  )
+}
+
+function TrustItem({ icon: Icon, label }: { icon: LucideIcon; label: string }) {
+  return (
+    <div className="flex flex-col items-center gap-1.5">
+      <span className="flex size-9 items-center justify-center rounded-full bg-green/10">
+        <Icon className="size-4 text-green" />
+      </span>
+      <span className="text-[11px] font-medium leading-tight text-muted-2">{label}</span>
     </div>
   )
 }
