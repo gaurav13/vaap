@@ -38,24 +38,32 @@ const FEATURES = [
 
 export function ComingSoon() {
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex min-h-screen flex-col bg-background md:h-dvh md:min-h-0 md:overflow-hidden">
       {/* Thin gold accent line across the very top for an editorial feel */}
       <span className="h-[3px] w-full shrink-0" style={{ backgroundColor: GOLD }} aria-hidden />
 
       <div className="flex min-h-0 flex-1 flex-col md:grid md:grid-cols-[1.05fr_0.95fr]">
         {/* Left: content */}
-        <div className="relative flex min-h-0 flex-col px-5 py-6 sm:px-10 md:py-8 lg:px-16">
-        <header className="flex items-center gap-3">
-          <VaapLogo height={52} className="sm:hidden" />
-          <VaapLogo height={84} className="hidden sm:inline-flex" />
-        </header>
+        <div
+          className="relative flex min-h-0 flex-col md:overflow-hidden"
+          style={{ padding: "clamp(1.25rem, 2.4vw, 2.75rem) clamp(1.25rem, 3.4vw, 4rem)" }}
+        >
+          <header className="flex shrink-0 items-center">
+            <VaapLogo height={48} className="sm:hidden" />
+            <span className="hidden sm:inline-flex" style={{ height: "clamp(56px, 5.2vw, 84px)" }}>
+              <VaapLogo height={84} className="h-full w-auto" />
+            </span>
+          </header>
 
-          <div className="flex min-h-0 flex-1 flex-col justify-start py-8 md:justify-center md:py-4">
-            <div className="flex max-w-2xl items-start gap-6 lg:gap-8">
+          <div className="flex min-h-0 flex-1 flex-col justify-start md:justify-center">
+            <div
+              className="flex max-w-2xl items-start"
+              style={{ gap: "clamp(1rem, 1.6vw, 2rem)", paddingTop: "clamp(1rem, 2vw, 0px)" }}
+            >
               {/* Far-left stacked eyebrow with gold vertical rule */}
-              <div className="hidden shrink-0 items-stretch gap-3 pt-2 md:flex">
+              <div className="hidden shrink-0 items-stretch gap-3 pt-1 md:flex">
                 <span className="w-px self-stretch" style={{ backgroundColor: GOLD }} aria-hidden />
-                <span className="text-xs font-semibold uppercase leading-relaxed tracking-[0.25em] text-heading">
+                <span className="text-[0.7rem] font-semibold uppercase leading-relaxed tracking-[0.25em] text-heading">
                   People.
                   <br />
                   Industry.
@@ -72,39 +80,56 @@ export function ComingSoon() {
                   <span className="h-px flex-1 max-w-[80px]" style={{ backgroundColor: GOLD }} aria-hidden />
                 </div>
 
-                <h1 className="mt-4 font-serif text-[3.5rem] font-medium leading-[0.9] tracking-tight text-balance sm:text-[4.25rem] lg:text-[5rem]">
+                <h1
+                  className="font-serif font-medium leading-[0.9] tracking-tight text-balance"
+                  style={{ marginTop: "clamp(0.75rem, 1.4vw, 1.25rem)", fontSize: "clamp(2.75rem, 4.6vw, 5rem)" }}
+                >
                   <span className="block text-heading">Launching</span>
                   <span className="block" style={{ color: GOLD }}>
                     Soon
                   </span>
                 </h1>
 
-                <p className="mt-6 max-w-md text-base leading-relaxed text-body text-pretty lg:text-lg">
+                <p
+                  className="max-w-md leading-relaxed text-body text-pretty"
+                  style={{ marginTop: "clamp(1rem, 1.6vw, 1.5rem)", fontSize: "clamp(0.95rem, 1vw, 1.125rem)" }}
+                >
                   A unified platform for a transparent, innovative and inclusive virtual asset and blockchain ecosystem
                   in Pakistan.
                 </p>
 
-                <div className="mt-7">
+                <div style={{ marginTop: "clamp(1.25rem, 1.8vw, 1.75rem)" }}>
                   <Link
                     href="/membership/apply"
-                    className="group inline-flex w-full items-center justify-center gap-3 rounded-full bg-green px-8 py-4 text-sm font-semibold text-white shadow-lg shadow-green/25 ring-1 ring-inset ring-white/10 transition hover:shadow-xl hover:shadow-green/30 hover:brightness-110 sm:w-auto lg:text-base"
+                    className="group inline-flex w-full items-center justify-center gap-3 rounded-full bg-green px-8 py-3.5 text-sm font-semibold text-white shadow-lg shadow-green/25 ring-1 ring-inset ring-white/10 transition hover:shadow-xl hover:shadow-green/30 hover:brightness-110 sm:w-auto lg:text-base"
                   >
                     <UserPlus className="size-5" aria-hidden />
                     Pre-Register for Membership
                     <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" aria-hidden />
                   </Link>
-                  <p className="mt-3.5 text-sm text-muted-2 text-pretty">
+                  <p className="mt-3 text-sm text-muted-2 text-pretty">
                     Be the first to join. Get updates on our launch, membership and events.
                   </p>
                 </div>
 
-                <ul className="mt-9 grid grid-cols-2 gap-x-4 gap-y-6 border-t border-line pt-7 lg:grid-cols-4 lg:gap-x-0 lg:divide-x lg:divide-line md:mt-7">
+                <ul
+                  className="grid grid-cols-2 border-t border-line lg:grid-cols-4 lg:gap-x-0 lg:divide-x lg:divide-line"
+                  style={{
+                    marginTop: "clamp(1.5rem, 2.4vw, 2.25rem)",
+                    paddingTop: "clamp(1.25rem, 1.8vw, 1.75rem)",
+                    columnGap: "1rem",
+                    rowGap: "clamp(1rem, 1.6vw, 1.5rem)",
+                  }}
+                >
                   {FEATURES.map(({ icon: Icon, label }) => (
-                    <li key={label} className="flex flex-col items-center gap-2.5 px-2 text-center lg:px-4">
-                      <span className="flex size-11 items-center justify-center rounded-full bg-mint ring-1 ring-green/10">
+                    <li key={label} className="flex flex-col items-center gap-2 px-2 text-center lg:px-4">
+                      <span
+                        className="flex items-center justify-center rounded-full bg-mint ring-1 ring-green/10"
+                        style={{ width: "clamp(2.25rem, 2.6vw, 2.75rem)", height: "clamp(2.25rem, 2.6vw, 2.75rem)" }}
+                      >
                         <Icon className="size-5 text-green" aria-hidden />
                       </span>
-                      <span className="whitespace-pre-line text-[0.7rem] font-semibold uppercase leading-snug tracking-[0.12em] text-heading">
+                      <span className="whitespace-pre-line text-[0.68rem] font-semibold uppercase leading-snug tracking-[0.12em] text-heading">
                         {label}
                       </span>
                     </li>
@@ -115,29 +140,29 @@ export function ComingSoon() {
           </div>
         </div>
 
-        {/* Right: imagery */}
-        <div className="relative order-first h-64 overflow-hidden bg-mint sm:h-80 md:order-none md:h-auto md:min-h-full">
+        {/* Right: imagery (dark mood) */}
+        <div className="relative order-first h-64 overflow-hidden bg-[#0a1f18] sm:h-80 md:order-none md:h-auto md:min-h-full">
           <Image
-            src="/images/vaap-launch-islamabad.png"
-            alt="Faisal Mosque, Minar-e-Pakistan and the mountains under a crescent moon, rendered in green"
+            src="/images/vaap-launch-islamabad-dark.png"
+            alt="Faisal Mosque and the Margalla Hills at night, rendered in a dark green mood with subtle blockchain network graphics in the sky"
             fill
             priority
             sizes="(max-width: 768px) 100vw, 48vw"
             className="object-cover"
           />
-          {/* Subtle wash to soften the top-left where the panel meets the content column */}
+          {/* Dark wash to deepen the mood and keep overlay text readable */}
           <div
             className="absolute inset-0"
             style={{
               background:
-                "linear-gradient(120deg, rgba(244,247,244,0.55) 0%, rgba(244,247,244,0.05) 32%, rgba(6,46,33,0) 70%)",
+                "linear-gradient(120deg, rgba(6,20,15,0.72) 0%, rgba(6,20,15,0.28) 34%, rgba(6,20,15,0.15) 62%, rgba(6,20,15,0.45) 100%)",
             }}
             aria-hidden
           />
 
-          <div className="absolute left-5 top-6 sm:left-10 sm:top-8">
+          <div className="absolute left-5 top-6 sm:left-8 sm:top-8">
             <div className="flex flex-col gap-2">
-              <span className="text-xs font-semibold uppercase leading-relaxed tracking-[0.35em] text-green sm:text-sm">
+              <span className="text-xs font-semibold uppercase leading-relaxed tracking-[0.35em] text-white sm:text-sm">
                 Blockchain
                 <br />
                 For a Brighter
@@ -150,12 +175,12 @@ export function ComingSoon() {
 
           {/* Decorative gold-edged green diagonal wedge in the bottom-right corner */}
           <div
-            className="pointer-events-none absolute bottom-0 right-0 h-56 w-72 sm:h-72 sm:w-96"
+            className="pointer-events-none absolute bottom-0 right-0 h-48 w-64 sm:h-64 sm:w-80"
             style={{ clipPath: "polygon(100% 0, 100% 100%, 0 100%)", backgroundColor: GOLD }}
             aria-hidden
           />
           <div
-            className="pointer-events-none absolute bottom-0 right-0 h-56 w-72 sm:h-72 sm:w-96"
+            className="pointer-events-none absolute bottom-0 right-0 h-48 w-64 sm:h-64 sm:w-80"
             style={{
               clipPath: "polygon(100% 6%, 100% 100%, 8% 100%)",
               backgroundColor: "#0d3b2a",
@@ -178,12 +203,15 @@ export function ComingSoon() {
       </div>
 
       {/* Footer */}
-      <footer className="shrink-0 border-t border-line px-5 py-5 sm:px-10 lg:px-16">
-        <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
-          <p className="order-2 text-center text-xs text-muted-2 sm:order-1 sm:text-left sm:text-sm">
+      <footer
+        className="shrink-0 border-t border-line"
+        style={{ padding: "clamp(0.75rem, 1.2vw, 1.25rem) clamp(1.25rem, 3.4vw, 4rem)" }}
+      >
+        <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
+          <p className="order-2 text-center text-xs text-muted-2 sm:order-1 sm:text-left">
             © {new Date().getFullYear()} Virtual Assets Association of Pakistan (VAAP). All rights reserved.
           </p>
-          <div className="order-1 flex flex-col items-center gap-4 sm:order-2 sm:flex-row sm:gap-6">
+          <div className="order-1 flex flex-col items-center gap-3 sm:order-2 sm:flex-row sm:gap-6">
             <div className="flex items-center gap-5 text-heading sm:gap-4">
               <Link href="#" aria-label="LinkedIn" className="transition hover:text-green">
                 <LinkedinIcon className="size-5" />
