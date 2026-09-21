@@ -75,12 +75,14 @@ export function SiteHeader({
   user = null,
   nav = NAV,
   newsAlert = null,
+  launchMinimal = false,
 }: {
   variant?: "overlay" | "solid"
   active?: string
   user?: HeaderUser
   nav?: NavItem[]
   newsAlert?: NewsAlert | null
+  launchMinimal?: boolean
 }) {
   const [open, setOpen] = useState(false)
   const overlay = variant === "overlay"
@@ -100,6 +102,7 @@ export function SiteHeader({
           <span className="sr-only">VAAP Home</span>
         </Link>
 
+        {!launchMinimal && (
         <nav className="hidden items-center gap-6 xl:flex">
           {nav.map((item) => {
             const isActive = active === item.label
@@ -151,8 +154,10 @@ export function SiteHeader({
             )
           })}
         </nav>
+        )}
 
         <div className="flex items-center gap-2.5">
+          {!launchMinimal && (
           <button
             type="button"
             aria-label="Search"
@@ -163,6 +168,7 @@ export function SiteHeader({
           >
             <Search className="size-5" />
           </button>
+          )}
 
           {user ? (
             <UserMenu user={user} overlay={overlay} />
@@ -180,7 +186,7 @@ export function SiteHeader({
                 Member Login
               </Link>
               <Link
-                href="/membership"
+                href={launchMinimal ? "/membership/apply" : "/membership"}
                 className="hidden rounded-lg bg-green px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-green-hover sm:inline-flex"
               >
                 Join VAAP
@@ -188,6 +194,7 @@ export function SiteHeader({
             </>
           )}
 
+          {!launchMinimal && (
           <button
             type="button"
             aria-label="Toggle menu"
@@ -199,10 +206,11 @@ export function SiteHeader({
           >
             {open ? <X className="size-6" /> : <Menu className="size-6" />}
           </button>
+          )}
         </div>
       </div>
 
-      {open && (
+      {open && !launchMinimal && (
         <div className="mx-4 mb-2 rounded-xl border border-line bg-background p-4 shadow-lg xl:hidden">
           <nav className="flex flex-col">
             {nav.map((item) => (
