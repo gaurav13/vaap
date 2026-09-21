@@ -39,59 +39,72 @@ const FEATURES = [
 export function ComingSoon() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
+      {/* Thin gold accent line across the very top for an editorial feel */}
+      <span className="h-[3px] w-full shrink-0" style={{ backgroundColor: GOLD }} aria-hidden />
+
       <div className="grid flex-1 lg:grid-cols-[1.05fr_0.95fr]">
         {/* Left: content */}
-        <div className="relative flex flex-col px-6 py-8 sm:px-10 lg:px-16 lg:py-12">
-          <header className="flex items-center justify-between">
-            <VaapLogo height={44} />
-            <nav aria-label="Language" className="flex items-center gap-3 text-sm">
-              <span className="font-medium text-heading">EN</span>
-              <span className="text-line">|</span>
-              <span className="text-muted-2">日本語</span>
-              <span className="text-line">|</span>
-              <span className="text-muted-2">اردو</span>
+        <div className="relative flex flex-col px-6 py-8 sm:px-10 lg:px-16 lg:py-10">
+          <header className="flex items-center justify-between gap-4">
+            <VaapLogo height={46} />
+            <nav aria-label="Language" className="flex items-center gap-1 text-sm">
+              <span className="rounded-full bg-mint px-3 py-1 font-semibold text-green">EN</span>
+              <button
+                type="button"
+                className="rounded-full px-3 py-1 text-muted-2 transition hover:text-heading"
+              >
+                日本語
+              </button>
+              <button
+                type="button"
+                className="rounded-full px-3 py-1 text-muted-2 transition hover:text-heading"
+              >
+                اردو
+              </button>
             </nav>
           </header>
 
-          <div className="flex flex-1 flex-col justify-center py-12 lg:py-0">
+          <div className="flex flex-1 flex-col justify-center py-12 lg:py-6">
             <div className="max-w-xl">
               <div className="flex items-center gap-4">
-                <span className="text-sm font-semibold uppercase tracking-[0.35em] text-green">
+                <span className="text-xs font-semibold uppercase tracking-[0.4em] text-green">
                   Our Platform Is
                 </span>
-                <span className="h-px w-16" style={{ backgroundColor: GOLD }} aria-hidden />
+                <span className="h-px flex-1 max-w-[80px]" style={{ backgroundColor: GOLD }} aria-hidden />
               </div>
 
-              <h1 className="mt-4 font-serif text-5xl leading-[1.05] tracking-tight text-heading text-balance sm:text-6xl lg:text-7xl">
-                Launching Soon
+              <h1 className="mt-5 font-serif text-[3.25rem] leading-[0.98] tracking-tight text-heading text-balance sm:text-6xl lg:text-[5rem]">
+                Launching
+                <br />
+                Soon
               </h1>
 
-              <p className="mt-6 text-lg leading-relaxed text-body text-pretty">
+              <p className="mt-7 max-w-md text-lg leading-relaxed text-body text-pretty">
                 A unified platform for a transparent, innovative and inclusive virtual asset and blockchain ecosystem in
                 Pakistan.
               </p>
 
-              <div className="mt-8">
+              <div className="mt-9">
                 <Link
-                  href="/sign-up"
-                  className="inline-flex items-center gap-3 rounded-full bg-green px-8 py-4 text-base font-semibold text-white shadow-lg shadow-green/20 transition hover:brightness-110"
+                  href="/membership/apply"
+                  className="group inline-flex items-center gap-3 rounded-full bg-green px-8 py-4 text-base font-semibold text-white shadow-lg shadow-green/25 ring-1 ring-inset ring-white/10 transition hover:shadow-xl hover:shadow-green/30 hover:brightness-110"
                 >
                   <UserPlus className="size-5" aria-hidden />
                   Pre-Register for Membership
-                  <ArrowRight className="size-5" aria-hidden />
+                  <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" aria-hidden />
                 </Link>
-                <p className="mt-3 text-sm text-muted-2">
+                <p className="mt-4 text-sm text-muted-2">
                   Be the first to join. Get updates on our launch, membership and events.
                 </p>
               </div>
 
-              <ul className="mt-12 grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-4 sm:divide-x sm:divide-line">
+              <ul className="mt-14 grid grid-cols-2 gap-x-2 gap-y-9 sm:grid-cols-4 sm:divide-x sm:divide-line">
                 {FEATURES.map(({ icon: Icon, label }) => (
-                  <li key={label} className="flex flex-col items-center gap-3 px-2 text-center sm:px-4">
-                    <span className="flex size-12 items-center justify-center rounded-full bg-mint">
+                  <li key={label} className="flex flex-col items-center gap-3 px-2 text-center sm:px-3">
+                    <span className="flex size-12 items-center justify-center rounded-full bg-mint ring-1 ring-green/10">
                       <Icon className="size-6 text-green" aria-hidden />
                     </span>
-                    <span className="whitespace-pre-line text-xs font-semibold uppercase tracking-wider text-heading">
+                    <span className="whitespace-pre-line text-[0.7rem] font-semibold uppercase leading-snug tracking-[0.12em] text-heading">
                       {label}
                     </span>
                   </li>
@@ -99,16 +112,10 @@ export function ComingSoon() {
               </ul>
             </div>
           </div>
-
-          <span
-            className="pointer-events-none absolute left-0 top-1/3 hidden h-24 w-1 lg:block"
-            style={{ backgroundColor: GOLD }}
-            aria-hidden
-          />
         </div>
 
         {/* Right: imagery */}
-        <div className="relative min-h-[320px] overflow-hidden lg:min-h-full">
+        <div className="relative min-h-[340px] overflow-hidden lg:min-h-full">
           <Image
             src="/images/hero-islamabad.png"
             alt="Faisal Mosque and Pakistan's skyline representing a stronger digital Pakistan"
@@ -117,14 +124,19 @@ export function ComingSoon() {
             sizes="(max-width: 1024px) 100vw, 48vw"
             className="object-cover"
           />
+          {/* Legibility gradient — darker at the corners where text sits */}
           <div
             className="absolute inset-0"
-            style={{ background: "linear-gradient(135deg, rgba(6,46,33,0.35) 0%, rgba(6,46,33,0.05) 45%, rgba(6,46,33,0.55) 100%)" }}
+            style={{
+              background:
+                "linear-gradient(135deg, rgba(6,46,33,0.55) 0%, rgba(6,46,33,0.10) 40%, rgba(6,46,33,0.15) 60%, rgba(6,46,33,0.62) 100%)",
+            }}
             aria-hidden
           />
+
           <div className="absolute left-6 top-8 sm:left-10">
             <div className="flex flex-col gap-2">
-              <span className="text-sm font-semibold uppercase tracking-[0.35em] text-white drop-shadow">
+              <span className="text-sm font-semibold uppercase leading-relaxed tracking-[0.35em] text-white drop-shadow-md">
                 Blockchain
                 <br />
                 For a Brighter
@@ -134,15 +146,16 @@ export function ComingSoon() {
               <span className="h-px w-12" style={{ backgroundColor: GOLD }} aria-hidden />
             </div>
           </div>
-          <div className="absolute bottom-8 right-6 text-right sm:right-10">
-            <span className="text-sm font-semibold uppercase leading-relaxed tracking-[0.3em] text-white drop-shadow">
+
+          <div className="absolute bottom-8 right-6 flex flex-col items-end text-right sm:right-10">
+            <span className="text-sm font-semibold uppercase leading-relaxed tracking-[0.3em] text-white drop-shadow-md">
               Trust.
               <br />
               Collaboration.
               <br />
               Opportunity.
             </span>
-            <span className="mt-2 block h-px w-12 self-end justify-self-end" style={{ backgroundColor: GOLD, marginLeft: "auto" }} aria-hidden />
+            <span className="mt-2 block h-px w-12" style={{ backgroundColor: GOLD }} aria-hidden />
           </div>
         </div>
       </div>

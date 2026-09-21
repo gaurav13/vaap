@@ -9,7 +9,7 @@ import './globals.css'
 
 // Paths that stay reachable even while the site is in "Coming Soon" mode, so
 // admins can sign in and manage the launch toggle.
-const EXEMPT_PREFIXES = ['/admin', '/dashboard', '/sign-in', '/sign-up', '/forgot-password', '/reset-password', '/api']
+const EXEMPT_PREFIXES = ['/admin', '/dashboard', '/sign-in', '/sign-up', '/forgot-password', '/reset-password', '/api', '/membership/apply']
 
 async function isComingSoonGated(pathname: string): Promise<boolean> {
   const exempt = EXEMPT_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))
