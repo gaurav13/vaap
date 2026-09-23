@@ -34,8 +34,11 @@ for (const [key, value] of Object.entries(fromFiles)) {
 }
 
 async function seed() {
-  const email = (process.env.ADMIN_EMAIL?.trim() || DEFAULT_ADMIN_EMAIL).toLowerCase()
-  const password = process.env.ADMIN_PASSWORD || DEFAULT_ADMIN_PASSWORD
+  const explicitEmail = process.env.ADMIN_EMAIL?.trim() ?? ""
+  const explicitPassword = process.env.ADMIN_PASSWORD ?? ""
+  const explicit = explicitEmail.length > 0 && explicitPassword.length > 0
+  const email = (explicitEmail || DEFAULT_ADMIN_EMAIL).toLowerCase()
+  const password = explicitPassword || DEFAULT_ADMIN_PASSWORD
 
   if (password.length < 8) {
     throw new Error("ADMIN_PASSWORD must be at least 8 characters.")
@@ -46,57 +49,78 @@ async function seed() {
 
   const { db, pool } = await import("../lib/db")
   const { account, user } = await import("../lib/db/schema")
-  const { eq, sql } = await import("drizzle-orm")
+  const { and, eq, sql } = await import("drizzle-orm")
 
   try {
-    const [existingAdmin] = await db
-      .select({ id: user.id })
-      .from(user)
-      .where(eq(user.role, "admin"))
-      .limit(1)
-
-    if (existingAdmin) {
-      console.log("A super admin already exists. Skipping admin seed.")
-      return
-    }
-
     const [existingEmail] = await db
       .select({ id: user.id })
       .from(user)
       .where(sql`lower(${user.email}) = ${email}`)
       .limit(1)
 
-    if (existingEmail) {
-      console.log(`A user with ${email} already exists. Skipping admin seed.`)
-      return
+    // Fallback credentials only bootstrap the first admin. An explicit
+    // ADMIN_EMAIL and ADMIN_PASSWORD always create or update that user.
+    if (!explicit) {
+      const [existingAdmin] = await db
+        .select({ id: user.id })
+        .from(user)
+        .where(eq(user.role, "admin"))
+        .limit(1)
+
+      if (existingAdmin) {
+        console.log("A super admin already exists. Skipping admin seed.")
+        return
+      }
+      if (existingEmail) {
+        console.log(`A user with ${email} already exists. Skipping admin seed.`)
+        return
+      }
     }
 
     const hash = await hashPassword(password)
-    const userId = randomUUID()
     const now = new Date()
+    let userId = existingEmail?.id
 
-    await db.insert(user).values({
-      id: userId,
-      name: "Super Admin",
-      email,
-      emailVerified: true,
-      // Schema super-admin role. Permissions check role === "admin".
-      role: "admin",
-      createdAt: now,
-      updatedAt: now,
-    })
+    if (userId) {
+      await db
+        .update(user)
+        .set({ role: "admin", emailVerified: true, updatedAt: now })
+        .where(eq(user.id, userId))
+    } else {
+      userId = randomUUID()
+      await db.insert(user).values({
+        id: userId,
+        name: "Super Admin",
+        email,
+        emailVerified: true,
+        // Schema super-admin role. Permissions check role === "admin".
+        role: "admin",
+        createdAt: now,
+        updatedAt: now,
+      })
+    }
 
-    await db.insert(account).values({
-      id: randomUUID(),
-      accountId: userId,
-      providerId: "credential",
-      userId,
-      password: hash,
-      createdAt: now,
-      updatedAt: now,
-    })
+    const [credential] = await db
+      .select({ id: account.id })
+      .from(account)
+      .where(and(eq(account.userId, userId), eq(account.providerId, "credential")))
+      .limit(1)
 
-    console.log(`Created super admin ${email}.`)
+    if (credential) {
+      await db.update(account).set({ password: hash, updatedAt: now }).where(eq(account.id, credential.id))
+    } else {
+      await db.insert(account).values({
+        id: randomUUID(),
+        accountId: userId,
+        providerId: "credential",
+        userId,
+        password: hash,
+        createdAt: now,
+        updatedAt: now,
+      })
+    }
+
+    console.log(`${existingEmail ? "Updated" : "Created"} super admin ${email}.`)
   } finally {
     await pool.end()
   }
