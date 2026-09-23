@@ -51,18 +51,27 @@ type SendEmailArgs = {
  */
 export async function sendEmail({ to, subject, html, text }: SendEmailArgs): Promise<boolean> {
   const tx = getTransporter()
-  if (!tx) return false
+  if (!tx) {
+    console.error("[v0] Email is not configured: missing GMAIL_USER or Gmail app password")
+    return false
+  }
 
-  await tx.sendMail({
-    from: `"${EMAIL_FROM_NAME}" <${EMAIL_FROM}>`,
-    // Replies always route to the official support mailbox.
-    replyTo: EMAIL_FROM,
-    to,
-    subject,
-    html,
-    text,
-  })
-  return true
+  try {
+    await tx.sendMail({
+      from: `"${EMAIL_FROM_NAME}" <${EMAIL_FROM}>`,
+      // Replies always route to the official support mailbox.
+      replyTo: EMAIL_FROM,
+      to,
+      subject,
+      html,
+      text,
+    })
+    return true
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    console.error(`[v0] Email delivery failed for ${to}: ${message}`)
+    throw error
+  }
 }
 
 /** The address every VAAP email is sent from. */
