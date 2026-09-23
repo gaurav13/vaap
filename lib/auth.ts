@@ -3,6 +3,18 @@ import { pool } from "@/lib/db"
 import { sendEmail, passwordResetEmail, brandedEmail } from "@/lib/mailer"
 import { notify } from "@/lib/notifications"
 
+const configuredOrigins = [
+  process.env.BETTER_AUTH_URL,
+  process.env.V0_RUNTIME_URL,
+  process.env.V0_DEV_APP_URL,
+  process.env.V0_BUILD_URL,
+  process.env.V0_SANDBOX_URL,
+  process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined,
+  process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : undefined,
+].filter((origin): origin is string => Boolean(origin))
+
 export const auth = betterAuth({
   database: pool,
   baseURL:
@@ -120,25 +132,11 @@ export const auth = betterAuth({
       },
     },
   },
-  trustedOrigins: [
-    ...(process.env.NODE_ENV === "development"
-      ? [
-          "http://localhost:3000",
-          ...(process.env.V0_RUNTIME_URL ? [process.env.V0_RUNTIME_URL] : []),
-          ...(process.env.V0_DEV_APP_URL ? [process.env.V0_DEV_APP_URL] : []),
-          ...(process.env.V0_BUILD_URL ? [process.env.V0_BUILD_URL] : []),
-          ...(process.env.V0_SANDBOX_URL ? [process.env.V0_SANDBOX_URL] : []),
-        ]
-      : []),
-    ...(process.env.NODE_ENV === "production"
-      ? [
-          ...(process.env.VERCEL_URL ? [`https://${process.env.VERCEL_URL}`] : []),
-          ...(process.env.VERCEL_PROJECT_PRODUCTION_URL
-            ? [`https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`]
-            : []),
-        ]
-      : []),
-  ],
+  // The preview runtime can use different exact hostnames depending on whether
+  // the request comes from the v0 iframe, the build URL, or the sandbox URL.
+  // Keep all platform-provided exact origins trusted regardless of NODE_ENV;
+  // NODE_ENV is not reliable in the v0 preview runtime.
+  trustedOrigins: ["http://localhost:3000", ...configuredOrigins],
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 days
     updateAge: 60 * 60 * 24, // 1 day
