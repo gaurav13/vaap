@@ -11,7 +11,10 @@ const GMAIL_APP_PASSWORD = (process.env.GMAIL_SMTP_PASSWORD || process.env.GMAIL
 // EMAIL_FROM, but defaults to the association's support mailbox. Note: Gmail
 // SMTP only lets you send "From" this address if it is the authenticated
 // GMAIL_USER or a verified "Send mail as" alias on that account.
-const EMAIL_FROM = process.env.EMAIL_FROM || "support@vaap.org.pk"
+// Gmail rejects a From address that is not the authenticated account (or a
+// verified alias). Prefer an explicitly configured sender, then the Gmail
+// account, and only use the support address as a final fallback.
+const EMAIL_FROM = process.env.EMAIL_FROM || GMAIL_USER || "support@vaap.org.pk"
 const EMAIL_FROM_NAME = "Virtual Assets Association of Pakistan"
 
 let transporter: Transporter | null = null
