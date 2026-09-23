@@ -13,6 +13,10 @@ const configuredOrigins = [
   process.env.VERCEL_PROJECT_PRODUCTION_URL
     ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
     : undefined,
+  // Production custom domains are not always exposed through Vercel's runtime
+  // variables, but they still send auth requests with these exact origins.
+  "https://vaap.org.pk",
+  "https://www.vaap.org.pk",
 ].filter((origin): origin is string => Boolean(origin))
 
 export const auth = betterAuth({
@@ -23,7 +27,7 @@ export const auth = betterAuth({
       ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
       : process.env.VERCEL_URL
         ? `https://${process.env.VERCEL_URL}`
-        : process.env.V0_RUNTIME_URL),
+        : process.env.V0_RUNTIME_URL ?? "https://vaap.org.pk"),
   emailAndPassword: {
     enabled: true,
     autoSignIn: true,
