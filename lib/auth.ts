@@ -3,6 +3,29 @@ import { pool } from "@/lib/db"
 import { sendEmail, passwordResetEmail, brandedEmail } from "@/lib/mailer"
 import { notify } from "@/lib/notifications"
 
+const configuredOrigins = [
+  process.env.BETTER_AUTH_URL,
+  process.env.V0_RUNTIME_URL,
+  process.env.V0_DEV_APP_URL,
+  process.env.V0_BUILD_URL,
+  process.env.V0_SANDBOX_URL,
+  process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined,
+  process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : undefined,
+].filter((origin): origin is string => Boolean(origin))
+
+// v0 serves each published version of this preview from a versioned alias
+// (e.g. https://v0-hinza-1536-65b0f441-3.v0.build) while the environment only
+// exposes the canonical, un-suffixed URL (…-65b0f441.v0.build). Derive a
+// project-scoped wildcard from each v0 origin so every versioned alias of THIS
+// exact preview is trusted, without trusting other apps on v0.build. Better
+// Auth's "*" matches any run of non-slash characters, so it spans the suffix.
+const versionedV0Origins = configuredOrigins.flatMap((origin) => {
+  const match = /^(https:\/\/.+?)\.v0\.build$/.exec(origin)
+  return match ? [`${match[1]}-*.v0.build`] : []
+})
+
 export const auth = betterAuth({
   database: pool,
   baseURL:
@@ -112,25 +135,12 @@ export const auth = betterAuth({
       },
     },
   },
-  trustedOrigins: [
-    ...(process.env.NODE_ENV === "development"
-      ? [
-          "http://localhost:3000",
-          ...(process.env.V0_RUNTIME_URL ? [process.env.V0_RUNTIME_URL] : []),
-          ...(process.env.V0_DEV_APP_URL ? [process.env.V0_DEV_APP_URL] : []),
-          ...(process.env.V0_BUILD_URL ? [process.env.V0_BUILD_URL] : []),
-          ...(process.env.V0_SANDBOX_URL ? [process.env.V0_SANDBOX_URL] : []),
-        ]
-      : []),
-    ...(process.env.NODE_ENV === "production"
-      ? [
-          ...(process.env.VERCEL_URL ? [`https://${process.env.VERCEL_URL}`] : []),
-          ...(process.env.VERCEL_PROJECT_PRODUCTION_URL
-            ? [`https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`]
-            : []),
-        ]
-      : []),
-  ],
+  // The preview runtime can use different exact hostnames depending on whether
+  // the request comes from the v0 iframe, the build URL, or the sandbox URL.
+  // Keep all platform-provided exact origins trusted regardless of NODE_ENV;
+  // NODE_ENV is not reliable in the v0 preview runtime (it can be undefined),
+  // so gating origins on it would leave the trust list empty and break sign-in.
+  trustedOrigins: ["http://localhost:3000", ...configuredOrigins, ...versionedV0Origins],
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 days
     updateAge: 60 * 60 * 24, // 1 day
