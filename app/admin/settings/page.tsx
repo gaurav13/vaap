@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm"
 import { getSiteSettings, type MenuItem } from "@/lib/site-settings"
 import { getSession } from "@/lib/session"
 import { SettingsAdmin } from "@/components/admin/settings-admin"
+import { DeployPanel } from "@/components/admin/deploy-panel"
 
 export default async function AdminSettingsPage() {
   const [settings, publishedPages, session] = await Promise.all([
@@ -23,6 +24,7 @@ export default async function AdminSettingsPage() {
     <div>
       <h1 className="font-serif text-2xl font-bold text-heading">Website Settings</h1>
       <p className="mt-1 text-muted-2">Manage the navigation menu, banners, social links, and general site settings.</p>
+      {canManageStatus && <DeployPanel />}
       <SettingsAdmin
         menu={settings.menu}
         social={settings.social}
