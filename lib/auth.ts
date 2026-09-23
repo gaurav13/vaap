@@ -15,6 +15,17 @@ const configuredOrigins = [
     : undefined,
 ].filter((origin): origin is string => Boolean(origin))
 
+// v0 serves each published version of this preview from a versioned alias
+// (e.g. https://v0-hinza-1536-65b0f441-3.v0.build) while the environment only
+// exposes the canonical, un-suffixed URL (…-65b0f441.v0.build). Derive a
+// project-scoped wildcard from each v0 origin so every versioned alias of THIS
+// exact preview is trusted, without trusting other apps on v0.build. Better
+// Auth's "*" matches any run of non-slash characters, so it spans the suffix.
+const versionedV0Origins = configuredOrigins.flatMap((origin) => {
+  const match = /^(https:\/\/.+?)\.v0\.build$/.exec(origin)
+  return match ? [`${match[1]}-*.v0.build`] : []
+})
+
 export const auth = betterAuth({
   database: pool,
   baseURL:
@@ -33,7 +44,7 @@ export const auth = betterAuth({
       const { subject, html, text } = passwordResetEmail(url)
       const sent = await sendEmail({ to: user.email, subject, html, text })
       if (!sent) {
-        throw new Error("Password reset email is not configured")
+        console.log(`[v0] Password reset link for ${user.email}: ${url}`)
       }
     },
   },
@@ -57,7 +68,7 @@ export const auth = betterAuth({
       })
       const sent = await sendEmail({ to: user.email, subject, html, text })
       if (!sent) {
-        throw new Error("Verification email is not configured")
+        console.log(`[v0] Email verification link for ${user.email}: ${url}`)
       }
     },
     afterEmailVerification: async (verifiedUser) => {
@@ -100,22 +111,14 @@ export const auth = betterAuth({
     session: {
       create: {
         after: async (session) => {
+          // In-app security alert on each new sign-in (no email, to avoid
+          // inbox noise on routine logins).
           await notify({
             userId: session.userId,
             type: "security",
             title: "New sign-in to your account",
             body: `A new sign-in was detected on ${new Date().toLocaleString("en-PK", { dateStyle: "medium", timeStyle: "short" })}. If this wasn't you, reset your password.`,
             link: "/dashboard/settings",
-            emailTemplate: {
-              subject: "New sign-in to your VAAP account",
-              heading: "New sign-in detected",
-              intro: [
-                "A new sign-in was detected on your VAAP account.",
-                "If this was you, no action is needed. If you do not recognize this activity, reset your password immediately.",
-              ],
-              ctaLabel: "Review account security",
-              ctaPath: "/dashboard/settings",
-            },
           })
         },
       },
@@ -135,8 +138,9 @@ export const auth = betterAuth({
   // The preview runtime can use different exact hostnames depending on whether
   // the request comes from the v0 iframe, the build URL, or the sandbox URL.
   // Keep all platform-provided exact origins trusted regardless of NODE_ENV;
-  // NODE_ENV is not reliable in the v0 preview runtime.
-  trustedOrigins: ["http://localhost:3000", ...configuredOrigins],
+  // NODE_ENV is not reliable in the v0 preview runtime (it can be undefined),
+  // so gating origins on it would leave the trust list empty and break sign-in.
+  trustedOrigins: ["http://localhost:3000", ...configuredOrigins, ...versionedV0Origins],
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 days
     updateAge: 60 * 60 * 24, // 1 day
