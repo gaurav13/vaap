@@ -2,6 +2,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { ArrowRight, UserPlus, Users, Boxes, ShieldCheck, TrendingUp, Mail } from "lucide-react"
 import { VaapLogo } from "@/components/vaap-logo"
+import { PreRegisterLink } from "@/components/pre-register-link"
 
 const GOLD = "#C6A15B"
 
@@ -97,14 +98,11 @@ export function ComingSoon() {
                 </p>
 
                 <div style={{ marginTop: "clamp(1rem, 1.5vw, 1.5rem)" }}>
-                  <Link
-                    href="/membership/apply"
-                    className="group inline-flex w-full items-center justify-center gap-3 rounded-full bg-green px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-green/25 ring-1 ring-inset ring-white/10 transition hover:shadow-xl hover:shadow-green/30 hover:brightness-110 sm:w-auto lg:text-base"
-                  >
+                  <PreRegisterLink className="group inline-flex w-full items-center justify-center gap-3 rounded-full bg-green px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-green/25 ring-1 ring-inset ring-white/10 transition hover:shadow-xl hover:shadow-green/30 hover:brightness-110 sm:w-auto lg:text-base">
                     <UserPlus className="size-5" aria-hidden />
                     Pre-Register for Membership
                     <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" aria-hidden />
-                  </Link>
+                  </PreRegisterLink>
                   <p className="mt-2.5 text-sm text-muted-2 text-pretty">
                     Be the first to join. Get updates on our launch, membership and events.
                   </p>
