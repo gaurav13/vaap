@@ -3,6 +3,15 @@ import { pool } from "@/lib/db"
 import { sendEmail, passwordResetEmail, brandedEmail } from "@/lib/mailer"
 import { notify } from "@/lib/notifications"
 
+// The live site is served from a custom domain. Vercel only auto-exposes the
+// project's .vercel.app URL via VERCEL_PROJECT_PRODUCTION_URL / VERCEL_URL, so
+// the custom domain would otherwise never appear in trustedOrigins and Better
+// Auth would reject every sign-up, sign-in, and password-reset request from it
+// with "Invalid origin". Hardcode the production domain(s) so auth always works
+// on the live site regardless of whether BETTER_AUTH_URL is set.
+const PRODUCTION_URL = "https://vaap.org.pk"
+const productionOrigins = [PRODUCTION_URL, "https://www.vaap.org.pk"]
+
 const configuredOrigins = [
   process.env.BETTER_AUTH_URL,
   process.env.V0_RUNTIME_URL,
@@ -30,11 +39,13 @@ export const auth = betterAuth({
   database: pool,
   baseURL:
     process.env.BETTER_AUTH_URL ??
-    (process.env.VERCEL_PROJECT_PRODUCTION_URL
-      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-      : process.env.VERCEL_URL
-        ? `https://${process.env.VERCEL_URL}`
-        : process.env.V0_RUNTIME_URL),
+    (process.env.VERCEL_ENV === "production"
+      ? PRODUCTION_URL
+      : process.env.VERCEL_PROJECT_PRODUCTION_URL
+        ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+        : process.env.VERCEL_URL
+          ? `https://${process.env.VERCEL_URL}`
+          : process.env.V0_RUNTIME_URL),
   emailAndPassword: {
     enabled: true,
     autoSignIn: true,
@@ -140,7 +151,12 @@ export const auth = betterAuth({
   // Keep all platform-provided exact origins trusted regardless of NODE_ENV;
   // NODE_ENV is not reliable in the v0 preview runtime (it can be undefined),
   // so gating origins on it would leave the trust list empty and break sign-in.
-  trustedOrigins: ["http://localhost:3000", ...configuredOrigins, ...versionedV0Origins],
+  trustedOrigins: [
+    "http://localhost:3000",
+    ...productionOrigins,
+    ...configuredOrigins,
+    ...versionedV0Origins,
+  ],
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 days
     updateAge: 60 * 60 * 24, // 1 day
