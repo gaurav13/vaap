@@ -1,8 +1,12 @@
 import { existsSync, readFileSync } from "node:fs"
 import { randomUUID } from "node:crypto"
+import { hashPassword } from "better-auth/crypto"
 
-// Load env before the database module reads DATABASE_URL. Platform variables
-// win; otherwise .env.local overrides .env, matching Next.js.
+const DEFAULT_ADMIN_EMAIL = "admin@vaap.org.pk"
+const DEFAULT_ADMIN_PASSWORD = "VaapAdmin#2026!Secure"
+
+// Load env files before the database pool is created. Existing process.env
+// values win; .env.local overrides .env, matching Next.js.
 function readEnvFile(path: string): Record<string, string> {
   if (!existsSync(path)) return {}
   const values: Record<string, string> = {}
@@ -30,25 +34,23 @@ for (const [key, value] of Object.entries(fromFiles)) {
 }
 
 async function seed() {
-  const email = process.env.ADMIN_EMAIL?.trim().toLowerCase() ?? ""
-  const password = process.env.ADMIN_PASSWORD ?? ""
+  const email = (process.env.ADMIN_EMAIL?.trim() || DEFAULT_ADMIN_EMAIL).toLowerCase()
+  const password = process.env.ADMIN_PASSWORD || DEFAULT_ADMIN_PASSWORD
 
-  if (!email || !password) {
-    console.log("ADMIN_EMAIL or ADMIN_PASSWORD is unset. Skipping admin seed.")
-    return
-  }
   if (password.length < 8) {
     throw new Error("ADMIN_PASSWORD must be at least 8 characters.")
+  }
+  if (!process.env.DATABASE_URL) {
+    throw new Error("DATABASE_URL is not set. Add it to the environment or .env.local.")
   }
 
   const { db, pool } = await import("../lib/db")
   const { account, user } = await import("../lib/db/schema")
-  const { auth } = await import("../lib/auth")
   const { eq, sql } = await import("drizzle-orm")
 
   try {
     const [existingAdmin] = await db
-      .select({ id: user.id, email: user.email })
+      .select({ id: user.id })
       .from(user)
       .where(eq(user.role, "admin"))
       .limit(1)
@@ -65,13 +67,11 @@ async function seed() {
       .limit(1)
 
     if (existingEmail) {
-      console.log("A user with ADMIN_EMAIL already exists. Skipping admin seed.")
+      console.log(`A user with ${email} already exists. Skipping admin seed.`)
       return
     }
 
-    // Same hasher Better Auth uses for email/password sign-in (ctx.password.hash).
-    const ctx = await auth.$context
-    const hash = await ctx.password.hash(password)
+    const hash = await hashPassword(password)
     const userId = randomUUID()
     const now = new Date()
 
