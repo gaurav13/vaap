@@ -45,7 +45,7 @@ export const auth = betterAuth({
       })
       const sent = await sendEmail({ to: user.email, subject, html, text })
       if (!sent) {
-        console.log(`[v0] Email verification link for ${user.email}: ${url}`)
+        throw new Error("Verification email is not configured")
       }
     },
     afterEmailVerification: async (verifiedUser) => {
@@ -88,14 +88,22 @@ export const auth = betterAuth({
     session: {
       create: {
         after: async (session) => {
-          // In-app security alert on each new sign-in (no email, to avoid
-          // inbox noise on routine logins).
           await notify({
             userId: session.userId,
             type: "security",
             title: "New sign-in to your account",
             body: `A new sign-in was detected on ${new Date().toLocaleString("en-PK", { dateStyle: "medium", timeStyle: "short" })}. If this wasn't you, reset your password.`,
             link: "/dashboard/settings",
+            emailTemplate: {
+              subject: "New sign-in to your VAAP account",
+              heading: "New sign-in detected",
+              intro: [
+                "A new sign-in was detected on your VAAP account.",
+                "If this was you, no action is needed. If you do not recognize this activity, reset your password immediately.",
+              ],
+              ctaLabel: "Review account security",
+              ctaPath: "/dashboard/settings",
+            },
           })
         },
       },
