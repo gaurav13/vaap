@@ -33,6 +33,7 @@ export default async function DashboardPage() {
   const session = await getSession()
   if (!session?.user) redirect("/sign-in")
   const user = session.user
+  if (user.role === "admin" || user.role === "staff") redirect("/admin")
   const firstName = (user.name ?? "Member").split(" ")[0]
 
   const [membership, news, events] = await Promise.all([

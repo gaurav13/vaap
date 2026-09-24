@@ -1,3 +1,4 @@
+import { Suspense } from "react"
 import { redirect } from "next/navigation"
 import { getSession } from "@/lib/session"
 import { AuthForm } from "@/components/auth-form"
@@ -8,7 +9,9 @@ export default async function SignInPage() {
 
   return (
     <main className="flex min-h-svh items-center justify-center bg-muted/40 px-4 py-16">
-      <AuthForm mode="sign-in" />
+      <Suspense>
+        <AuthForm mode="sign-in" />
+      </Suspense>
     </main>
   )
 }

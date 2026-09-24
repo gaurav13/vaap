@@ -46,6 +46,20 @@ export const auth = betterAuth({
         : process.env.VERCEL_URL
           ? `https://${process.env.VERCEL_URL}`
           : process.env.V0_RUNTIME_URL),
+  socialProviders: {
+    google: {
+      clientId: process.env.GOOGLE_CLIENT_ID as string,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+    },
+  },
+  // A verified Google account may sign in to an existing user with the same
+  // email. The existing role is kept; brand-new users still default to member.
+  account: {
+    accountLinking: {
+      enabled: true,
+      trustedProviders: ["google"],
+    },
+  },
   emailAndPassword: {
     enabled: true,
     autoSignIn: true,

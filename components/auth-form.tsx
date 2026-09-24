@@ -3,21 +3,57 @@
 import type React from "react"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { authClient } from "@/lib/auth-client"
 import { Button } from "@/components/ui/button"
 import { VaapLogo } from "@/components/vaap-logo"
 import Link from "next/link"
 
+function GoogleMark() {
+  return (
+    <svg viewBox="0 0 24 24" className="size-5" aria-hidden="true">
+      <path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.2-2.27H12v4.3h6.44a5.51 5.51 0 0 1-2.39 3.62v3h3.87c2.26-2.08 3.57-5.15 3.57-8.65Z" />
+      <path fill="#34A853" d="M12 24c3.24 0 5.96-1.07 7.95-2.91l-3.87-3c-1.08.72-2.46 1.15-4.08 1.15-3.13 0-5.78-2.11-6.73-4.96H1.26v3.09A12 12 0 0 0 12 24Z" />
+      <path fill="#FBBC05" d="M5.27 14.28A7.2 7.2 0 0 1 4.89 12c0-.79.14-1.56.38-2.28V6.63H1.26A12 12 0 0 0 0 12c0 1.94.46 3.77 1.26 5.37l4.01-3.09Z" />
+      <path fill="#EA4335" d="M12 4.77c1.76 0 3.34.61 4.59 1.8l3.44-3.44C17.95 1.19 15.24 0 12 0 7.31 0 3.23 2.69 1.26 6.63l4.01 3.09C6.22 6.88 8.87 4.77 12 4.77Z" />
+    </svg>
+  )
+}
+
 export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(
+    searchParams.get("error") ? "Google sign-in was cancelled or could not be completed." : null,
+  )
   const [loading, setLoading] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
 
   const isSignUp = mode === "sign-up"
+  const busy = loading || googleLoading
+
+  async function handleGoogle() {
+    setError(null)
+    setGoogleLoading(true)
+    try {
+      const { error } = await authClient.signIn.social({
+        provider: "google",
+        callbackURL: "/dashboard",
+        newUserCallbackURL: "/dashboard",
+        errorCallbackURL: isSignUp ? "/sign-up" : "/sign-in",
+      })
+      if (error) {
+        setError(error.message ?? "Could not continue with Google.")
+        setGoogleLoading(false)
+      }
+    } catch {
+      setError("Could not continue with Google.")
+      setGoogleLoading(false)
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -64,6 +100,24 @@ export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
               : "Sign in to access your VAAP dashboard."}
           </p>
         </div>
+      </div>
+
+      <Button
+        type="button"
+        variant="outline"
+        size="lg"
+        disabled={busy}
+        onClick={handleGoogle}
+        className="h-11 w-full gap-3 border-border bg-background text-foreground hover:bg-muted"
+      >
+        <GoogleMark />
+        {googleLoading ? "Redirecting to Google…" : "Continue with Google"}
+      </Button>
+
+      <div className="my-6 flex items-center gap-3">
+        <span className="h-px flex-1 bg-border" aria-hidden />
+        <span className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">or</span>
+        <span className="h-px flex-1 bg-border" aria-hidden />
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -128,7 +182,7 @@ export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
           </p>
         )}
 
-        <Button type="submit" size="lg" disabled={loading} className="mt-2">
+        <Button type="submit" size="lg" disabled={busy} className="mt-2">
           {loading ? "Please wait…" : isSignUp ? "Create account" : "Sign in"}
         </Button>
       </form>
