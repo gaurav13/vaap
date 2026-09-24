@@ -11,6 +11,7 @@ import {
   Briefcase,
   CalendarDays,
   ChevronDown,
+  ExternalLink,
   FileCheck2,
   FileText,
   Home,
@@ -263,6 +264,16 @@ function Topbar({
       </div>
 
       <div className="flex items-center gap-2 sm:gap-4">
+        <Link
+          href="/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 rounded-lg bg-green px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-green/90"
+        >
+          <ExternalLink className="size-4" />
+          <span className="hidden sm:inline">Visit Website</span>
+        </Link>
+
         <NotificationBell initial={notifications} />
 
         <div className="relative" ref={ref}>
