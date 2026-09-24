@@ -18,6 +18,9 @@ export function EntityManager({ entity, items }: { entity: EntityKey; items: Row
   const [creating, setCreating] = useState(false)
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+  const [uploads, setUploads] = useState(0)
+  const spacesImages = entity === "pages"
+  const spacesFiles = entity === "publications"
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -36,6 +39,7 @@ export function EntityManager({ entity, items }: { entity: EntityKey; items: Row
   }
 
   function onDelete(id: number) {
+    if (entity === "pages" && !window.confirm("Delete this page? This cannot be undone.")) return
     startTransition(async () => {
       await deleteEntity(entity, id)
       router.refresh()
@@ -74,15 +78,26 @@ export function EntityManager({ entity, items }: { entity: EntityKey; items: Row
 
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             {config.fields.map((field) => (
-              <FieldRenderer key={field.name} field={field} value={editing?.[field.name]} />
+              <FieldRenderer
+                key={field.name}
+                field={field}
+                value={editing?.[field.name]}
+                spacesImages={spacesImages}
+                spacesFiles={spacesFiles}
+                onBusyChange={(busy) => setUploads((count) => Math.max(0, count + (busy ? 1 : -1)))}
+              />
             ))}
           </div>
 
-          {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
+          {error && (
+            <p className="mt-3 rounded-lg bg-destructive/10 px-3.5 py-2.5 text-sm text-destructive" role="alert">
+              {error}
+            </p>
+          )}
 
           <div className="mt-5 flex gap-2">
-            <Button type="submit" disabled={pending}>
-              {pending ? "Saving…" : editing ? "Save Changes" : "Create"}
+            <Button type="submit" disabled={pending || uploads > 0}>
+              {uploads > 0 ? "Uploading…" : pending ? "Saving…" : editing ? "Save Changes" : "Create"}
             </Button>
           </div>
         </form>
@@ -127,8 +142,8 @@ export function EntityManager({ entity, items }: { entity: EntityKey; items: Row
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex size-9 items-center justify-center rounded-md text-muted-2 transition-colors hover:bg-mint hover:text-green"
-                        aria-label="View live"
-                        title="View live"
+                        aria-label={item.status === "draft" ? "Preview draft" : "View live"}
+                        title={item.status === "draft" ? "Preview draft" : "View live"}
                       >
                         <ExternalLink className="size-4" />
                       </a>
@@ -166,9 +181,9 @@ export function EntityManager({ entity, items }: { entity: EntityKey; items: Row
 
 function viewHref(config: (typeof ENTITIES)[EntityKey], item: Row): string | null {
   if (!config.viewUrl) return null
-  // Only link to a live page for published/active items.
-  const isDraft = "published" in item ? item.published === false : item.status === "draft"
-  if (isDraft && "published" in item) return null
+  // Checkbox-based records (publications, documents) have no public page while
+  // unpublished. CMS pages always link to /{slug}, including drafts.
+  if ("published" in item && item.published === false) return null
   try {
     return config.viewUrl(item)
   } catch {
@@ -182,7 +197,19 @@ function labelForFlag(flag: string) {
   return flag
 }
 
-function FieldRenderer({ field, value }: { field: FieldDef; value: unknown }) {
+function FieldRenderer({
+  field,
+  value,
+  spacesImages = false,
+  spacesFiles = false,
+  onBusyChange,
+}: {
+  field: FieldDef
+  value: unknown
+  spacesImages?: boolean
+  spacesFiles?: boolean
+  onBusyChange?: (busy: boolean) => void
+}) {
   const wrapCls = field.fullWidth || field.type === "textarea" ? "sm:col-span-2" : ""
 
   if (field.autoUsdFrom) {
@@ -196,7 +223,13 @@ function FieldRenderer({ field, value }: { field: FieldDef; value: unknown }) {
           {field.label}
           {field.required && <span className="text-destructive"> *</span>}
         </span>
-        <RichTextEditor name={field.name} defaultValue={strVal(value)} placeholder={field.placeholder} />
+        <RichTextEditor
+          name={field.name}
+          defaultValue={strVal(value)}
+          placeholder={field.placeholder}
+          imageUpload={spacesImages}
+          onBusyChange={onBusyChange}
+        />
         {field.help && <span className="mt-1 block text-xs text-muted-2">{field.help}</span>}
       </div>
     )
@@ -209,7 +242,20 @@ function FieldRenderer({ field, value }: { field: FieldDef; value: unknown }) {
           {field.label}
           {field.required && <span className="text-destructive"> *</span>}
         </span>
-        <FileUpload name={field.name} kind={field.type === "image" ? "image" : "file"} defaultValue={strVal(value)} required={field.required} />
+        <FileUpload
+          name={field.name}
+          kind={field.type === "image" ? "image" : "file"}
+          defaultValue={strVal(value)}
+          required={field.required}
+          storage={
+            (spacesImages && field.type === "image") ||
+            (spacesFiles && (field.type === "image" || field.type === "file"))
+              ? "spaces"
+              : "inline"
+          }
+          folder={spacesFiles ? "publications" : "pages"}
+          onBusyChange={onBusyChange}
+        />
         {field.help && <span className="mt-1 block text-xs text-muted-2">{field.help}</span>}
       </div>
     )

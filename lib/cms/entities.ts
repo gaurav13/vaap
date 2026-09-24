@@ -55,13 +55,18 @@ export const ENTITIES: Record<EntityKey, EntityConfig> = {
       { name: "status", label: "Status", type: "select", options: ["draft", "published"] },
       { name: "heroTitle", label: "Hero title", type: "text" },
       { name: "heroSubtitle", label: "Hero subtitle", type: "textarea", fullWidth: true },
-      { name: "heroImage", label: "Hero image", type: "image", nullable: true },
-      { name: "content", label: "Body content", type: "richtext", fullWidth: true, placeholder: "Write the page content. Use the toolbar for headings, lists and links.", help: "Rich text — controls text size, bold, lists and links." },
+      { name: "heroImage", label: "Hero image", type: "image", nullable: true, help: "Banner shown at the top of the published page. Uploaded to DigitalOcean Spaces." },
+      { name: "content", label: "Body content", type: "richtext", fullWidth: true, placeholder: "Write the page content. Use the toolbar for headings, lists, links, and images.", help: "Rich text. The image button uploads inline pictures to DigitalOcean Spaces." },
       { name: "seoTitle", label: "SEO title", type: "text" },
       { name: "metaDescription", label: "Meta description", type: "textarea", fullWidth: true },
     ],
     list: { title: "title", subtitle: "slug", badge: "status" },
-    viewUrl: (row) => `/${row.parentSlug ? `${row.parentSlug}/` : ""}${row.slug}`,
+    viewUrl: (row) => {
+      const slug = String(row.slug ?? "").replace(/^\/+|\/+$/g, "")
+      if (!slug) return null
+      const parent = String(row.parentSlug ?? "").replace(/^\/+|\/+$/g, "")
+      return parent ? `/${parent}/${slug}` : `/${slug}`
+    },
   },
   publications: {
     label: "Publications",

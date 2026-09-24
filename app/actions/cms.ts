@@ -84,7 +84,13 @@ export async function saveEntity(key: EntityKey, id: number | null, formData: Fo
   // Entity-specific normalization.
   if (key === "pages") {
     values.slug = slugify(String(values.slug || values.title || ""))
+    values.parentSlug = values.parentSlug ? slugify(String(values.parentSlug)) : null
     values.updatedAt = new Date()
+    const slug = String(values.slug)
+    const parent = (values.parentSlug as string | null) ?? null
+    const matches = await db.select({ id: pages.id, parentSlug: pages.parentSlug }).from(pages).where(eq(pages.slug, slug))
+    const clash = matches.find((row) => row.id !== id && (row.parentSlug ?? null) === parent)
+    if (clash) return { ok: false, error: "A page with this slug already exists in that section." }
   }
   if (key === "members") {
     if (!values.membershipId) {
@@ -331,9 +337,20 @@ export async function getAllPages() {
 }
 
 export async function getPublishedPage(slug: string, parentSlug?: string | null) {
-  const rows = await db.select().from(pages).where(and(eq(pages.slug, slug), eq(pages.status, "published"))).limit(5)
-  if (parentSlug !== undefined) {
-    return rows.find((r) => (r.parentSlug ?? null) === (parentSlug ?? null)) ?? null
-  }
-  return rows[0] ?? null
+  return getCmsPage(slug, parentSlug, { includeDrafts: false })
+}
+
+function blankToNull(value: string | null | undefined) {
+  const trimmed = value?.trim()
+  return trimmed ? trimmed : null
+}
+
+// Public visitors only receive published pages. Staff and super admins can
+// preview drafts at the same URL.
+export async function getCmsPage(slug: string, parentSlug?: string | null, opts?: { includeDrafts?: boolean }) {
+  const rows = await db.select().from(pages).where(eq(pages.slug, slug)).limit(10)
+  const parent = parentSlug === undefined ? undefined : blankToNull(parentSlug)
+  const matched = rows.filter((row) => parent === undefined || blankToNull(row.parentSlug) === parent)
+  const visible = opts?.includeDrafts ? matched : matched.filter((row) => row.status === "published")
+  return visible[0] ?? null
 }

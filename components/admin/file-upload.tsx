@@ -1,13 +1,18 @@
 "use client"
 
 import { useRef, useState } from "react"
-import { Upload, X, FileText, LinkIcon } from "lucide-react"
+import { Loader2, Upload, X, FileText, LinkIcon } from "lucide-react"
+import { uploadPageImageFile } from "@/components/admin/upload-image"
 
 type Props = {
   name: string
   kind: "image" | "file"
   defaultValue?: string
   required?: boolean
+  // Pages store images in DigitalOcean Spaces and keep the public URL.
+  storage?: "inline" | "spaces"
+  folder?: "pages" | "news" | "articles" | "events" | "publications"
+  onBusyChange?: (busy: boolean) => void
 }
 
 // Uploads a file by encoding it as a data URL stored in a hidden input, so it
@@ -15,19 +20,39 @@ type Props = {
 // alternative. Large files are rejected to keep the encoded payload reasonable.
 const MAX_BYTES = 3 * 1024 * 1024 // 3MB
 
-export function FileUpload({ name, kind, defaultValue = "", required }: Props) {
+export function FileUpload({ name, kind, defaultValue = "", required, storage = "inline", folder = "pages", onBusyChange }: Props) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [value, setValue] = useState(defaultValue)
   const [fileName, setFileName] = useState("")
   const [error, setError] = useState<string | null>(null)
-  const [mode, setMode] = useState<"upload" | "url">(defaultValue.startsWith("data:") ? "upload" : "url")
+  const [uploading, setUploading] = useState(false)
+  const [mode, setMode] = useState<"upload" | "url">(
+    defaultValue.startsWith("data:") || (folder === "publications" && !defaultValue) ? "upload" : "url",
+  )
+  const remote = storage === "spaces"
 
-  function onPick(e: React.ChangeEvent<HTMLInputElement>) {
+  async function onPick(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
     setError(null)
-    if (file.size > MAX_BYTES) {
+    if (!remote && file.size > MAX_BYTES) {
       setError("File is too large (max 3MB).")
+      return
+    }
+    if (remote) {
+      setUploading(true)
+      onBusyChange?.(true)
+      try {
+        const url = await uploadPageImageFile(file, folder)
+        setValue(url)
+        setFileName(file.name)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Image upload failed.")
+      } finally {
+        setUploading(false)
+        onBusyChange?.(false)
+        if (inputRef.current) inputRef.current.value = ""
+      }
       return
     }
     const reader = new FileReader()
@@ -65,10 +90,11 @@ export function FileUpload({ name, kind, defaultValue = "", required }: Props) {
             <button
               type="button"
               onClick={() => inputRef.current?.click()}
-              className="inline-flex items-center gap-2 rounded-lg bg-mint px-3.5 py-2 text-sm font-semibold text-green transition-colors hover:bg-green hover:text-white"
+              disabled={uploading}
+              className="inline-flex items-center gap-2 rounded-lg bg-mint px-3.5 py-2 text-sm font-semibold text-green transition-colors hover:bg-green hover:text-white disabled:opacity-60"
             >
-              <Upload className="size-4" />
-              Choose {isImage ? "image" : "document"}
+              {uploading ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />}
+              {uploading ? "Uploading…" : `Choose ${isImage ? "image" : "document"}`}
             </button>
             {hasValue && (
               <button type="button" onClick={clear} className="inline-flex items-center gap-1 text-xs text-muted-2 hover:text-destructive">
@@ -79,11 +105,17 @@ export function FileUpload({ name, kind, defaultValue = "", required }: Props) {
           <input
             ref={inputRef}
             type="file"
-            accept={isImage ? "image/*" : ".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv"}
+            accept={isImage ? "image/*" : remote ? ".pdf,application/pdf" : ".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv"}
             onChange={onPick}
             className="hidden"
           />
-          <p className="mt-2 text-xs text-muted-2">Max 3MB. Stored inline.</p>
+          <p className="mt-2 text-xs text-muted-2">
+            {remote
+              ? isImage
+                ? "JPEG, PNG, WebP, GIF, or AVIF. Max 8MB. Saved to DigitalOcean Spaces."
+                : "PDF. Max 20MB. Saved to DigitalOcean Spaces."
+              : "Max 3MB. Stored inline."}
+          </p>
         </div>
       ) : (
         <input
@@ -95,7 +127,11 @@ export function FileUpload({ name, kind, defaultValue = "", required }: Props) {
         />
       )}
 
-      {error && <p className="mt-2 text-xs text-destructive">{error}</p>}
+      {error && (
+        <p className="mt-2 rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive" role="alert">
+          {error}
+        </p>
+      )}
 
       {hasValue && (
         <div className="mt-3">

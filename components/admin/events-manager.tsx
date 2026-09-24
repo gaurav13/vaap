@@ -4,6 +4,7 @@ import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { CalendarDays, Check, Eye, MapPin, Pencil, Plus, Trash2, User, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { FileUpload } from "@/components/admin/file-upload"
 import { createEvent, updateEvent, deleteEvent, setEventStatus } from "@/app/actions/admin"
 
 type EventItem = {
@@ -38,6 +39,7 @@ export function EventsManager({ items }: { items: EventItem[] }) {
   const [editing, setEditing] = useState<EventItem | null>(null)
   const [creating, setCreating] = useState(false)
   const [pending, startTransition] = useTransition()
+  const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -89,6 +91,7 @@ export function EventsManager({ items }: { items: EventItem[] }) {
               onClick={() => {
                 setEditing(null)
                 setCreating(false)
+                setUploading(false)
                 setError(null)
               }}
               className="text-muted-2 hover:text-navy"
@@ -124,9 +127,17 @@ export function EventsManager({ items }: { items: EventItem[] }) {
                 <input name="hostName" defaultValue={editing?.hostName} placeholder="Organizer or partner" className={inputCls} />
               </Field>
             </div>
-            <Field label="Cover image URL">
-              <input name="coverImage" defaultValue={editing?.coverImage} placeholder="https://…" className={inputCls} />
-            </Field>
+            <div>
+              <span className="mb-1.5 block text-sm font-medium text-body">Cover image</span>
+              <FileUpload
+                name="coverImage"
+                kind="image"
+                storage="spaces"
+                folder="events"
+                defaultValue={editing?.coverImage ?? ""}
+                onBusyChange={setUploading}
+              />
+            </div>
             <Field label="Description">
               <textarea name="description" defaultValue={editing?.description} rows={4} className={inputCls} />
             </Field>
@@ -144,8 +155,8 @@ export function EventsManager({ items }: { items: EventItem[] }) {
           {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
 
           <div className="mt-5 flex gap-2">
-            <Button type="submit" disabled={pending}>
-              {pending ? "Saving…" : editing ? "Save Changes" : "Create Event"}
+            <Button type="submit" disabled={pending || uploading}>
+              {uploading ? "Uploading image…" : pending ? "Saving…" : editing ? "Save Changes" : "Create Event"}
             </Button>
           </div>
         </form>

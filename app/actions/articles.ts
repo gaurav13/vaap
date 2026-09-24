@@ -168,6 +168,71 @@ export async function getArticleTimeline(id: number) {
 
 // ---- Editor / publisher facing -------------------------------------------
 
+export async function createAdminArticle(input: {
+  title: string
+  category: string
+  excerpt: string
+  content: string
+  tags: string
+  image?: string
+  published: boolean
+}) {
+  const me = await requirePublisher()
+  const title = input.title.trim()
+  if (!title) return { ok: false as const, error: "Title is required." }
+  if (!input.content.trim()) return { ok: false as const, error: "Content cannot be empty." }
+
+  const slug = await uniqueSlug(title)
+  const published = input.published
+  const now = new Date()
+  const [created] = await db
+    .insert(articles)
+    .values({
+      title,
+      slug,
+      category: input.category.trim() || "Insight",
+      excerpt: input.excerpt.trim(),
+      content: input.content,
+      tags: input.tags.trim(),
+      image: input.image?.trim() || null,
+      authorId: me.id,
+      authorName: me.name ?? "",
+      authorRole: me.role,
+      status: published ? "published" : "approved",
+      publishedAt: published ? now : null,
+    })
+    .returning()
+
+  await db.insert(articleApprovals).values({
+    articleId: created.id,
+    reviewerId: me.id,
+    reviewerName: me.name ?? "",
+    decision: published ? "published" : "approved",
+    note: published ? "Created and published from admin" : "Created from admin",
+  })
+
+  revalidatePath("/admin/articles")
+  revalidatePath("/insights")
+  if (published) revalidatePath(`/insights/${slug}`)
+  return {
+    ok: true as const,
+    article: {
+      id: created.id,
+      title: created.title,
+      slug: created.slug,
+      category: created.category,
+      excerpt: created.excerpt,
+      content: created.content,
+      authorName: created.authorName,
+      authorRole: created.authorRole,
+      image: created.image,
+      status: created.status,
+      updatedAt: created.updatedAt.toISOString(),
+      publishedAt: created.publishedAt ? created.publishedAt.toISOString() : null,
+    },
+  }
+}
+
 export async function getArticleReviewQueue() {
   await requirePublisher()
   const rows = await db

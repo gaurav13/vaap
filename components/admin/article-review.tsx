@@ -11,9 +11,11 @@ import {
   ArrowLeft,
   Globe,
   EyeOff,
+  Plus,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { reviewArticle, publishArticle, unpublishArticle } from "@/app/actions/articles"
+import { reviewArticle, publishArticle, unpublishArticle, createAdminArticle } from "@/app/actions/articles"
+import { FileUpload } from "@/components/admin/file-upload"
 
 type Article = {
   id: number
@@ -49,6 +51,11 @@ function StatusBadge({ status }: { status: string }) {
   )
 }
 
+const CATEGORIES = ["Insight", "Policy", "Research", "Community", "Announcement", "Education"]
+
+const inputCls =
+  "w-full rounded-lg border border-line bg-card px-3 py-2.5 text-sm text-heading outline-none focus:border-green"
+
 const TABS = [
   { key: "submitted", label: "In Review" },
   { key: "approved", label: "Approved" },
@@ -61,6 +68,8 @@ export function ArticleReview({ initial }: { initial: Article[] }) {
   const [articles, setArticles] = useState<Article[]>(initial)
   const [tab, setTab] = useState<(typeof TABS)[number]["key"]>("submitted")
   const [active, setActive] = useState<Article | null>(null)
+  const [creating, setCreating] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [note, setNote] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
@@ -105,6 +114,38 @@ export function ArticleReview({ initial }: { initial: Article[] }) {
     })
   }
 
+  function closeCreate() {
+    setCreating(false)
+    setUploading(false)
+    setError(null)
+  }
+
+  function onCreate(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    setError(null)
+    const form = e.currentTarget
+    const data = new FormData(form)
+    startTransition(async () => {
+      const res = await createAdminArticle({
+        title: String(data.get("title") ?? ""),
+        category: String(data.get("category") ?? "Insight"),
+        excerpt: String(data.get("excerpt") ?? ""),
+        content: String(data.get("content") ?? ""),
+        tags: String(data.get("tags") ?? ""),
+        image: String(data.get("image") ?? ""),
+        published: data.get("published") === "on",
+      })
+      if (!res.ok) {
+        setError(res.error)
+        return
+      }
+      setArticles((prev) => [res.article, ...prev])
+      setTab(res.article.status === "published" ? "published" : "approved")
+      setCreating(false)
+      setUploading(false)
+    })
+  }
+
   function doUnpublish() {
     if (!active) return
     setError(null)
@@ -116,6 +157,109 @@ export function ArticleReview({ initial }: { initial: Article[] }) {
       }
       apply(active.id, { status: "approved", publishedAt: null })
     })
+  }
+
+  if (creating) {
+    return (
+      <div className="mx-auto w-full max-w-4xl">
+        <button
+          onClick={closeCreate}
+          className="mb-5 inline-flex items-center gap-1.5 text-sm font-semibold text-muted-2 hover:text-heading"
+        >
+          <ArrowLeft className="size-4" /> Back to queue
+        </button>
+
+        <form onSubmit={onCreate} className="rounded-2xl border border-line bg-card p-6 lg:p-8">
+          <h1 className="text-xl font-bold text-heading">New article</h1>
+          <p className="mt-1 text-sm text-muted-2">
+            Write an insight and publish it to the public insights page, or save it as approved to publish later.
+          </p>
+
+          <div className="mt-6 grid gap-5">
+            <label className="block">
+              <span className="mb-1.5 block text-sm font-semibold text-heading">Title</span>
+              <input name="title" required className={inputCls} placeholder="A clear, compelling headline" />
+            </label>
+
+            <div className="grid gap-5 sm:grid-cols-2">
+              <label className="block">
+                <span className="mb-1.5 block text-sm font-semibold text-heading">Category</span>
+                <select name="category" defaultValue={CATEGORIES[0]} className={inputCls}>
+                  {CATEGORIES.map((c) => (
+                    <option key={c}>{c}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="block">
+                <span className="mb-1.5 block text-sm font-semibold text-heading">Tags (comma separated)</span>
+                <input name="tags" className={inputCls} placeholder="regulation, defi, pakistan" />
+              </label>
+            </div>
+
+            <div>
+              <span className="mb-1.5 block text-sm font-semibold text-heading">Cover image</span>
+              <FileUpload
+                name="image"
+                kind="image"
+                storage="spaces"
+                folder="articles"
+                onBusyChange={setUploading}
+              />
+            </div>
+
+            <label className="block">
+              <span className="mb-1.5 block text-sm font-semibold text-heading">Excerpt</span>
+              <textarea
+                name="excerpt"
+                rows={2}
+                className={cn(inputCls, "resize-y")}
+                placeholder="A one or two sentence summary shown on cards."
+              />
+            </label>
+
+            <label className="block">
+              <span className="mb-1.5 block text-sm font-semibold text-heading">Content</span>
+              <textarea
+                name="content"
+                required
+                rows={10}
+                className={cn(inputCls, "resize-y")}
+                placeholder="Write the article."
+              />
+            </label>
+
+            <label className="flex items-center gap-2 text-sm text-body">
+              <input type="checkbox" name="published" defaultChecked className="size-4 accent-[var(--color-green)]" />
+              Publish now (visible on the public insights page)
+            </label>
+          </div>
+
+          {error && (
+            <p className="mt-5 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
+              {error}
+            </p>
+          )}
+
+          <div className="mt-7 flex flex-wrap gap-3">
+            <button
+              type="submit"
+              disabled={pending || uploading}
+              className="inline-flex items-center gap-2 rounded-lg bg-green px-4 py-2.5 text-sm font-semibold text-white hover:bg-green/90 disabled:opacity-50"
+            >
+              {pending || uploading ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
+              {uploading ? "Uploading image…" : pending ? "Saving…" : "Save article"}
+            </button>
+            <button
+              type="button"
+              onClick={closeCreate}
+              className="inline-flex items-center gap-2 rounded-lg border border-line bg-card px-4 py-2.5 text-sm font-semibold text-heading hover:bg-muted"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    )
   }
 
   if (active) {
@@ -239,10 +383,23 @@ export function ArticleReview({ initial }: { initial: Article[] }) {
 
   return (
     <div>
-      <h1 className="flex items-center gap-2 text-2xl font-bold text-heading">
-        <PenSquare className="size-6 text-green" /> Article Review
-      </h1>
-      <p className="mt-1 text-sm text-muted-2">Review member submissions, request changes, and publish to the public insights page.</p>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="flex items-center gap-2 text-2xl font-bold text-heading">
+            <PenSquare className="size-6 text-green" /> Article Review
+          </h1>
+          <p className="mt-1 text-sm text-muted-2">Review member submissions, request changes, and publish to the public insights page.</p>
+        </div>
+        <button
+          onClick={() => {
+            setError(null)
+            setCreating(true)
+          }}
+          className="inline-flex items-center gap-2 rounded-lg bg-green px-4 py-2.5 text-sm font-semibold text-white hover:bg-green/90"
+        >
+          <Plus className="size-4" /> Add article
+        </button>
+      </div>
 
       <div className="mt-6 flex flex-wrap gap-2">
         {TABS.map((t) => (

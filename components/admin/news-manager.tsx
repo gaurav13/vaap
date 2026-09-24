@@ -4,6 +4,7 @@ import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { Eye, Pencil, Plus, Trash2, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { FileUpload } from "@/components/admin/file-upload"
 import { createNews, updateNews, deleteNews } from "@/app/actions/admin"
 
 type NewsItem = {
@@ -27,6 +28,7 @@ export function NewsManager({ items, committees = [] }: { items: NewsItem[]; com
   const [editing, setEditing] = useState<NewsItem | null>(null)
   const [creating, setCreating] = useState(false)
   const [pending, startTransition] = useTransition()
+  const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -96,9 +98,17 @@ export function NewsManager({ items, committees = [] }: { items: NewsItem[]; com
                   ))}
                 </select>
               </Field>
-              <Field label="Image URL (optional)">
-                <input name="image" defaultValue={editing?.image ?? ""} placeholder="/images/news-skyline.png" className={inputCls} />
-              </Field>
+            </div>
+            <div>
+              <span className="mb-1.5 block text-sm font-medium text-body">Image</span>
+              <FileUpload
+                name="image"
+                kind="image"
+                storage="spaces"
+                folder="news"
+                defaultValue={editing?.image ?? ""}
+                onBusyChange={setUploading}
+              />
             </div>
             <Field label="Committee (optional)">
               <select name="committeeId" defaultValue={editing?.committeeId ? String(editing.committeeId) : ""} className={inputCls}>
@@ -130,11 +140,15 @@ export function NewsManager({ items, committees = [] }: { items: NewsItem[]; com
             </label>
           </div>
 
-          {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
+          {error && (
+            <p className="mt-3 rounded-lg bg-destructive/10 px-3.5 py-2.5 text-sm text-destructive" role="alert">
+              {error}
+            </p>
+          )}
 
           <div className="mt-5 flex gap-2">
-            <Button type="submit" disabled={pending}>
-              {pending ? "Saving…" : editing ? "Save Changes" : "Publish"}
+            <Button type="submit" disabled={pending || uploading}>
+              {uploading ? "Uploading image…" : pending ? "Saving…" : editing ? "Save Changes" : "Publish"}
             </Button>
           </div>
         </form>

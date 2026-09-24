@@ -2,10 +2,12 @@ export function PageHero({
   eyebrow,
   title,
   description,
+  image,
 }: {
   eyebrow?: string
   title: string
   description?: string
+  image?: string | null
 }) {
   return (
     <section className="border-b border-line bg-navy">
@@ -18,6 +20,14 @@ export function PageHero({
         </h1>
         {description && (
           <p className="fluid-lead mt-4 max-w-2xl text-pretty text-white/70">{description}</p>
+        )}
+        {image && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={image}
+            alt=""
+            className="mt-8 max-h-96 w-full rounded-xl object-cover"
+          />
         )}
       </div>
     </section>
