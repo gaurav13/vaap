@@ -23,10 +23,18 @@ export function PublicProposalCard({ card, emphasis = false }: { card: CardData;
         aria-label={`Open ${proposal.title}`}
         tabIndex={-1}
       >
+        {hasBanner && (
+          <img
+            src={image || "/placeholder.svg"}
+            alt=""
+            aria-hidden
+            className="absolute inset-0 h-full w-full scale-110 object-cover opacity-60 blur-xl"
+          />
+        )}
         <img
           src={image || "/placeholder.svg"}
           alt={hasBanner ? `${proposal.title} banner` : ""}
-          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+          className={`relative h-full w-full ${hasBanner ? "object-contain" : "object-cover"}`}
         />
       </Link>
 
