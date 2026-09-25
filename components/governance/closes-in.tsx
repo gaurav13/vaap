@@ -32,15 +32,34 @@ export function ClosesIn({ closesAt }: { closesAt: string }) {
     timeZone: "Asia/Karachi",
   })
 
+  const units = [
+    { value: now?.d, label: "Days" },
+    { value: now?.h, label: "Hrs" },
+    { value: now?.m, label: "Min" },
+  ]
+
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-gold/30 bg-gold-tint p-3">
-      <Clock className="size-7 shrink-0 text-green" aria-hidden />
-      <div className="min-w-0">
-        <p className="text-xs text-muted-2">{now?.done ? "Voting closed" : "Closes in"}</p>
-        <p className="font-mono text-lg font-bold tabular-nums text-heading" aria-live="polite">
-          {now ? `${pad(now.d)}d : ${pad(now.h)}h : ${pad(now.m)}m` : "--d : --h : --m"}
-        </p>
-        <p className="text-xs text-muted-2">{label} (PKT)</p>
+    <div className="flex items-center justify-between gap-4">
+      <div className="flex min-w-0 items-center gap-2.5">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-mint text-green">
+          <Clock className="size-4" aria-hidden />
+        </span>
+        <div className="min-w-0">
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-2">
+            {now?.done ? "Voting closed" : "Closes in"}
+          </p>
+          <p className="truncate text-sm text-heading">{label} PKT</p>
+        </div>
+      </div>
+      <div className="flex shrink-0 items-center gap-1.5" aria-live="polite">
+        {units.map((u) => (
+          <div key={u.label} className="flex w-11 flex-col items-center rounded-lg border border-line bg-card py-1">
+            <span className="text-base font-bold leading-tight tabular-nums text-heading">
+              {u.value === undefined ? "--" : pad(u.value)}
+            </span>
+            <span className="text-[10px] font-medium uppercase tracking-wide text-muted-2">{u.label}</span>
+          </div>
+        ))}
       </div>
     </div>
   )
