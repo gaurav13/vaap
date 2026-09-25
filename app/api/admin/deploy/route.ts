@@ -6,15 +6,47 @@ import { acquireDeployLock, releaseDeployLock, runDeploy, type DeployEvent } fro
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
+const TRUSTED_HOSTS = new Set(
+  [
+    "https://vaap.org.pk",
+    "https://www.vaap.org.pk",
+    process.env.BETTER_AUTH_URL,
+    process.env.NEXT_PUBLIC_SITE_URL,
+  ].flatMap((url) => {
+    if (!url) return []
+    try {
+      return [new URL(url).host]
+    } catch {
+      return []
+    }
+  }),
+)
+
+function firstHeaderValue(value: string | null) {
+  return value?.split(",")[0]?.trim().toLowerCase() || null
+}
+
+// Reverse proxies (nginx in front of PM2) often forward Host as localhost:3000,
+// so a plain Origin-vs-Host comparison rejects legitimate same-site clicks.
 function sameOrigin(request: Request) {
+  if (request.headers.get("sec-fetch-site") === "same-origin") return true
+
   const origin = request.headers.get("origin")
-  const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host")
-  if (!origin || !host) return false
+  if (!origin) return false
+  let originHost: string
   try {
-    return new URL(origin).host === host
+    originHost = new URL(origin).host.toLowerCase()
   } catch {
     return false
   }
+
+  if (TRUSTED_HOSTS.has(originHost)) return true
+
+  const hosts = [
+    firstHeaderValue(request.headers.get("x-forwarded-host")),
+    firstHeaderValue(request.headers.get("host")),
+  ]
+  return hosts.includes(originHost)
 }
 
 export async function POST(request: Request) {
