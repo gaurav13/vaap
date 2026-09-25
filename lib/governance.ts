@@ -150,10 +150,14 @@ export async function createProposal(input: {
   selectedMemberIds?: number[]
   createdById?: string | null
   createdByName?: string
+  opensAt?: Date | null
+  closesAt?: Date | null
 }) {
   const [proposal] = await db
     .insert(governanceProposals)
     .values({
+      opensAt: input.opensAt ?? null,
+      closesAt: input.closesAt ?? null,
       reference: makeReference("VAAP-RES"),
       title: input.title,
       summary: input.summary ?? "",
@@ -194,7 +198,13 @@ export async function createProposal(input: {
 export async function setProposalStatus(id: number, status: string) {
   const patch: Partial<ProposalRow> = { status, updatedAt: new Date() }
   if (status === "published") patch.publishedAt = new Date()
-  if (status === "active" && !patch.opensAt) patch.opensAt = new Date()
+  if (status === "active") {
+    const [current] = await db
+      .select({ opensAt: governanceProposals.opensAt })
+      .from(governanceProposals)
+      .where(eq(governanceProposals.id, id))
+    if (!current?.opensAt || current.opensAt.getTime() > Date.now()) patch.opensAt = new Date()
+  }
   if (status === "closed") patch.closedAt = new Date()
   await db.update(governanceProposals).set(patch).where(eq(governanceProposals.id, id))
 }

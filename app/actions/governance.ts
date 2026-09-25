@@ -49,8 +49,24 @@ export async function createProposalAction(formData: FormData) {
     .map((s) => s.trim())
     .filter(Boolean)
 
+  const parseDate = (v: FormDataEntryValue | null) => {
+    const s = String(v ?? "").trim()
+    if (!s) return null
+    const d = new Date(s)
+    return Number.isNaN(d.getTime()) ? null : d
+  }
+  const opensAt = parseDate(formData.get("opensAt"))
+  const closesAt = parseDate(formData.get("closesAt"))
+  if (!closesAt) return { ok: false, error: "A voting expiry date is required." }
+  if (closesAt.getTime() <= Date.now()) return { ok: false, error: "The voting expiry date must be in the future." }
+  if (opensAt && opensAt.getTime() >= closesAt.getTime()) {
+    return { ok: false, error: "The voting expiry date must be after the opening date." }
+  }
+
   try {
     const proposal = await createProposal({
+      opensAt,
+      closesAt,
       title,
       summary: String(formData.get("summary") ?? "").trim(),
       description: String(formData.get("description") ?? "").trim(),

@@ -19,6 +19,24 @@ export function ProposalForm({ categories }: { categories: string[] }) {
     e.preventDefault()
     setError("")
     const formData = new FormData(e.currentTarget)
+    for (const key of ["opensAt", "closesAt"]) {
+      const local = String(formData.get(key) ?? "")
+      formData.set(key, local ? new Date(local).toISOString() : "")
+    }
+    const closes = String(formData.get("closesAt") ?? "")
+    const opens = String(formData.get("opensAt") ?? "")
+    if (!closes) {
+      setError("Please set a voting expiry date.")
+      return
+    }
+    if (new Date(closes).getTime() <= Date.now()) {
+      setError("The voting expiry date must be in the future.")
+      return
+    }
+    if (opens && new Date(opens).getTime() >= new Date(closes).getTime()) {
+      setError("The voting expiry date must be after the opening date.")
+      return
+    }
     startTransition(async () => {
       const res = await createProposalAction(formData)
       if (res.ok && res.id) {
@@ -141,6 +159,23 @@ export function ProposalForm({ categories }: { categories: string[] }) {
             Pass threshold (% yes)
           </label>
           <input id="passThreshold" name="passThreshold" type="number" min={1} max={100} defaultValue={50} className={inputClass} />
+        </div>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label className={labelClass} htmlFor="opensAt">
+            Voting opens <span className="font-normal text-muted-foreground">(optional)</span>
+          </label>
+          <input id="opensAt" name="opensAt" type="datetime-local" className={inputClass} />
+          <p className="mt-1 text-xs text-muted-foreground">Leave empty to open when you activate the proposal.</p>
+        </div>
+        <div>
+          <label className={labelClass} htmlFor="closesAt">
+            Voting expires
+          </label>
+          <input id="closesAt" name="closesAt" type="datetime-local" required className={inputClass} />
+          <p className="mt-1 text-xs text-muted-foreground">Votes are rejected after this date and time.</p>
         </div>
       </div>
 
