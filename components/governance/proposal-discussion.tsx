@@ -3,8 +3,9 @@
 import Link from "next/link"
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
-import { Loader2, MessagesSquare, Send, ShieldCheck, Trash2 } from "lucide-react"
+import { Loader2, MessagesSquare, Send, ShieldAlert, ShieldCheck, Trash2 } from "lucide-react"
 import { deleteProposalCommentAction, postProposalCommentAction } from "@/app/actions/proposal-extras"
+import { COMMENT_DAILY_LIMIT, COMMUNITY_RULES, validateCommentText } from "@/lib/comment-moderation"
 
 export type DiscussionComment = {
   id: number
@@ -46,6 +47,7 @@ export function ProposalDiscussion({
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
   const [deletingId, setDeletingId] = useState<number | null>(null)
+  const liveIssue = body.trim().length >= 2 ? validateCommentText(body) : null
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -75,6 +77,20 @@ export function ProposalDiscussion({
         <MessagesSquare className="size-5 text-green" aria-hidden="true" /> Member Discussion
       </h2>
 
+      <section aria-labelledby="community-rules" className="rounded-xl border border-line bg-muted/40 px-4 py-3">
+        <h3 id="community-rules" className="inline-flex items-center gap-2 text-sm font-semibold text-heading">
+          <ShieldAlert className="size-4 text-green" aria-hidden="true" /> Community Rules
+        </h3>
+        <ul className="mt-2 flex flex-col gap-1 pl-5 text-sm leading-relaxed text-muted-2 marker:text-green list-disc">
+          {COMMUNITY_RULES.map((rule) => (
+            <li key={rule}>{rule}</li>
+          ))}
+        </ul>
+        <p className="mt-2 text-xs text-muted-2">
+          Comments that break these rules are blocked automatically and may be removed by VAAP administrators.
+        </p>
+      </section>
+
       {canPost ? (
         <form onSubmit={submit} className="flex flex-col gap-2 rounded-xl border border-line p-4">
           <label htmlFor="comment-body" className="text-sm font-medium text-heading">
@@ -86,16 +102,31 @@ export function ProposalDiscussion({
             onChange={(e) => setBody(e.target.value)}
             maxLength={MAX}
             rows={4}
-            placeholder="Keep it respectful and on topic."
-            className="resize-y rounded-lg border border-line bg-background px-3 py-2 text-sm leading-relaxed outline-none focus:border-green"
+            onPaste={(e) => {
+              if (e.clipboardData.files.length > 0) {
+                e.preventDefault()
+                setError("Images and files cannot be added to comments. Plain text only.")
+              }
+            }}
+            onDrop={(e) => {
+              if (e.dataTransfer.files.length > 0) {
+                e.preventDefault()
+                setError("Images and files cannot be added to comments. Plain text only.")
+              }
+            }}
+            placeholder="Plain text only. No links, emails, phone numbers, or abusive language."
+            aria-describedby="comment-hint"
+            aria-invalid={Boolean(liveIssue)}
+            className="resize-y rounded-lg border border-line bg-background px-3 py-2 text-sm leading-relaxed outline-none focus:border-green aria-[invalid=true]:border-destructive"
           />
+          {liveIssue && <p className="text-xs text-destructive">{liveIssue}</p>}
           <div className="flex items-center justify-between gap-3">
-            <span className="text-xs text-muted-2">
-              {body.length}/{MAX}
+            <span id="comment-hint" className="text-xs text-muted-2">
+              {body.length}/{MAX} · 1 comment per hour, max {COMMENT_DAILY_LIMIT} per day
             </span>
             <button
               type="submit"
-              disabled={pending || body.trim().length < 2}
+              disabled={pending || body.trim().length < 2 || Boolean(liveIssue)}
               className="inline-flex items-center gap-2 rounded-lg bg-green px-4 py-2 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
             >
               {pending && deletingId === null ? (
