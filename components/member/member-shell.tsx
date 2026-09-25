@@ -42,6 +42,7 @@ const NAV: NavItem[] = [
   { label: "Membership", href: "/dashboard/membership", icon: IdCard },
   { label: "Voting Status", href: "/dashboard/voting", icon: ShieldCheck },
   { label: "Governance & Voting", href: "/dashboard/governance", icon: Vote },
+  { label: "Elections", href: "/dashboard/elections", icon: Vote },
   { label: "My Applications", href: "/dashboard/applications", icon: FileCheck2 },
   { label: "Events", href: "/dashboard/events", icon: CalendarDays, group: "Explore" },
   { label: "Knowledge & Resources", href: "/dashboard/resources", icon: BookOpen },

@@ -73,7 +73,9 @@ const GROUPS: { heading: string; links: { href: string; label: string; icon: typ
   {
     heading: "Governance",
     links: [
-      { href: "/admin/governance", label: "Proposals & Voting", icon: Vote },
+ { href: "/admin/governance", label: "Proposals & Voting", icon: Vote },
+ { href: "/admin/elections", label: "Elections", icon: Vote },
+ { href: "/admin/governance/reports", label: "Reports & Audit", icon: FileText },
     ],
   },
   {

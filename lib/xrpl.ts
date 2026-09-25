@@ -89,11 +89,11 @@ export async function submitMemo(memoType: string, memoData: string): Promise<Xr
   return withClient(async (client) => {
     const wallet = await getGovernanceWallet(client)
 
+    // AccountSet is a no-op on the governance account itself and carries the
+    // memo on-ledger. A self-Payment would be rejected with temREDUNDANT.
     const prepared = await client.autofill({
-      TransactionType: "Payment",
+      TransactionType: "AccountSet",
       Account: wallet.address,
-      Destination: wallet.address,
-      Amount: "1", // 1 drop, self-payment
       Memos: [
         {
           Memo: {
