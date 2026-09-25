@@ -15,9 +15,11 @@ function diff(target: number) {
 export function VoteCountdown({
   closesAt,
   compact = false,
+  tone = "light",
 }: {
   closesAt: string
   compact?: boolean
+  tone?: "light" | "dark"
 }) {
   const target = new Date(closesAt).getTime()
   const [t, setT] = useState(() => diff(target))
@@ -27,8 +29,14 @@ export function VoteCountdown({
     return () => clearInterval(id)
   }, [target])
 
+  const dark = tone === "dark"
+
   if (t.ms <= 0) {
-    return <span className="text-sm font-semibold text-muted-2">Voting closed</span>
+    return (
+      <span className={`text-sm font-semibold ${dark ? "text-primary-foreground/80" : "text-muted-2"}`}>
+        Voting closed
+      </span>
+    )
   }
 
   if (compact) {
@@ -47,11 +55,26 @@ export function VoteCountdown({
   ]
 
   return (
-    <div className="grid grid-cols-4 gap-2">
+    <div className="grid grid-cols-4 gap-2" role="timer" aria-live="off">
       {cells.map((c) => (
-        <div key={c.label} className="rounded-xl border border-line bg-background p-2.5 text-center">
-          <p className="font-mono text-2xl font-bold tabular-nums text-heading">{String(c.value).padStart(2, "0")}</p>
-          <p className="mt-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-2">{c.label}</p>
+        <div
+          key={c.label}
+          className={`rounded-xl border p-2.5 text-center ${
+            dark ? "border-primary-foreground/25 bg-primary-foreground/5" : "border-line bg-background"
+          }`}
+        >
+          <p
+            className={`text-3xl font-bold tabular-nums ${dark ? "text-primary-foreground" : "font-mono text-heading"}`}
+          >
+            {String(c.value).padStart(2, "0")}
+          </p>
+          <p
+            className={`mt-1 text-[10px] font-semibold uppercase tracking-wider ${
+              dark ? "text-primary-foreground/80" : "text-muted-2"
+            }`}
+          >
+            {c.label}
+          </p>
         </div>
       ))}
     </div>

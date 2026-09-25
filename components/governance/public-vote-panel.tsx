@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState, useTransition } from "react"
-import { CheckCircle2, LogIn, ShieldCheck, ShieldX, Vote } from "lucide-react"
+import { CheckCircle2, Lock, LogIn, Send, ShieldCheck, ShieldX, Vote } from "lucide-react"
 import { castVoteAction } from "@/app/actions/governance"
 
 type Option = { id: number; label: string }
@@ -214,20 +214,23 @@ export function PublicVotePanel({
 
   // ---- Logged in, eligible: cast flow -----------------------------------
   return (
-    <PanelShell>
-      <div className="mb-3 flex items-start gap-2 rounded-xl border border-green-border bg-mint p-3">
-        <ShieldCheck className="mt-0.5 size-4 shrink-0 text-green" />
-        <div className="text-xs">
+    <div className="flex flex-col gap-4">
+      <div className="flex items-start gap-3 rounded-2xl border border-green-border bg-mint p-4 shadow-sm">
+        <ShieldCheck className="mt-0.5 size-7 shrink-0 fill-green text-mint" aria-hidden="true" />
+        <div className="text-sm leading-relaxed">
           <p className="font-semibold text-heading">You are eligible to vote</p>
           {voter.memberNumber && (
             <p className="text-muted-2">
-              Member Number: <span className="font-mono font-semibold text-heading">{voter.memberNumber}</span> · Voting
-              Right: <span className="font-semibold text-green">APPROVED</span>
+              Member Number: <span className="font-semibold text-green">{voter.memberNumber}</span>
             </p>
           )}
+          <p className="text-muted-2">
+            Voting Right: <span className="font-semibold text-green">APPROVED</span>
+          </p>
         </div>
       </div>
 
+    <PanelShell>
       {step === "confirm" ? (
         <div className="rounded-xl border border-green-border bg-mint p-4">
           <p className="text-sm font-semibold text-heading">Confirm your vote</p>
@@ -273,14 +276,18 @@ export function PublicVotePanel({
         </div>
       ) : (
         <>
-          <p className="mb-2 text-sm font-bold text-heading">Cast your vote</p>
-          <div className="flex flex-col gap-2.5">
+          <p className="mb-4 flex items-center gap-2 text-lg font-bold text-heading">
+            <Vote className="size-5 text-green" aria-hidden="true" /> Cast Your Vote
+          </p>
+          <div className="flex flex-col gap-3" role="radiogroup" aria-label="Your vote">
             {yesNo
               ? (["yes", "no", "abstain"] as const).map((c) => (
                   <label
                     key={c}
-                    className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3.5 transition-colors ${
-                      choice === c ? "border-green bg-mint" : "border-line bg-background hover:border-green/50"
+                    className={`flex cursor-pointer items-center gap-4 rounded-xl border p-4 transition-colors ${
+                      choice === c
+                        ? "border-green bg-mint ring-1 ring-green"
+                        : "border-line bg-background hover:border-green/50"
                     }`}
                   >
                     <input
@@ -289,7 +296,7 @@ export function PublicVotePanel({
                       value={c}
                       checked={choice === c}
                       onChange={() => setChoice(c)}
-                      className="mt-0.5 size-4 accent-[var(--color-green)]"
+                      className="size-5 shrink-0 accent-[var(--color-green)]"
                     />
                     <span>
                       <span className="block text-sm font-semibold uppercase text-heading">{c}</span>
@@ -323,16 +330,20 @@ export function PublicVotePanel({
               setError("")
               setStep("confirm")
             }}
-            className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-green px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-green-hover disabled:opacity-50"
+            className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-green px-5 py-3.5 text-base font-semibold text-white transition-colors hover:bg-green-hover disabled:opacity-50"
           >
-            <Vote className="size-4" /> Continue
+            <Send className="size-4" aria-hidden="true" /> Submit My Vote
           </button>
+          <p className="mt-3 flex items-center justify-center gap-1.5 text-xs text-muted-2">
+            <Lock className="size-3.5" aria-hidden="true" /> Your vote will be recorded securely on the XRP Ledger.
+          </p>
         </>
       )}
     </PanelShell>
+    </div>
   )
 }
 
 function PanelShell({ children }: { children: React.ReactNode }) {
-  return <div className="rounded-2xl border border-line bg-card p-5">{children}</div>
+  return <div className="rounded-2xl border border-line bg-background p-5 shadow-sm">{children}</div>
 }
