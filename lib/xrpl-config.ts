@@ -103,5 +103,31 @@ export async function getSavedMainnetAddress(): Promise<string | null> {
 }
 
 export async function saveMainnetSeed(seed: string): Promise<void> {
+  const { Wallet } = await import("xrpl")
+  const address = Wallet.fromSeed(seed).classicAddress
   await writeSetting(MAINNET_SEED_KEY, encrypt(seed))
+  await writeSetting(MAINNET_ADDRESS_KEY, address)
+  await writeSetting(MAINNET_CREATED_KEY, new Date().toISOString())
+}
+
+const MAINNET_ADDRESS_KEY = "xrpl_mainnet_address"
+const MAINNET_CREATED_KEY = "xrpl_mainnet_created_at"
+
+export type GovernanceAccountInfo = {
+  address: string
+  source: "vars" | "saved"
+  createdAt: string | null
+}
+
+/** Non-sensitive facts about the permanent mainnet governance account. */
+export async function getGovernanceAccountInfo(): Promise<GovernanceAccountInfo | null> {
+  const address = await getSavedMainnetAddress()
+  if (!address) return null
+  const source = process.env.XRPL_GOVERNANCE_SEED?.trim() ? "vars" : "saved"
+  const [storedAddress, createdAt] = await Promise.all([
+    readSetting(MAINNET_ADDRESS_KEY).catch(() => null),
+    readSetting(MAINNET_CREATED_KEY).catch(() => null),
+  ])
+  if (storedAddress !== address) await writeSetting(MAINNET_ADDRESS_KEY, address).catch(() => {})
+  return { address, source, createdAt: storedAddress === address ? createdAt : null }
 }

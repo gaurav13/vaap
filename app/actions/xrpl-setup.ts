@@ -97,6 +97,9 @@ export async function activateMainnet(seed: string, replace = false): Promise<Re
       return { ok: false, error: "That doesn't look like a valid XRPL secret seed (it should start with “s”)." }
     }
 
+    if (replace && process.env.XRPL_GOVERNANCE_SEED?.trim()) {
+      return { ok: false, error: "The account is set by XRPL_GOVERNANCE_SEED in Vars. Change it there instead." }
+    }
     const existing = await getStoredMainnetSeed()
     if (existing && Wallet.fromSeed(existing).classicAddress !== wallet.classicAddress && !replace) {
       return {
@@ -121,6 +124,33 @@ export async function activateMainnet(seed: string, replace = false): Promise<Re
     await drainXrplQueue().catch(() => {})
     refresh()
     return { ok: true, message: `Mainnet is live. Account ${wallet.classicAddress} holds ${balance} XRP.` }
+  } catch (e) {
+    return { ok: false, error: (e as Error).message }
+  }
+}
+
+/**
+ * Create the permanent mainnet governance account on the server and save it
+ * (encrypted) immediately, so it survives leaving the page before funding.
+ * The seed is returned exactly once for an offline backup. Refuses to run if an
+ * account already exists, so it can never overwrite the saved one.
+ */
+export async function createGovernanceWallet(): Promise<
+  { ok: true; address: string; seed: string } | { ok: false; error: string }
+> {
+  try {
+    await requireSuperAdmin()
+    const existing = await getMainnetSeed()
+    if (existing) {
+      return {
+        ok: false,
+        error: `A governance account (${Wallet.fromSeed(existing).classicAddress}) already exists. It was not changed.`,
+      }
+    }
+    const wallet = Wallet.generate()
+    await saveMainnetSeed(wallet.seed as string)
+    refresh()
+    return { ok: true, address: wallet.classicAddress, seed: wallet.seed as string }
   } catch (e) {
     return { ok: false, error: (e as Error).message }
   }
