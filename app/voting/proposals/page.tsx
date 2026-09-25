@@ -103,7 +103,7 @@ export default async function ProposalsListPage({
             No proposals match your filters.
           </p>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-5 md:grid-cols-2">
             {cards.map((c) => (
               <PublicProposalCard key={c.proposal.id} card={c} />
             ))}
