@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Plus, Vote } from "lucide-react"
+import { Plus, Vote, Eye } from "lucide-react"
 import { listProposals } from "@/lib/governance"
 import { StatusPill } from "@/components/governance/status-pill"
 
@@ -54,8 +54,11 @@ export default async function AdminGovernancePage() {
                     <StatusPill status={p.status} />
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <Link href={`/admin/governance/${p.id}`} className="text-sm font-semibold text-green hover:underline">
-                      Manage
+                    <Link
+                      href={`/admin/governance/${p.id}`}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-green-border bg-mint px-3 py-1.5 text-sm font-semibold text-green transition-colors hover:bg-mint/70"
+                    >
+                      <Eye className="size-3.5" /> View &amp; manage
                     </Link>
                   </td>
                 </tr>

@@ -77,7 +77,7 @@ export default async function MemberGovernancePage() {
                     </div>
                     {p.summary && <p className="mt-1.5 text-sm text-muted-2">{p.summary}</p>}
                     <p className="mt-2 text-xs font-medium text-green">
-                      {votedMap.get(p.id) ? "You have voted — view your receipt" : "Vote now"}
+                      {votedMap.get(p.id) ? "You have voted — view details & receipt" : "View details & vote"}
                     </p>
                   </div>
                   <ArrowRight className="size-5 shrink-0 text-green" />

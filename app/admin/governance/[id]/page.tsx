@@ -1,15 +1,20 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { ArrowLeft, ExternalLink } from "lucide-react"
+import { ArrowLeft, ExternalLink, Users, Layers, Percent, ShieldCheck, Calendar } from "lucide-react"
 import { and, desc, eq } from "drizzle-orm"
 import { db } from "@/lib/db"
-import { xrplAnchors, xrplTransactions } from "@/lib/db/schema"
+import { xrplAnchors } from "@/lib/db/schema"
 import { getProposal, getProposalResult, eligibleMemberIds, proposalVoteCount } from "@/lib/governance"
 import { explorerUrl } from "@/lib/xrpl"
 import { StatusPill } from "@/components/governance/status-pill"
 import { ProposalAdminControls } from "@/components/governance/proposal-admin-controls"
 
 export const dynamic = "force-dynamic"
+
+function fmtDate(d: Date | string | null | undefined) {
+  if (!d) return "—"
+  return new Date(d).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
+}
 
 export default async function AdminProposalDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id: idStr } = await params
@@ -32,6 +37,8 @@ export default async function AdminProposalDetail({ params }: { params: Promise<
   ])
   const anchor = anchors[0] ?? null
   const optionTally: Record<string, number> = result?.optionTally ? JSON.parse(result.optionTally) : {}
+  const eligibleCount = eligible.length
+  const turnout = eligibleCount > 0 ? Math.round((voteCount / eligibleCount) * 100) : 0
 
   return (
     <div className="mx-auto w-full max-w-3xl">
@@ -42,25 +49,53 @@ export default async function AdminProposalDetail({ params }: { params: Promise<
         <ArrowLeft className="size-4" /> Back to proposals
       </Link>
 
+      {/* Header */}
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="font-mono text-xs text-muted-2">{proposal.reference}</p>
           <h1 className="text-2xl font-bold text-heading">{proposal.title}</h1>
+          {proposal.summary && <p className="mt-2 text-sm text-muted-2">{proposal.summary}</p>}
         </div>
         <StatusPill status={proposal.status} />
       </div>
 
-      {proposal.summary && <p className="mb-4 text-sm text-muted-2">{proposal.summary}</p>}
+      {/* Meta chips */}
+      <div className="mb-6 flex flex-wrap gap-2">
+        <MetaChip icon={<Layers className="size-3.5" />} label="Category" value={proposal.category || "Resolution"} />
+        <MetaChip icon={<ShieldCheck className="size-3.5" />} label="Vote type" value={proposal.voteType.replace(/_/g, " ")} />
+        <MetaChip icon={<Percent className="size-3.5" />} label="Quorum" value={`${proposal.quorum}%`} />
+        <MetaChip icon={<Percent className="size-3.5" />} label="Pass at" value={`${proposal.passThreshold}%`} />
+      </div>
 
+      {/* Stats */}
       <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Stat label="Eligible voters" value={eligible.length} />
+        <Stat label="Eligible voters" value={eligibleCount} />
         <Stat label="Votes cast" value={voteCount} />
-        <Stat label="Quorum" value={`${proposal.quorum}%`} />
-        <Stat label="Pass at" value={`${proposal.passThreshold}%`} />
+        <Stat label="Turnout" value={`${turnout}%`} />
+        <Stat label="Visibility" value={proposal.visibility === "open" ? "Public" : "Members"} />
+      </div>
+
+      {/* Participation bar */}
+      <div className="mb-6 rounded-2xl border border-line bg-card p-6">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="inline-flex items-center gap-2 text-base font-bold text-heading">
+            <Users className="size-4 text-green" /> Participation
+          </h2>
+          <span className="text-sm font-semibold text-heading">
+            {voteCount} / {eligibleCount} voted
+          </span>
+        </div>
+        <div className="h-2.5 w-full overflow-hidden rounded-full bg-background">
+          <div className="h-full rounded-full bg-green transition-all" style={{ width: `${Math.min(turnout, 100)}%` }} />
+        </div>
+        <p className="mt-2 text-xs text-muted-2">
+          {turnout}% turnout{proposal.quorum > 0 ? ` · quorum ${proposal.quorum}%` : ""}
+        </p>
       </div>
 
       <ProposalAdminControls id={id} status={proposal.status} />
 
+      {/* Resolution text */}
       {proposal.description && (
         <div className="mt-6 rounded-2xl border border-line bg-card p-6">
           <h2 className="mb-2 text-base font-bold text-heading">Resolution text</h2>
@@ -68,6 +103,7 @@ export default async function AdminProposalDetail({ params }: { params: Promise<
         </div>
       )}
 
+      {/* Result */}
       {result && (
         <div className="mt-6 rounded-2xl border border-line bg-card p-6">
           <div className="mb-4 flex items-center justify-between">
@@ -98,6 +134,7 @@ export default async function AdminProposalDetail({ params }: { params: Promise<
         </div>
       )}
 
+      {/* XRPL anchor */}
       {proposal.anchorResultOnXrpl && (
         <div className="mt-6 rounded-2xl border border-line bg-card p-6">
           <h2 className="mb-2 text-base font-bold text-heading">XRP Ledger anchor (testnet)</h2>
@@ -122,7 +159,39 @@ export default async function AdminProposalDetail({ params }: { params: Promise<
           )}
         </div>
       )}
+
+      {/* Timeline */}
+      <div className="mt-6 rounded-2xl border border-line bg-card p-6">
+        <h2 className="mb-3 inline-flex items-center gap-2 text-base font-bold text-heading">
+          <Calendar className="size-4 text-green" /> Timeline
+        </h2>
+        <ul className="flex flex-col gap-2 text-sm">
+          <TimelineRow label="Created" value={fmtDate(proposal.createdAt)} />
+          <TimelineRow label="Published" value={fmtDate(proposal.publishedAt)} />
+          <TimelineRow label="Voting opened" value={fmtDate(proposal.opensAt)} />
+          <TimelineRow label="Voting closed" value={fmtDate(proposal.closedAt)} />
+        </ul>
+      </div>
     </div>
+  )
+}
+
+function MetaChip({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-card px-3 py-1.5 text-xs text-muted-2">
+      <span className="text-green">{icon}</span>
+      <span className="font-medium text-heading capitalize">{value}</span>
+      <span className="text-muted-2">{label}</span>
+    </span>
+  )
+}
+
+function TimelineRow({ label, value }: { label: string; value: string }) {
+  return (
+    <li className="flex items-center justify-between">
+      <span className="text-muted-2">{label}</span>
+      <span className="font-medium text-heading">{value}</span>
+    </li>
   )
 }
 
