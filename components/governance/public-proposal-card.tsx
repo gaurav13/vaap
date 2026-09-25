@@ -19,22 +19,14 @@ export function PublicProposalCard({ card, emphasis = false }: { card: CardData;
     <article className="group flex flex-col overflow-hidden rounded-2xl border border-line bg-card shadow-sm transition-shadow hover:shadow-md">
       <Link
         href={href}
-        className="relative block aspect-[16/5] w-full overflow-hidden bg-mint-2"
+        className="relative block aspect-video w-full overflow-hidden border-b border-line bg-mint-2"
         aria-label={`Open ${proposal.title}`}
         tabIndex={-1}
       >
-        {hasBanner && (
-          <img
-            src={image || "/placeholder.svg"}
-            alt=""
-            aria-hidden
-            className="absolute inset-0 h-full w-full scale-110 object-cover opacity-60 blur-xl"
-          />
-        )}
         <img
           src={image || "/placeholder.svg"}
           alt={hasBanner ? `${proposal.title} banner` : ""}
-          className={`relative h-full w-full ${hasBanner ? "object-contain" : "object-cover"}`}
+          className="absolute inset-0 h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-[1.03]"
         />
       </Link>
 
