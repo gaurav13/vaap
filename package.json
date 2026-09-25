@@ -4,8 +4,9 @@
   "private": true,
   "packageManager": "pnpm@12.3.4",
   "scripts": {
-    "dev": "next dev",
-    "build": "drizzle-kit push && tsx scripts/seed-admin.ts && next build",
+    "dev": "node scripts/generate-core-routes.mjs && next dev",
+    "build": "node scripts/generate-core-routes.mjs && drizzle-kit push && tsx scripts/seed-admin.ts && next build",
+    "routes:generate": "node scripts/generate-core-routes.mjs",
     "start": "next start",
     "db:push": "drizzle-kit push",
     "db:generate": "drizzle-kit generate",

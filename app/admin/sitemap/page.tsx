@@ -3,30 +3,11 @@ import { ExternalLink, FileText, Globe, Pencil, ChevronRight, Newspaper } from "
 import { getSiteSettings } from "@/lib/site-settings"
 import { getAllPages } from "@/app/actions/cms"
 import { getPublishedNews } from "@/app/actions/public"
+import { getCoreRouteState } from "@/lib/core-routes"
+import { getSession } from "@/lib/session"
+import { CoreRouteDeleteButton, CoreRouteRestoreButton } from "@/components/admin/core-route-actions"
 
 export const dynamic = "force-dynamic"
-
-const CORE_ROUTES: { label: string; href: string }[] = [
-  { label: "Home", href: "/" },
-  { label: "About", href: "/about" },
-  { label: "Membership", href: "/membership" },
-  { label: "Governance", href: "/governance" },
-  { label: "Voting", href: "/voting" },
-  { label: "Active Votes", href: "/voting/active" },
-  { label: "Upcoming Votes", href: "/voting/upcoming" },
-  { label: "Voting Results", href: "/voting/results" },
-  { label: "Voting Guidelines", href: "/voting/guidelines" },
-  { label: "Verify a Vote", href: "/voting/verify" },
-  { label: "Elections", href: "/voting/elections" },
-  { label: "Committees", href: "/committees" },
-  { label: "Ecosystem", href: "/ecosystem" },
-  { label: "Knowledge Hub", href: "/knowledge" },
-  { label: "Community", href: "/community" },
-  { label: "News", href: "/news" },
-  { label: "Events", href: "/events" },
-  { label: "Contact", href: "/contact" },
-  { label: "Verify Membership", href: "/membership/verify" },
-]
 
 function ViewLink({ href }: { href: string }) {
   return (
@@ -42,11 +23,14 @@ function ViewLink({ href }: { href: string }) {
 }
 
 export default async function AdminSitemapPage() {
-  const [settings, allPages, posts] = await Promise.all([
+  const [settings, allPages, posts, core, session] = await Promise.all([
     getSiteSettings(),
     getAllPages(),
     getPublishedNews(),
+    getCoreRouteState(),
+    getSession(),
   ])
+  const isSuperAdmin = session?.user?.role === "admin"
 
   return (
     <div>
@@ -204,18 +188,47 @@ export default async function AdminSitemapPage() {
           <Globe className="size-5 text-green" />
           <h2 className="text-lg font-bold text-heading">Core pages</h2>
         </div>
-        <p className="mt-1 text-sm text-muted-2">Built-in pages that always exist on the site.</p>
+        <p className="mt-1 text-sm text-muted-2">
+          Built-in pages, detected automatically from the codebase on every deploy — new pages appear here and in{" "}
+          <a href="/sitemap.xml" target="_blank" rel="noopener noreferrer" className="font-medium text-green hover:underline">
+            sitemap.xml
+          </a>{" "}
+          without manual editing. Deleting removes a page from the sitemap; you can restore it anytime.
+        </p>
         <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          {CORE_ROUTES.map((r) => (
+          {core.visible.map((r) => (
             <div key={r.href} className="flex items-center justify-between gap-3 rounded-lg border border-line bg-background p-3">
               <div className="min-w-0">
                 <p className="truncate font-medium text-heading">{r.label}</p>
                 <p className="truncate text-xs text-muted-2">{r.href}</p>
               </div>
-              <ViewLink href={r.href} />
+              <div className="flex shrink-0 items-center gap-1.5">
+                <ViewLink href={r.href} />
+                {isSuperAdmin && r.href !== "/" && <CoreRouteDeleteButton href={r.href} label={r.label} />}
+              </div>
             </div>
           ))}
         </div>
+
+        {core.hidden.length > 0 && (
+          <div className="mt-6">
+            <h3 className="text-sm font-bold text-heading">Deleted from sitemap ({core.hidden.length})</h3>
+            <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {core.hidden.map((r) => (
+                <div
+                  key={r.href}
+                  className="flex items-center justify-between gap-3 rounded-lg border border-dashed border-line bg-muted/40 p-3"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate font-medium text-muted-2 line-through">{r.label}</p>
+                    <p className="truncate text-xs text-muted-2">{r.href}</p>
+                  </div>
+                  {isSuperAdmin && <CoreRouteRestoreButton href={r.href} label={r.label} />}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </section>
     </div>
   )
