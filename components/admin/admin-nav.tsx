@@ -25,6 +25,7 @@ import {
   Percent,
   PenSquare,
   Settings,
+  ShieldCheck,
   Users,
   UsersRound,
   Vote,
@@ -75,6 +76,7 @@ const GROUPS: { heading: string; links: { href: string; label: string; icon: typ
     links: [
  { href: "/admin/governance", label: "Proposals & Voting", icon: Vote },
  { href: "/admin/elections", label: "Elections", icon: Vote },
+ { href: "/admin/governance/voting-rights", label: "Voting Rights", icon: ShieldCheck, adminOnly: true },
  { href: "/admin/governance/reports", label: "Reports & Audit", icon: FileText },
     ],
   },

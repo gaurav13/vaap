@@ -17,6 +17,7 @@ import {
   logGovernance,
   ensurePublicId,
 } from "@/lib/governance"
+import { hasGovernanceRight } from "@/lib/voting-rights"
 
 async function requireManager() {
   const session = await getSession()
@@ -138,8 +139,11 @@ export async function castVoteAction(input: { proposalId: number; choice: string
   try {
     const member = await getMemberByUserId(user.id)
     if (!member) return { ok: false, error: "No member profile found." }
-    if (!member.votingEligible || member.status !== "active") {
+    if (member.status !== "active") {
       return { ok: false, error: "You are not currently eligible to vote." }
+    }
+    if (!(await hasGovernanceRight(member.id))) {
+      return { ok: false, error: "You do not have governance voting rights. Contact VAAP administration." }
     }
     const data = await getProposal(input.proposalId)
     if (!data) return { ok: false, error: "Proposal not found." }

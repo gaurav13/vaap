@@ -3,6 +3,8 @@ import Link from "next/link"
 import { Check, ShieldCheck, X, FileCheck2, Boxes, Coins, Clock } from "lucide-react"
 import { getSession } from "@/lib/session"
 import { getMyMembership } from "@/app/actions/cms"
+import { getMemberByUserId } from "@/lib/governance"
+import { getVotingRights, type VotingStatus } from "@/lib/voting-rights"
 import { PageHeading } from "@/components/member/page-heading"
 import { VoteRegisterButton } from "@/components/member/vote-register-button"
 
@@ -13,6 +15,8 @@ export default async function VotingPage() {
   if (!session?.user) redirect("/sign-in")
   const user = session.user
   const membership = await getMyMembership(user.id)
+  const member = await getMemberByUserId(user.id)
+  const rights = member ? await getVotingRights(member.id) : null
 
   const eligible = membership?.votingEligible ?? false
   const active = membership?.status === "active"
@@ -54,6 +58,12 @@ export default async function VotingPage() {
                 : "Not currently registered"}
           </p>
         </div>
+      </div>
+
+      {/* Voting rights granted by administration */}
+      <div className="mt-6 grid gap-3 sm:grid-cols-2">
+        <RightStatusCard title="Governance right" description="Vote on resolutions & proposals" status={rights?.governanceStatus} />
+        <RightStatusCard title="Election right" description="Vote for office bearers by secret ballot" status={rights?.electionStatus} />
       </div>
 
       {/* Who can vote */}
@@ -125,6 +135,37 @@ export default async function VotingPage() {
           )}
         </div>
       )}
+    </div>
+  )
+}
+
+function RightStatusCard({
+  title,
+  description,
+  status,
+}: {
+  title: string
+  description: string
+  status?: VotingStatus | null
+}) {
+  const s: VotingStatus = status ?? "pending"
+  const meta: Record<VotingStatus, { label: string; className: string; dot: string }> = {
+    approved: { label: "Approved", className: "border-green-border bg-mint text-green", dot: "bg-green" },
+    pending: { label: "Pending review", className: "border-line bg-card text-heading", dot: "bg-amber-500" },
+    suspended: { label: "Suspended", className: "border-orange-200 bg-orange-50 text-orange-700", dot: "bg-orange-500" },
+    revoked: { label: "Revoked", className: "border-line bg-card text-muted-2", dot: "bg-gray-400" },
+    rejected: { label: "Not granted", className: "border-line bg-card text-muted-2", dot: "bg-gray-400" },
+  }
+  const m = meta[s]
+  return (
+    <div className={`rounded-2xl border p-5 ${m.className}`}>
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-bold">{title}</p>
+        <span className="inline-flex items-center gap-1.5 text-xs font-semibold">
+          <span className={`size-2 rounded-full ${m.dot}`} /> {m.label}
+        </span>
+      </div>
+      <p className="mt-1 text-xs opacity-80">{description}</p>
     </div>
   )
 }

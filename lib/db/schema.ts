@@ -638,6 +638,18 @@ export const governanceMemberPermissions = pgTable("governance_member_permission
   canVote: boolean("canVote").notNull().default(true),
   isElectionOfficer: boolean("isElectionOfficer").notNull().default(false),
   note: text("note").notNull().default(""),
+  // Formal VAAP election voting right (Chair, Vice Chair, Exec Committee, ...).
+  // pending | approved | rejected | suspended | revoked
+  electionStatus: text("electionStatus").notNull().default("pending"),
+  electionApprovedBy: text("electionApprovedBy").notNull().default(""),
+  electionApprovedAt: timestamp("electionApprovedAt"),
+  electionReason: text("electionReason").notNull().default(""),
+  // Governance / project / DAO voting right. Same status lifecycle, independent
+  // of the election right.
+  governanceStatus: text("governanceStatus").notNull().default("pending"),
+  governanceApprovedBy: text("governanceApprovedBy").notNull().default(""),
+  governanceApprovedAt: timestamp("governanceApprovedAt"),
+  governanceReason: text("governanceReason").notNull().default(""),
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 })

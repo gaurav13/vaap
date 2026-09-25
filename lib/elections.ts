@@ -20,6 +20,7 @@ import {
   enqueueXrplJob,
 } from "@/lib/governance"
 import { sha256Hex } from "@/lib/xrpl"
+import { approvedElectionMemberIds } from "@/lib/voting-rights"
 
 export type ElectionRow = typeof elections.$inferSelect
 export type PositionRow = typeof electionPositions.$inferSelect
@@ -227,8 +228,10 @@ async function eligibleMembers(election: ElectionRow) {
     .from(members)
     .where(eq(members.status, "active"))
 
-  // Only members with voting rights in good standing may ever be enrolled.
-  const votingMembers = base.filter((m) => m.votingEligible && m.goodStanding)
+  // Only members whose ELECTION voting right has been approved by a
+  // super-admin, and who are in good standing, may ever be enrolled.
+  const approved = new Set(await approvedElectionMemberIds())
+  const votingMembers = base.filter((m) => approved.has(m.id) && m.goodStanding)
 
   if (election.eligibilityMode === "specific_category" && election.eligibleCategory) {
     return votingMembers.filter((m) => m.category === election.eligibleCategory)

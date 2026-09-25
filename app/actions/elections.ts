@@ -14,6 +14,7 @@ import {
   castBallot,
 } from "@/lib/elections"
 import { getMemberByUserId } from "@/lib/governance"
+import { hasElectionRight } from "@/lib/voting-rights"
 
 async function requireManager() {
   const session = await getSession()
@@ -143,6 +144,9 @@ export async function castBallotAction(input: { electionId: number; selections: 
   try {
     const member = await getMemberByUserId(user.id)
     if (!member) return { ok: false, error: "No member profile found." }
+    if (!(await hasElectionRight(member.id))) {
+      return { ok: false, error: "You do not have election voting rights. Contact VAAP administration." }
+    }
 
     const detail = await getElection(input.electionId)
     if (!detail) return { ok: false, error: "Election not found." }

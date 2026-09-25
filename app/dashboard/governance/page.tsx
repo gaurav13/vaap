@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 import { Vote, ArrowRight, ShieldCheck } from "lucide-react"
 import { getSession } from "@/lib/session"
 import { listProposals, getMemberByUserId, getMemberVote } from "@/lib/governance"
+import { getVotingRights } from "@/lib/voting-rights"
 import { PageHeading } from "@/components/member/page-heading"
 import { StatusPill } from "@/components/governance/status-pill"
 
@@ -13,7 +14,8 @@ export default async function MemberGovernancePage() {
   if (!session?.user) redirect("/sign-in")
 
   const member = await getMemberByUserId(session.user.id)
-  const eligible = (member?.votingEligible ?? false) && member?.status === "active"
+  const rights = member ? await getVotingRights(member.id) : null
+  const eligible = rights?.governanceStatus === "approved" && member?.status === "active"
 
   const proposals = await listProposals({ statuses: ["active", "closed", "results_published", "archived"] })
   const votedMap = new Map<number, boolean>()
@@ -37,7 +39,13 @@ export default async function MemberGovernancePage() {
         <div className="mb-6 flex items-center gap-3 rounded-2xl border border-line bg-card p-5">
           <ShieldCheck className="size-5 shrink-0 text-muted-2" />
           <p className="text-sm text-muted-2">
-            You can view proposals, but you are not currently an eligible voter.{" "}
+            {rights?.governanceStatus === "pending"
+              ? "Your governance voting right is pending review by VAAP administration. You can view proposals in the meantime."
+              : rights?.governanceStatus === "suspended"
+                ? "Your governance voting right is currently suspended. Contact VAAP administration for details."
+                : rights?.governanceStatus === "revoked" || rights?.governanceStatus === "rejected"
+                  ? "You do not have governance voting rights. Contact VAAP administration if you believe this is an error."
+                  : "You can view proposals, but you are not currently an approved governance voter."}{" "}
             <Link href="/dashboard/voting" className="font-semibold text-green hover:underline">
               Check your voting status
             </Link>

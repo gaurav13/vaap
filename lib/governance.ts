@@ -19,6 +19,7 @@ import {
   xrplAnchors,
 } from "@/lib/db/schema"
 import { sha256Hex } from "@/lib/xrpl"
+import { approvedGovernanceMemberIds } from "@/lib/voting-rights"
 
 export type ProposalRow = typeof governanceProposals.$inferSelect
 export type VoteRow = typeof governanceVotes.$inferSelect
@@ -204,22 +205,26 @@ export async function setProposalStatus(id: number, status: string) {
 
 /** Return the member ids eligible to vote on a proposal. */
 export async function eligibleMemberIds(proposal: ProposalRow): Promise<number[]> {
+  // A member may only vote on governance proposals when a super-admin has
+  // APPROVED their governance voting right (independent of the election right).
+  const approved = new Set(await approvedGovernanceMemberIds())
+
   if (proposal.eligibilityMode === "selected_members") {
     const rows = await db
       .select({ memberId: governanceProposalEligibility.memberId })
       .from(governanceProposalEligibility)
       .where(eq(governanceProposalEligibility.proposalId, proposal.id))
-    return rows.map((r) => r.memberId)
+    return rows.map((r) => r.memberId).filter((id) => approved.has(id))
   }
 
-  const base = and(eq(members.votingEligible, true), eq(members.status, "active"))
+  const base = eq(members.status, "active")
   const where =
     proposal.eligibilityMode === "category" && proposal.eligibleCategory
       ? and(base, eq(members.category, proposal.eligibleCategory))
       : base
 
   const rows = await db.select({ id: members.id }).from(members).where(where)
-  return rows.map((r) => r.id)
+  return rows.map((r) => r.id).filter((id) => approved.has(id))
 }
 
 export async function isMemberEligible(proposal: ProposalRow, memberId: number): Promise<boolean> {

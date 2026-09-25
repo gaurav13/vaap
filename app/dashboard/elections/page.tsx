@@ -4,6 +4,7 @@ import { ChevronRight, Vote } from "lucide-react"
 import { getSession } from "@/lib/session"
 import { listElections, isVoterEligible, getMemberBallot } from "@/lib/elections"
 import { getMemberByUserId } from "@/lib/governance"
+import { getVotingRights } from "@/lib/voting-rights"
 import { StatusPill } from "@/components/governance/status-pill"
 
 export const dynamic = "force-dynamic"
@@ -13,6 +14,7 @@ export default async function MemberElectionsPage() {
   if (!session?.user) redirect("/login")
 
   const member = await getMemberByUserId(session.user.id)
+  const rights = member ? await getVotingRights(member.id) : null
   const elections = await listElections({
     statuses: ["active", "closed", "results_published"],
   })
@@ -36,6 +38,18 @@ export default async function MemberElectionsPage() {
           <p className="text-sm text-muted-foreground">Vote for VAAP office bearers by secret ballot.</p>
         </div>
       </div>
+
+      {rights?.electionStatus !== "approved" && (
+        <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+          {rights?.electionStatus === "pending"
+            ? "Your election voting right is pending review by VAAP administration. You can view candidates but cannot cast a ballot yet."
+            : rights?.electionStatus === "suspended"
+              ? "Your election voting right is currently suspended. Contact VAAP administration for details."
+              : rights?.electionStatus === "revoked" || rights?.electionStatus === "rejected"
+                ? "You do not have election voting rights. Contact VAAP administration if you believe this is an error."
+                : "You are not currently an approved election voter. Contact VAAP administration to request election voting rights."}
+        </div>
+      )}
 
       <div className="mt-8 space-y-3">
         {rows.length === 0 && (
