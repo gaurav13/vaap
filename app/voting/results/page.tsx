@@ -4,6 +4,7 @@ import { getPublicProposalGroups } from "@/lib/governance-public"
 import { getProposalAnchor, getProposalResult } from "@/lib/governance"
 import { explorerUrl, XRPL_NETWORK } from "@/lib/xrpl"
 import { StatusPill } from "@/components/governance/status-pill"
+import { proposalBannerSrc } from "@/components/governance/public-proposal-card"
 import { EmptyVotingState, VotingSectionShell } from "@/components/governance/voting-section-shell"
 
 export const dynamic = "force-dynamic"
@@ -54,7 +55,23 @@ export default async function VotingResultsPage() {
           {rows.map(({ card, result, anchorHash }) => {
             const p = card.proposal
             return (
-              <article key={p.id} className="rounded-2xl border border-line bg-card p-6">
+              <article
+                key={p.id}
+                className="group flex flex-col overflow-hidden rounded-2xl border border-line bg-card shadow-sm transition-shadow hover:shadow-md md:flex-row"
+              >
+                <Link
+                  href={`/voting/proposals/${p.id}`}
+                  className="relative block aspect-video w-full shrink-0 overflow-hidden border-b border-line bg-mint-2 md:w-80 md:border-b-0 md:border-r"
+                  aria-label={`Open ${p.title}`}
+                  tabIndex={-1}
+                >
+                  <img
+                    src={proposalBannerSrc(p) || "/placeholder.svg"}
+                    alt={p.bannerImageUrl ? `${p.title} banner` : ""}
+                    className="absolute inset-0 h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-[1.03]"
+                  />
+                </Link>
+                <div className="min-w-0 flex-1 p-6">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
                     {p.reference && <p className="font-mono text-xs text-muted-2">{p.reference}</p>}
@@ -105,6 +122,7 @@ export default async function VotingResultsPage() {
                       View details <ArrowRight className="size-4" />
                     </Link>
                   </div>
+                </div>
                 </div>
               </article>
             )

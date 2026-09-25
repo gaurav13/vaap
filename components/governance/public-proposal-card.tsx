@@ -6,6 +6,10 @@ import type { PublicProposalCard as CardData } from "@/lib/governance-public"
 
 const ILLUSTRATIONS = ["/images/vote-card-document.png", "/images/vote-card-ballot.png"]
 
+export function proposalBannerSrc(proposal: { id: number; bannerImageUrl?: string | null }) {
+  return proposal.bannerImageUrl || ILLUSTRATIONS[proposal.id % ILLUSTRATIONS.length]
+}
+
 export function PublicProposalCard({ card, emphasis = false }: { card: CardData; emphasis?: boolean }) {
   const { proposal, eligibleCount, voteCount, turnout } = card
   const isOpen = proposal.status === "active"

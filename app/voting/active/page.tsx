@@ -20,9 +20,9 @@ export default async function ActiveVotesPage() {
       {open.length === 0 ? (
         <EmptyVotingState message="No votes are open right now. Check Upcoming Votes for what's scheduled next." />
       ) : (
-        <div className="grid gap-5 md:grid-cols-2">
-          {open.map((c) => (
-            <PublicProposalCard key={c.proposal.id} card={c} />
+        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+          {open.map((c, i) => (
+            <PublicProposalCard key={c.proposal.id} card={c} emphasis={i === 0} />
           ))}
         </div>
       )}
