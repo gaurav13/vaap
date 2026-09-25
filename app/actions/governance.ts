@@ -10,6 +10,7 @@ import {
   setProposalStatus,
   getProposal,
   getMemberByUserId,
+  getMemberVote,
   isMemberEligible,
   castVote,
   computeProposalResult,
@@ -148,9 +149,19 @@ export async function castVoteAction(input: { proposalId: number; choice: string
     const data = await getProposal(input.proposalId)
     if (!data) return { ok: false, error: "Proposal not found." }
     if (data.proposal.status !== "active") return { ok: false, error: "This vote is not open." }
+    // Server-side close-time enforcement (independent of the client countdown).
+    if (data.proposal.closesAt && data.proposal.closesAt.getTime() < Date.now()) {
+      return { ok: false, error: "Voting has closed for this proposal." }
+    }
 
     const eligible = await isMemberEligible(data.proposal, member.id)
     if (!eligible) return { ok: false, error: "You are not on the eligibility list for this vote." }
+
+    // Duplicate votes are blocked unless the proposal allows vote changes.
+    const existingVote = await getMemberVote(input.proposalId, member.id)
+    if (existingVote && !data.proposal.allowVoteChanges) {
+      return { ok: false, error: "You have already voted on this proposal." }
+    }
 
     // Validate choice against the vote type.
     if (data.proposal.voteType === "yes_no_abstain") {
@@ -178,6 +189,9 @@ export async function castVoteAction(input: { proposalId: number; choice: string
     })
     revalidatePath("/dashboard/governance")
     revalidatePath(`/dashboard/governance/${input.proposalId}`)
+    revalidatePath("/governance")
+    revalidatePath("/governance/proposals")
+    revalidatePath(`/governance/proposals/${input.proposalId}`)
     return { ok: true, receiptCode }
   } catch (e) {
     console.log("[v0] castVoteAction error:", (e as Error).message)

@@ -155,11 +155,41 @@ export type CtaBanner = {
   imageAlt: string
 }
 
+// The public "Voting" mega-menu. Kept as a single source of truth so the site
+// header, the sitemap and the super-admin menu editor all stay in sync. It is
+// injected automatically by ensureVotingMenu() whenever it is not already
+// present, so admins never have to add it by hand.
+export const VOTING_MENU: MenuItem = {
+  label: "Voting",
+  href: "/governance/voting/active",
+  children: [
+    { label: "Active Votes", href: "/governance/voting/active" },
+    { label: "Upcoming Votes", href: "/governance/voting/upcoming" },
+    { label: "Voting Results", href: "/governance/voting/results" },
+    { label: "Voting Guidelines", href: "/governance/voting/guidelines" },
+  ],
+}
+
+// Ensure the Voting menu is present exactly once, positioned right after the
+// Governance item (or appended if Governance is absent). Idempotent: it detects
+// an existing Voting entry by label or by a /governance/voting href.
+export function ensureVotingMenu(items: MenuItem[]): MenuItem[] {
+  const hasVoting = items.some(
+    (i) => i.label?.trim().toLowerCase() === "voting" || (i.href ?? "").startsWith("/governance/voting"),
+  )
+  if (hasVoting) return items
+  const idx = items.findIndex((i) => i.label?.trim().toLowerCase() === "governance")
+  const next = [...items]
+  next.splice(idx >= 0 ? idx + 1 : next.length, 0, VOTING_MENU)
+  return next
+}
+
 export const DEFAULT_MENU: MenuItem[] = [
   { label: "Home", href: "/" },
   { label: "About", href: "/about" },
   { label: "Team", href: "/team" },
   { label: "Governance", href: "/governance" },
+  VOTING_MENU,
   { label: "Committees", href: "/committees" },
   {
     label: "Membership",
@@ -403,7 +433,7 @@ export type SiteSettings = {
 export async function getSiteSettings(): Promise<SiteSettings> {
   const map = await readAll()
   return {
-    menu: parse<MenuItem[]>(map.menu, DEFAULT_MENU),
+    menu: ensureVotingMenu(parse<MenuItem[]>(map.menu, DEFAULT_MENU)),
     social: parse<SocialLinks>(map.social, DEFAULT_SOCIAL),
     general: parse<General>(map.general, DEFAULT_GENERAL),
     banner: parse<Banner>(map.banner, DEFAULT_BANNER),
@@ -460,6 +490,6 @@ export async function getGovFramework(): Promise<GovFramework> {
 
 export async function getMenuItems(): Promise<MenuItem[]> {
   const map = await readAll()
-  const items = parse<MenuItem[]>(map.menu, DEFAULT_MENU)
-  return items.filter((i) => i.label?.trim() && i.href?.trim())
+  const items = parse<MenuItem[]>(map.menu, DEFAULT_MENU).filter((i) => i.label?.trim() && i.href?.trim())
+  return ensureVotingMenu(items)
 }

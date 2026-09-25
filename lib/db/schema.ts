@@ -670,6 +670,20 @@ export const governanceProposals = pgTable("governance_proposals", {
   passThreshold: integer("passThreshold").notNull().default(50),
   recordIndividualVotesOnXrpl: boolean("recordIndividualVotesOnXrpl").notNull().default(false),
   anchorResultOnXrpl: boolean("anchorResultOnXrpl").notNull().default(true),
+  // Public-website visibility controls (super-admin per proposal).
+  showLiveResults: boolean("showLiveResults").notNull().default(false),
+  showIndividualVotesPublicly: boolean("showIndividualVotesPublicly").notNull().default(false),
+  showMemberNumberPublicly: boolean("showMemberNumberPublicly").notNull().default(false),
+  allowVoteChanges: boolean("allowVoteChanges").notNull().default(false),
+  // Extended proposal detail sections (all optional).
+  background: text("background").notNull().default(""),
+  objectives: text("objectives").notNull().default(""),
+  expectedImpact: text("expectedImpact").notNull().default(""),
+  implementationPlan: text("implementationPlan").notNull().default(""),
+  timelineText: text("timelineText").notNull().default(""),
+  budget: text("budget").notNull().default(""),
+  committee: text("committee").notNull().default(""),
+  proposalOwner: text("proposalOwner").notNull().default(""),
   status: text("status").notNull().default("draft"), // draft | published | active | closed | archived
   opensAt: timestamp("opensAt"),
   closesAt: timestamp("closesAt"),
