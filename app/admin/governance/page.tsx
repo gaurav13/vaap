@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { getActiveNetwork } from "@/lib/xrpl-config"
 import { Plus, Vote, Eye } from "lucide-react"
 import { listProposals } from "@/lib/governance"
 import { StatusPill } from "@/components/governance/status-pill"
@@ -19,7 +20,7 @@ export default async function AdminGovernancePage() {
         <div>
           <h1 className="text-2xl font-bold text-heading">Proposals &amp; Voting</h1>
           <p className="mt-1 text-sm text-muted-2">
-            Create DAO resolutions, run member votes, and anchor results to the XRP Ledger ({networkLabel()}).
+            Create DAO resolutions, run member votes, and anchor results to the XRP Ledger ({networkLabel(await getActiveNetwork())}).
           </p>
         </div>
         <Link

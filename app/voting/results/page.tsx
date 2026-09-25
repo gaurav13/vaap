@@ -2,7 +2,8 @@ import Link from "next/link"
 import { ArrowRight, ExternalLink, Search, ShieldCheck, Users } from "lucide-react"
 import { getPublicProposalGroups } from "@/lib/governance-public"
 import { getProposalAnchor, getProposalResult } from "@/lib/governance"
-import { explorerUrl, XRPL_NETWORK } from "@/lib/xrpl"
+import { explorerUrl } from "@/lib/xrpl"
+import { getActiveNetwork } from "@/lib/xrpl-config"
 import { StatusPill } from "@/components/governance/status-pill"
 import { proposalBannerSrc } from "@/components/governance/public-proposal-card"
 import { EmptyVotingState, VotingSectionShell } from "@/components/governance/voting-section-shell"
@@ -16,7 +17,7 @@ export const metadata = {
 }
 
 export default async function VotingResultsPage() {
-  const { completed } = await getPublicProposalGroups()
+  const [{ completed }, network] = await Promise.all([getPublicProposalGroups(), getActiveNetwork()])
   const rows = await Promise.all(
     completed.map(async (card) => {
       const [result, anchor] = await Promise.all([
@@ -35,7 +36,7 @@ export default async function VotingResultsPage() {
     >
       <div className="mb-6 flex flex-wrap items-center gap-3">
         <span className="inline-flex items-center gap-2 rounded-full bg-mint px-3 py-1 text-xs font-semibold text-green">
-          <ShieldCheck className="size-3.5" /> XRP Ledger · {XRPL_NETWORK}
+          <ShieldCheck className="size-3.5" /> XRP Ledger · {network}
         </span>
         <Link
           href="/voting/verify"

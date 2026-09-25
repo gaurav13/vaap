@@ -8,7 +8,7 @@ import {
   governanceVotes,
   electionParticipation,
 } from "@/lib/db/schema"
-import { submitMemo, XRPL_NETWORK } from "@/lib/xrpl"
+import { submitMemo } from "@/lib/xrpl"
 
 const MEMO_TYPES: Record<string, string> = {
   vote: "VAAP-VOTE",
@@ -125,7 +125,7 @@ export async function drainXrplQueue(batch = 5): Promise<{ processed: ProcessedJ
         .update(xrplTransactionQueue)
         .set({ status: exhausted ? "failed" : "pending", lastError: message, nextRunAt, updatedAt: new Date() })
         .where(eq(xrplTransactionQueue.id, job.id))
-      console.error(`[xrpl-worker] job ${job.id} on ${XRPL_NETWORK} failed (attempt ${attempt}):`, message)
+      console.error(`[xrpl-worker] job ${job.id} failed (attempt ${attempt}):`, message)
       processed.push({ id: job.id, status: exhausted ? "failed" : "retrying", error: message })
     }
   }

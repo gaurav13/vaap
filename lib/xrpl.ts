@@ -5,6 +5,7 @@ import { db } from "@/lib/db"
 import { governanceSettings } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
 import { XRPL_NETWORK, explorerUrl, accountExplorerUrl, networkLabel, type XrplNetwork } from "@/lib/xrpl-network"
+import { getActiveNetwork, getMainnetSeed } from "@/lib/xrpl-config"
 
 // ---------------------------------------------------------------------------
 // XRPL governance anchoring service.
@@ -14,9 +15,10 @@ import { XRPL_NETWORK, explorerUrl, accountExplorerUrl, networkLabel, type XrplN
 // governance account submits an AccountSet transaction whose Memo carries a
 // hash of the vote / result.
 //
-// Network is selected with XRPL_NETWORK ("mainnet" | "testnet", default
-// testnet). On mainnet the signing key MUST come from XRPL_GOVERNANCE_SEED —
-// it is never generated, faucet-funded, or stored in the database.
+// The network and mainnet key are resolved at runtime (lib/xrpl-config.ts):
+// env vars first, then the super admin's saved setup. On mainnet the key is
+// never generated or faucet-funded — it must be a funded account the admin
+// supplied. Testnet auto-provisions a free faucet wallet.
 // ---------------------------------------------------------------------------
 
 export { XRPL_NETWORK, explorerUrl, accountExplorerUrl, networkLabel }
@@ -66,22 +68,24 @@ async function writeTestnetSeed(seed: string): Promise<void> {
     })
 }
 
-export function isMainnetConfigured(): boolean {
-  return Boolean(process.env.XRPL_GOVERNANCE_SEED?.trim())
+export async function isMainnetConfigured(): Promise<boolean> {
+  return Boolean(await getMainnetSeed())
 }
 
 /**
- * Resolve the VAAP governance wallet.
- *  - Mainnet: XRPL_GOVERNANCE_SEED only. Missing seed is a hard error.
+ * Resolve the VAAP governance wallet for a network.
+ *  - Mainnet: configured seed only. Missing seed is a hard error.
  *  - Testnet: env seed, else a persisted auto-provisioned seed, else a new faucet-funded wallet.
  */
-export async function getGovernanceWallet(client: Client | null): Promise<Wallet> {
-  const envSeed = process.env.XRPL_GOVERNANCE_SEED?.trim()
-  if (envSeed) return Wallet.fromSeed(envSeed)
-
-  if (XRPL_NETWORK === "mainnet") {
-    throw new Error("XRPL_GOVERNANCE_SEED is not set; mainnet anchoring is disabled")
+export async function getGovernanceWallet(client: Client | null, network: XrplNetwork): Promise<Wallet> {
+  if (network === "mainnet") {
+    const seed = await getMainnetSeed()
+    if (!seed) throw new Error("Mainnet governance account is not set up; open Admin → XRPL Setup")
+    return Wallet.fromSeed(seed)
   }
+
+  const envSeed = process.env.XRPL_GOVERNANCE_SEED?.trim()
+  if (envSeed && process.env.XRPL_NETWORK?.trim().toLowerCase() === "testnet") return Wallet.fromSeed(envSeed)
 
   const stored = await readTestnetSeed()
   if (stored) return Wallet.fromSeed(stored)
@@ -92,9 +96,9 @@ export async function getGovernanceWallet(client: Client | null): Promise<Wallet
   return funded.wallet
 }
 
-async function connectWithFailover(): Promise<Client> {
+async function connectWithFailover(network: XrplNetwork): Promise<Client> {
   let lastError: unknown
-  for (const url of ENDPOINTS[XRPL_NETWORK]) {
+  for (const url of ENDPOINTS[network]) {
     const client = new Client(url, { timeout: 20000, maxFeeXRP: MAX_FEE_XRP })
     try {
       await client.connect()
@@ -104,11 +108,11 @@ async function connectWithFailover(): Promise<Client> {
       await client.disconnect().catch(() => {})
     }
   }
-  throw new Error(`Unable to reach any XRPL ${XRPL_NETWORK} server: ${(lastError as Error)?.message ?? "unknown"}`)
+  throw new Error(`Unable to reach any XRPL ${network} server: ${(lastError as Error)?.message ?? "unknown"}`)
 }
 
-async function withClient<T>(fn: (client: Client) => Promise<T>): Promise<T> {
-  const client = await connectWithFailover()
+async function withClient<T>(network: XrplNetwork, fn: (client: Client) => Promise<T>): Promise<T> {
+  const client = await connectWithFailover(network)
   try {
     return await fn(client)
   } finally {
@@ -118,7 +122,7 @@ async function withClient<T>(fn: (client: Client) => Promise<T>): Promise<T> {
 
 type AccountFunds = { balanceXrp: number; reserveXrp: number; spendableXrp: number }
 
-async function getAccountFunds(client: Client, address: string): Promise<AccountFunds> {
+export async function getAccountFunds(client: Client, address: string): Promise<AccountFunds> {
   const [info, server] = await Promise.all([
     client.request({ command: "account_info", account: address, ledger_index: "validated" }),
     client.request({ command: "server_info" }),
@@ -141,10 +145,11 @@ function toHex(value: string): string {
  * verified without a validated tesSUCCESS transaction.
  */
 export async function submitMemo(memoType: string, memoData: string): Promise<XrplSubmitResult> {
-  return withClient(async (client) => {
-    const wallet = await getGovernanceWallet(client)
+  const network = await getActiveNetwork()
+  return withClient(network, async (client) => {
+    const wallet = await getGovernanceWallet(client, network)
 
-    if (XRPL_NETWORK === "mainnet") {
+    if (network === "mainnet") {
       const funds = await getAccountFunds(client, wallet.address)
       if (funds.spendableXrp < MIN_SPENDABLE_XRP) {
         throw new Error(
@@ -182,7 +187,7 @@ export async function submitMemo(memoType: string, memoData: string): Promise<Xr
       hash: result.result.hash,
       ledgerIndex: result.result.ledger_index ?? null,
       account: wallet.address,
-      network: XRPL_NETWORK,
+      network,
       validated: true,
       rawResult: JSON.stringify(result.result).slice(0, 8000),
     }
@@ -190,8 +195,11 @@ export async function submitMemo(memoType: string, memoData: string): Promise<Xr
 }
 
 /** Look up a previously submitted transaction and confirm it is validated with tesSUCCESS. */
-export async function verifyTx(hash: string): Promise<{ validated: boolean; ledgerIndex: number | null }> {
-  return withClient(async (client) => {
+export async function verifyTx(
+  hash: string,
+  network?: XrplNetwork,
+): Promise<{ validated: boolean; ledgerIndex: number | null }> {
+  return withClient(network ?? (await getActiveNetwork()), async (client) => {
     try {
       const tx = await client.request({ command: "tx", transaction: hash })
       const meta = tx.result.meta
@@ -217,9 +225,10 @@ export type XrplStatus = {
 
 /** Health snapshot for the admin dashboard. Never throws and never exposes the seed. */
 export async function getXrplStatus(): Promise<XrplStatus> {
+  const network = await getActiveNetwork()
   const base: XrplStatus = {
-    network: XRPL_NETWORK,
-    configured: XRPL_NETWORK === "testnet" || isMainnetConfigured(),
+    network,
+    configured: network === "testnet" || (await isMainnetConfigured()),
     address: null,
     balanceXrp: null,
     reserveXrp: null,
@@ -228,17 +237,17 @@ export async function getXrplStatus(): Promise<XrplStatus> {
   }
 
   if (!base.configured) {
-    return { ...base, message: "Set XRPL_GOVERNANCE_SEED to a funded mainnet account to enable anchoring." }
+    return { ...base, message: "Mainnet account not set up yet. Open XRPL Setup to activate it." }
   }
 
   try {
-    const wallet = await getGovernanceWallet(null).catch(() => null)
+    const wallet = await getGovernanceWallet(null, network).catch(() => null)
     if (!wallet) return { ...base, ready: true, message: "A testnet wallet will be provisioned on first anchor." }
 
-    return await withClient(async (client) => {
+    return await withClient(network, async (client) => {
       try {
         const funds = await getAccountFunds(client, wallet.address)
-        const ready = XRPL_NETWORK === "testnet" || funds.spendableXrp >= MIN_SPENDABLE_XRP
+        const ready = network === "testnet" || funds.spendableXrp >= MIN_SPENDABLE_XRP
         return {
           ...base,
           address: wallet.address,

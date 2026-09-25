@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { getActiveNetwork } from "@/lib/xrpl-config"
 import { notFound } from "next/navigation"
 import { ArrowLeft, ExternalLink, Users, Layers, Percent, ShieldCheck, Calendar } from "lucide-react"
 import { and, desc, eq } from "drizzle-orm"
@@ -181,7 +182,7 @@ export default async function AdminProposalDetail({
       {/* XRPL anchor */}
       {proposal.anchorResultOnXrpl && (
         <div className="mt-6 rounded-2xl border border-line bg-card p-6">
-          <h2 className="mb-2 text-base font-bold text-heading">XRP Ledger anchor ({networkLabel()})</h2>
+          <h2 className="mb-2 text-base font-bold text-heading">XRP Ledger anchor ({networkLabel(await getActiveNetwork())})</h2>
           {!anchor ? (
             <p className="text-sm text-muted-2">Close the vote to anchor the result on-chain.</p>
           ) : (
