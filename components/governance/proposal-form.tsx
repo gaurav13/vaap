@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation"
 import { useState, useTransition } from "react"
 import { createProposalAction } from "@/app/actions/governance"
+import { ProposalBannerField } from "@/components/governance/proposal-banner-field"
+import { ProposalDocumentsStaging, type StagedDocument } from "@/components/governance/proposal-documents-staging"
 
 const inputClass =
   "w-full rounded-lg border border-line bg-background px-3.5 py-2.5 text-sm text-heading outline-none transition-colors focus:border-green"
@@ -14,10 +16,36 @@ export function ProposalForm({ categories }: { categories: string[] }) {
   const [error, setError] = useState("")
   const [voteType, setVoteType] = useState("yes_no_abstain")
   const [eligibilityMode, setEligibilityMode] = useState("all_voting_members")
+  const [bannerUploading, setBannerUploading] = useState(false)
+  const [documents, setDocuments] = useState<StagedDocument[]>([])
+  const [progress, setProgress] = useState("")
+
+  async function uploadDocuments(proposalId: number) {
+    const failed: string[] = []
+    for (const [index, doc] of documents.entries()) {
+      setProgress(`Uploading document ${index + 1} of ${documents.length}…`)
+      const body = new FormData()
+      body.set("proposalId", String(proposalId))
+      body.set("file", doc.file)
+      body.set("title", doc.title.trim())
+      body.set("description", doc.description.trim())
+      try {
+        const res = await fetch("/api/admin/proposal-documents", { method: "POST", body })
+        if (!res.ok) failed.push(doc.file.name)
+      } catch {
+        failed.push(doc.file.name)
+      }
+    }
+    return failed
+  }
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setError("")
+    if (bannerUploading) {
+      setError("Please wait for the banner image to finish uploading.")
+      return
+    }
     const formData = new FormData(e.currentTarget)
     for (const key of ["opensAt", "closesAt"]) {
       const local = String(formData.get(key) ?? "")
@@ -38,13 +66,17 @@ export function ProposalForm({ categories }: { categories: string[] }) {
       return
     }
     startTransition(async () => {
+      setProgress("Creating proposal…")
       const res = await createProposalAction(formData)
-      if (res.ok && res.id) {
-        router.push(`/admin/governance/${res.id}`)
-        router.refresh()
-      } else {
+      if (!res.ok || !res.id) {
+        setProgress("")
         setError(res.error ?? "Something went wrong.")
+        return
       }
+      const failed = documents.length ? await uploadDocuments(res.id) : []
+      const query = failed.length ? `?docsFailed=${failed.length}` : ""
+      router.push(`/admin/governance/${res.id}${query}`)
+      router.refresh()
     })
   }
 
@@ -70,6 +102,10 @@ export function ProposalForm({ categories }: { categories: string[] }) {
         </label>
         <textarea id="description" name="description" rows={5} className={inputClass} placeholder="The full text of the resolution members will vote on." />
       </div>
+
+      <ProposalBannerField onUploadingChange={setBannerUploading} />
+
+      <ProposalDocumentsStaging documents={documents} onChange={setDocuments} />
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
@@ -193,10 +229,15 @@ export function ProposalForm({ categories }: { categories: string[] }) {
 
       {error && <p className="rounded-lg bg-destructive/10 px-3.5 py-2.5 text-sm text-destructive">{error}</p>}
 
-      <div className="flex justify-end">
+      <div className="flex items-center justify-end gap-3">
+        {pending && progress && (
+          <p className="text-sm text-muted-foreground" aria-live="polite">
+            {progress}
+          </p>
+        )}
         <button
           type="submit"
-          disabled={pending}
+          disabled={pending || bannerUploading}
           className="inline-flex items-center gap-2 rounded-lg bg-green px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-green-hover disabled:opacity-60"
         >
           {pending ? "Creating…" : "Create proposal"}

@@ -18,8 +18,15 @@ function fmtDate(d: Date | string | null | undefined) {
   return new Date(d).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
 }
 
-export default async function AdminProposalDetail({ params }: { params: Promise<{ id: string }> }) {
+export default async function AdminProposalDetail({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ docsFailed?: string }>
+}) {
   const { id: idStr } = await params
+  const docsFailed = Number((await searchParams).docsFailed) || 0
   const id = Number(idStr)
   if (!Number.isFinite(id)) notFound()
 
@@ -108,6 +115,12 @@ export default async function AdminProposalDetail({ params }: { params: Promise<
 
       <ProposalAdminControls id={id} status={proposal.status} />
 
+      {docsFailed > 0 && (
+        <p role="alert" className="mt-6 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          The proposal was created, but {docsFailed} document{docsFailed === 1 ? "" : "s"} failed to upload. Please
+          upload {docsFailed === 1 ? "it" : "them"} again below.
+        </p>
+      )}
       <ProposalDocumentsManager proposalId={id} documents={managedDocuments} />
 
       {/* Resolution text */}

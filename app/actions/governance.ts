@@ -63,8 +63,22 @@ export async function createProposalAction(formData: FormData) {
     return { ok: false, error: "The voting expiry date must be after the opening date." }
   }
 
+  const bannerRaw = String(formData.get("bannerImageUrl") ?? "").trim()
+  let bannerImageUrl = ""
+  if (bannerRaw) {
+    try {
+      if (new URL(bannerRaw).protocol !== "https:") throw new Error()
+      bannerImageUrl = bannerRaw
+    } catch {
+      return { ok: false, error: "The banner image URL is invalid. Please upload it again." }
+    }
+  }
+  const bannerAlt = String(formData.get("bannerAlt") ?? "").trim().slice(0, 200)
+
   try {
     const proposal = await createProposal({
+      bannerImageUrl,
+      bannerAlt,
       opensAt,
       closesAt,
       title,
