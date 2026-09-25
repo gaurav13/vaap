@@ -82,6 +82,21 @@ export default async function MemberProposalPage({ params }: { params: Promise<{
         <MetaChip icon={<Percent className="size-3.5" />} label="Pass at" value={`${proposal.passThreshold}%`} />
       </div>
 
+      <div className="mb-6 flex flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm font-semibold text-heading">Read the full proposal</p>
+          <p className="text-sm text-muted-2">
+            View the complete proposal page with background, documents, timeline, and live results.
+          </p>
+        </div>
+        <Link
+          href={`/voting/proposals/${proposal.id}`}
+          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+        >
+          Open proposal page <ExternalLink className="size-4" aria-hidden="true" />
+        </Link>
+      </div>
+
       {/* Description */}
       {proposal.description && (
         <div className="mb-6 rounded-2xl border border-line bg-card p-6">
