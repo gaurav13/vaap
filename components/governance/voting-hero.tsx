@@ -11,13 +11,14 @@ const PILLARS = [
 export function VotingHero() {
   return (
     <section className="relative overflow-hidden rounded-3xl border border-line bg-gradient-to-r from-gold-tint via-background to-mint">
-      <div className="absolute inset-y-0 right-0 hidden w-3/5 lg:block">
+      <div className="relative h-56 w-full sm:h-72 md:h-80 lg:absolute lg:inset-y-0 lg:right-0 lg:h-full lg:w-3/5">
         <img
           src="/images/support-faisal-mosque.png"
           alt="Faisal Mosque, Islamabad"
-          className="h-full w-full object-cover"
+          className="h-full w-full object-cover object-center"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-gold-tint via-gold-tint/30 to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-background to-transparent lg:hidden" />
+        <div className="absolute inset-y-0 left-0 hidden w-1/3 bg-gradient-to-r from-gold-tint to-transparent lg:block" />
       </div>
 
       <div className="relative flex flex-col gap-8 p-6 sm:p-10 lg:flex-row lg:items-center lg:justify-between">
