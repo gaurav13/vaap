@@ -11,7 +11,9 @@ const nextConfig = {
       { source: "/governance/voting", destination: "/voting", permanent: true },
       { source: "/governance/voting/:path*", destination: "/voting/:path*", permanent: true },
       { source: "/governance/framework", destination: "/governance", permanent: true },
-      ...["proposals", "register", "verify", "elections"].flatMap((seg) => [
+      { source: "/governance/register", destination: "/voting/results", permanent: true },
+  { source: "/voting/register", destination: "/voting/results", permanent: true },
+  ...["proposals", "verify", "elections"].flatMap((seg) => [
         { source: `/governance/${seg}`, destination: `/voting/${seg}`, permanent: true },
         { source: `/governance/${seg}/:path*`, destination: `/voting/${seg}/:path*`, permanent: true },
       ]),

@@ -21,7 +21,7 @@ const CORE_ROUTES = [
   "/voting/proposals",
   "/voting/elections",
   "/voting/verify",
-  "/voting/register",
+
   "/committees",
   "/membership",
   "/membership/apply",

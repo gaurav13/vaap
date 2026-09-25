@@ -116,7 +116,7 @@ export async function setProposalStatusAction(id: number, status: string) {
     revalidatePath("/admin/governance")
     revalidatePath(`/admin/governance/${id}`)
     revalidatePath("/dashboard/governance")
-    revalidatePath("/voting/register")
+    revalidatePath("/voting/results")
     return { ok: true }
   } catch (e) {
     console.log("[v0] setProposalStatusAction error:", (e as Error).message)

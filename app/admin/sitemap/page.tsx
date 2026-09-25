@@ -16,7 +16,6 @@ const CORE_ROUTES: { label: string; href: string }[] = [
   { label: "Upcoming Votes", href: "/voting/upcoming" },
   { label: "Voting Results", href: "/voting/results" },
   { label: "Voting Guidelines", href: "/voting/guidelines" },
-  { label: "Voting Register", href: "/voting/register" },
   { label: "Verify a Vote", href: "/voting/verify" },
   { label: "Elections", href: "/voting/elections" },
   { label: "Committees", href: "/committees" },

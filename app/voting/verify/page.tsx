@@ -22,10 +22,10 @@ export default async function VerifyPage({ searchParams }: { searchParams: Promi
       <SiteHeader />
       <main className="mx-auto w-full max-w-xl px-4 py-14 sm:px-6">
         <Link
-          href="/voting/register"
+          href="/voting/results"
           className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-muted-2 hover:text-heading"
         >
-          <ArrowLeft className="size-4" /> Public register
+          <ArrowLeft className="size-4" /> Voting results
         </Link>
         <h1 className="text-3xl font-bold text-heading">Verify a vote receipt</h1>
         <p className="mt-1 text-muted-2">
