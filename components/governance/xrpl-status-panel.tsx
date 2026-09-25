@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { ExternalLink, ShieldCheck, TriangleAlert } from "lucide-react"
 import { sql } from "drizzle-orm"
 import { db } from "@/lib/db"
@@ -33,6 +34,9 @@ export async function XrplStatusPanel() {
               XRP Ledger · {networkLabel(status.network)} {status.ready ? "· Ready" : "· Action needed"}
             </h2>
             <p className="mt-0.5 text-sm text-muted-2">{status.message}</p>
+            <Link href="/admin/governance/xrpl-setup" className="mt-1 inline-block text-sm font-semibold text-green hover:underline">
+              {status.ready ? "XRPL setup guide" : "Set up XRPL account →"}
+            </Link>
             {status.address && (
               <a
                 href={accountExplorerUrl(status.address, status.network)}
