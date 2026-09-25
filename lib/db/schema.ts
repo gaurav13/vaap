@@ -675,6 +675,8 @@ export const governanceProposals = pgTable("governance_proposals", {
   showIndividualVotesPublicly: boolean("showIndividualVotesPublicly").notNull().default(false),
   showMemberNumberPublicly: boolean("showMemberNumberPublicly").notNull().default(false),
   allowVoteChanges: boolean("allowVoteChanges").notNull().default(false),
+  bannerImageUrl: text("bannerImageUrl").notNull().default(""),
+  bannerAlt: text("bannerAlt").notNull().default(""),
   // Extended proposal detail sections (all optional).
   background: text("background").notNull().default(""),
   objectives: text("objectives").notNull().default(""),

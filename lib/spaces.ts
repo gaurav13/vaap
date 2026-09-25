@@ -39,7 +39,7 @@ export function publicSpaceUrl(key: string) {
   return `${base}/${key}`
 }
 
-const IMAGE_FOLDERS = new Set(["pages", "news", "articles", "events", "publications"])
+const IMAGE_FOLDERS = new Set(["pages", "news", "articles", "events", "publications", "governance"])
 
 export async function uploadPageImage(file: {
   bytes: Uint8Array

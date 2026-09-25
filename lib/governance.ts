@@ -152,10 +152,14 @@ export async function createProposal(input: {
   createdByName?: string
   opensAt?: Date | null
   closesAt?: Date | null
+  bannerImageUrl?: string
+  bannerAlt?: string
 }) {
   const [proposal] = await db
     .insert(governanceProposals)
     .values({
+      bannerImageUrl: input.bannerImageUrl ?? "",
+      bannerAlt: input.bannerAlt ?? "",
       opensAt: input.opensAt ?? null,
       closesAt: input.closesAt ?? null,
       reference: makeReference("VAAP-RES"),

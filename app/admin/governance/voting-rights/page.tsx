@@ -18,11 +18,11 @@ export default async function VotingRightsPage() {
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-8">
       <header className="mb-6">
-        <h1 className="text-2xl font-bold text-navy">Voting Rights</h1>
-        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          Grant, suspend, or revoke each member&apos;s right to vote. Election rights and governance rights are managed
-          separately &mdash; approving one does not approve the other. Only members with an approved right can be
-          enrolled or cast a ballot.
+        <h1 className="text-2xl font-bold text-navy">Member Voting Approvals</h1>
+        <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+          Review and approve which members can vote. Election voting and governance &amp; proposal voting are approved
+          separately &mdash; accepting one does not accept the other. Accept or reject members one at a time, or select
+          several and use bulk accept / bulk reject.
         </p>
       </header>
       <VotingRightsManager rows={rows} />
