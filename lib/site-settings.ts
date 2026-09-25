@@ -161,21 +161,29 @@ export type CtaBanner = {
 // present, so admins never have to add it by hand.
 export const VOTING_MENU: MenuItem = {
   label: "Voting",
-  href: "/governance/voting/active",
+  href: "/voting",
   children: [
-    { label: "Active Votes", href: "/governance/voting/active" },
-    { label: "Upcoming Votes", href: "/governance/voting/upcoming" },
-    { label: "Voting Results", href: "/governance/voting/results" },
-    { label: "Voting Guidelines", href: "/governance/voting/guidelines" },
+    { label: "Active Votes", href: "/voting/active" },
+    { label: "Upcoming Votes", href: "/voting/upcoming" },
+    { label: "Voting Results", href: "/voting/results" },
+    { label: "Voting Guidelines", href: "/voting/guidelines" },
   ],
 }
 
 // Ensure the Voting menu is present exactly once, positioned right after the
 // Governance item (or appended if Governance is absent). Idempotent: it detects
-// an existing Voting entry by label or by a /governance/voting href.
-export function ensureVotingMenu(items: MenuItem[]): MenuItem[] {
+// an existing Voting entry by label or by a /voting href. Saved menus that still
+// point at the old /governance/voting/* URLs are rewritten to /voting/*.
+const legacyVotingHref = (href: string) => href.replace(/^\/governance\/voting(?=\/|$)/, "/voting")
+
+export function ensureVotingMenu(input: MenuItem[]): MenuItem[] {
+  const items: MenuItem[] = input.map((i) => ({
+    ...i,
+    href: legacyVotingHref(i.href ?? ""),
+    children: i.children?.map((c) => ({ ...c, href: legacyVotingHref(c.href ?? "") })),
+  }))
   const hasVoting = items.some(
-    (i) => i.label?.trim().toLowerCase() === "voting" || (i.href ?? "").startsWith("/governance/voting"),
+    (i) => i.label?.trim().toLowerCase() === "voting" || i.href.startsWith("/voting"),
   )
   if (hasVoting) return items
   const idx = items.findIndex((i) => i.label?.trim().toLowerCase() === "governance")

@@ -22,7 +22,7 @@ export default async function VerifyPage({ searchParams }: { searchParams: Promi
       <SiteHeader />
       <main className="mx-auto w-full max-w-xl px-4 py-14 sm:px-6">
         <Link
-          href="/governance/register"
+          href="/voting/register"
           className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-muted-2 hover:text-heading"
         >
           <ArrowLeft className="size-4" /> Public register

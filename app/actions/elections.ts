@@ -120,7 +120,7 @@ export async function setElectionStatusAction(id: number, status: string) {
     revalidatePath("/admin/elections")
     revalidatePath(`/admin/elections/${id}`)
     revalidatePath("/dashboard/elections")
-    revalidatePath("/governance/elections")
+    revalidatePath("/voting/elections")
     return { ok: true }
   } catch (e) {
     console.log("[v0] setElectionStatusAction error:", (e as Error).message)

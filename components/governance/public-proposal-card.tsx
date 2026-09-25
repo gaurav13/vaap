@@ -17,7 +17,7 @@ export function PublicProposalCard({ card }: { card: CardData }) {
       </div>
 
       <h3 className="mt-3 text-balance text-lg font-bold leading-snug text-heading">
-        <Link href={`/governance/proposals/${proposal.id}`} className="hover:text-green">
+        <Link href={`/voting/proposals/${proposal.id}`} className="hover:text-green">
           {proposal.title}
         </Link>
       </h3>
@@ -55,7 +55,7 @@ export function PublicProposalCard({ card }: { card: CardData }) {
       </div>
 
       <Link
-        href={`/governance/proposals/${proposal.id}`}
+        href={`/voting/proposals/${proposal.id}`}
         className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-green hover:gap-2.5 transition-all"
       >
         {isOpen ? "View & vote" : "View details"} <ArrowRight className="size-4" />

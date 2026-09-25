@@ -47,7 +47,7 @@ export default async function ProposalsListPage({
 
   return (
     <>
-      <SiteHeaderServer active="Governance" user={user} />
+      <SiteHeaderServer active="Voting" user={user} />
       <main className="mx-auto max-w-6xl px-4 py-10">
         <header className="mb-6">
           <p className="text-sm font-semibold uppercase tracking-wide text-green">VAAP Governance</p>
@@ -65,7 +65,7 @@ export default async function ProposalsListPage({
               const params = new URLSearchParams()
               if (f.key !== "all") params.set("filter", f.key)
               if (q) params.set("q", q)
-              const href = params.toString() ? `/governance/proposals?${params}` : "/governance/proposals"
+              const href = params.toString() ? `/voting/proposals?${params}` : "/voting/proposals"
               return (
                 <Link
                   key={f.key}
@@ -80,7 +80,7 @@ export default async function ProposalsListPage({
             })}
           </div>
 
-          <form action="/governance/proposals" className="flex gap-2">
+          <form action="/voting/proposals" className="flex gap-2">
             {filter !== "all" && <input type="hidden" name="filter" value={filter} />}
             <input
               type="search"

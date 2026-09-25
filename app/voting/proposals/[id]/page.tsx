@@ -89,7 +89,7 @@ export default async function PublicProposalDetailPage({ params }: { params: Pro
     }
   }
 
-  const loginHref = `/sign-in?returnTo=${encodeURIComponent(`/governance/proposals/${proposalId}`)}`
+  const loginHref = `/sign-in?returnTo=${encodeURIComponent(`/voting/proposals/${proposalId}`)}`
 
   const sections: { title: string; body: string }[] = [
     { title: "Background", body: proposal.background },
@@ -102,14 +102,14 @@ export default async function PublicProposalDetailPage({ params }: { params: Pro
 
   return (
     <>
-      <SiteHeaderServer active="Governance" user={user} />
+      <SiteHeaderServer active="Voting" user={user} />
       <main className="mx-auto max-w-6xl px-4 py-8">
         <nav className="mb-5 flex items-center gap-1.5 text-sm text-muted-2">
-          <Link href="/governance" className="hover:text-green">
-            Governance
+          <Link href="/voting" className="hover:text-green">
+            Voting
           </Link>
           <span>/</span>
-          <Link href="/governance/proposals" className="hover:text-green">
+          <Link href="/voting/proposals" className="hover:text-green">
             Proposals
           </Link>
           <span>/</span>

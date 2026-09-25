@@ -37,10 +37,10 @@ export default async function PublicElectionsPage() {
           are published. Where a result has been anchored to the XRP Ledger (testnet), a verification link is shown.
         </p>
         <div className="mt-4 flex flex-wrap gap-3 text-sm">
-          <Link href="/governance" className="font-medium text-green hover:underline">
+          <Link href="/voting/proposals" className="font-medium text-green hover:underline">
             Proposals &amp; resolutions
           </Link>
-          <Link href="/governance/verify" className="font-medium text-green hover:underline">
+          <Link href="/voting/verify" className="font-medium text-green hover:underline">
             Verify a receipt
           </Link>
         </div>

@@ -116,7 +116,7 @@ export async function setProposalStatusAction(id: number, status: string) {
     revalidatePath("/admin/governance")
     revalidatePath(`/admin/governance/${id}`)
     revalidatePath("/dashboard/governance")
-    revalidatePath("/governance/register")
+    revalidatePath("/voting/register")
     return { ok: true }
   } catch (e) {
     console.log("[v0] setProposalStatusAction error:", (e as Error).message)
@@ -189,9 +189,11 @@ export async function castVoteAction(input: { proposalId: number; choice: string
     })
     revalidatePath("/dashboard/governance")
     revalidatePath(`/dashboard/governance/${input.proposalId}`)
-    revalidatePath("/governance")
-    revalidatePath("/governance/proposals")
-    revalidatePath(`/governance/proposals/${input.proposalId}`)
+    revalidatePath("/voting")
+    revalidatePath("/voting/active")
+    revalidatePath("/voting/results")
+    revalidatePath("/voting/proposals")
+    revalidatePath(`/voting/proposals/${input.proposalId}`)
     return { ok: true, receiptCode }
   } catch (e) {
     console.log("[v0] castVoteAction error:", (e as Error).message)

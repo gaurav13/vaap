@@ -137,7 +137,7 @@ export type PublicProposalDetail = {
   voteCount: number
   remaining: number
   turnout: number
-  result: Awaited<ReturnType<typeof getProposalResult>>
+  result: Awaited<ReturnType<typeof getProposalResult>> | null
   optionTally: Record<string, number>
   anchorHash: string | null
   showResults: boolean
@@ -163,7 +163,7 @@ export async function getPublicProposalDetail(proposal: ProposalRow): Promise<Pu
   const showLiveResults = Boolean(proposal.showLiveResults)
   const showResults = closed || showLiveResults
 
-  let result: Awaited<ReturnType<typeof getProposalResult>> = null
+  let result: Awaited<ReturnType<typeof getProposalResult>> | null = null
   let optionTally: Record<string, number> = {}
   let anchorHash: string | null = null
 

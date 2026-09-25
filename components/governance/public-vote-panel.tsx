@@ -145,7 +145,7 @@ export function PublicVotePanel({
           </div>
         </div>
         <Link
-          href={`/governance/verify?code=${receipt}`}
+          href={`/voting/verify?code=${receipt}`}
           className="mt-3 inline-flex w-full items-center justify-center rounded-lg border border-line bg-background px-5 py-2.5 text-sm font-semibold text-heading transition-colors hover:bg-card"
         >
           Verify blockchain record
@@ -181,7 +181,7 @@ export function PublicVotePanel({
         </div>
         {voter.existingReceipt && (
           <Link
-            href={`/governance/verify?code=${voter.existingReceipt}`}
+            href={`/voting/verify?code=${voter.existingReceipt}`}
             className="mt-3 inline-flex w-full items-center justify-center rounded-lg border border-line bg-background px-5 py-2.5 text-sm font-semibold text-heading transition-colors hover:bg-card"
           >
             View my vote

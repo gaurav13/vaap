@@ -40,7 +40,7 @@ export default async function PublicRegisterPage() {
             independently verify that they have not been altered.
           </p>
           <Link
-            href="/governance/verify"
+            href="/voting/verify"
             className="mt-1 inline-flex items-center gap-2 rounded-lg border border-line bg-card px-4 py-2.5 text-sm font-semibold text-heading transition-colors hover:bg-background"
           >
             <Search className="size-4" /> Verify a vote receipt

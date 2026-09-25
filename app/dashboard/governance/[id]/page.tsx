@@ -117,7 +117,7 @@ export default async function MemberProposalPage({ params }: { params: Promise<{
             <p className="mt-1 text-sm text-muted-2">
               Receipt code:{" "}
               <Link
-                href={`/governance/verify?code=${existing.receiptCode}`}
+                href={`/voting/verify?code=${existing.receiptCode}`}
                 className="font-mono font-semibold text-green hover:underline"
               >
                 {existing.receiptCode}
