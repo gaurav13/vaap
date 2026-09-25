@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { ExternalLink, ShieldCheck, Search } from "lucide-react"
-import { listProposals, getProposalResult } from "@/lib/governance"
+import { listProposals, getProposalResult, getProposalAnchor } from "@/lib/governance"
 import { explorerUrl, XRPL_NETWORK } from "@/lib/xrpl"
 import { StatusPill } from "@/components/governance/status-pill"
 import { SiteHeader } from "@/components/site-header"
@@ -17,9 +17,12 @@ export const metadata = {
 export default async function PublicRegisterPage() {
   const proposals = await listProposals({ statuses: ["active", "closed", "results_published", "archived"] })
   const results = new Map<number, Awaited<ReturnType<typeof getProposalResult>>>()
+  const anchorHashes = new Map<number, string | null>()
   await Promise.all(
     proposals.map(async (p) => {
-      results.set(p.id, await getProposalResult(p.id))
+      const [result, anchor] = await Promise.all([getProposalResult(p.id), getProposalAnchor(p.id)])
+      results.set(p.id, result)
+      anchorHashes.set(p.id, anchor?.txHash ?? null)
     }),
   )
 
@@ -52,6 +55,7 @@ export default async function PublicRegisterPage() {
           ) : (
             proposals.map((p) => {
               const result = results.get(p.id)
+              const anchorHash = anchorHashes.get(p.id) ?? null
               return (
                 <article key={p.id} className="rounded-2xl border border-line bg-card p-6">
                   <div className="flex flex-wrap items-start justify-between gap-3">
@@ -74,9 +78,9 @@ export default async function PublicRegisterPage() {
                       ) : (
                         <Metric label="Total votes" value={result.totalVotes} />
                       )}
-                      {result.xrplTxHash && (
+                      {anchorHash && (
                         <a
-                          href={explorerUrl(result.xrplTxHash)}
+                          href={explorerUrl(anchorHash)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="ml-auto inline-flex items-center gap-1.5 font-semibold text-green hover:underline"

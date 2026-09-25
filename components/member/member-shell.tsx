@@ -24,6 +24,7 @@ import {
   ShieldCheck,
   Share2,
   User,
+  Vote,
   X,
 } from "lucide-react"
 import { authClient } from "@/lib/auth-client"

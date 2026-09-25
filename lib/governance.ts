@@ -15,6 +15,8 @@ import {
   governanceResults,
   governanceAuditLogs,
   xrplTransactionQueue,
+  xrplTransactions,
+  xrplAnchors,
 } from "@/lib/db/schema"
 import { sha256Hex } from "@/lib/xrpl"
 
@@ -445,25 +447,48 @@ export async function getProposalResult(proposalId: number) {
 export async function verifyReceipt(code: string) {
   const clean = code.trim().toUpperCase()
   if (!clean) return null
-  const [vote] = await db
+  const [row] = await db
     .select({
+      id: governanceVotes.id,
       receiptCode: governanceVotes.receiptCode,
       castAt: governanceVotes.castAt,
       xrplStatus: governanceVotes.xrplStatus,
-      xrplTxHash: governanceVotes.xrplTxHash,
       isActive: governanceVotes.isActive,
       proposalId: governanceVotes.proposalId,
     })
     .from(governanceVotes)
     .where(eq(governanceVotes.receiptCode, clean))
     .limit(1)
-  if (!vote) return null
+  if (!row) return null
+  // The on-ledger tx hash (if any) lives in the xrpl_transactions table, keyed
+  // by the vote row. Only a validated transaction has a hash.
+  const [tx] = await db
+    .select({ txHash: xrplTransactions.txHash, status: xrplTransactions.status })
+    .from(xrplTransactions)
+    .where(and(eq(xrplTransactions.refTable, "governance_votes"), eq(xrplTransactions.refId, row.id)))
+    .orderBy(desc(xrplTransactions.id))
+    .limit(1)
+  const vote = { ...row, xrplTxHash: tx?.txHash ?? null }
   const [proposal] = await db
     .select({ title: governanceProposals.title, reference: governanceProposals.reference, status: governanceProposals.status })
     .from(governanceProposals)
-    .where(eq(governanceProposals.id, vote.proposalId))
+    .where(eq(governanceProposals.id, row.proposalId))
     .limit(1)
   return { vote, proposal: proposal ?? null }
+}
+
+/**
+ * Returns the XRPL result anchor for a proposal, if one exists. The tx hash is
+ * only present once the anchor transaction has been validated on-ledger.
+ */
+export async function getProposalAnchor(proposalId: number) {
+  const [anchor] = await db
+    .select()
+    .from(xrplAnchors)
+    .where(and(eq(xrplAnchors.anchorType, "proposal_result"), eq(xrplAnchors.refId, proposalId)))
+    .orderBy(desc(xrplAnchors.id))
+    .limit(1)
+  return anchor ?? null
 }
 
 /** Count of ACTIVE ballots cast, for live open-vote displays. */

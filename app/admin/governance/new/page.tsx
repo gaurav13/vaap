@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic"
 
 export default async function NewProposalPage() {
   const plans = await db.select().from(membershipPlans)
-  const categories = Array.from(new Set(plans.map((p) => p.name).filter(Boolean)))
+  const categories = Array.from(new Set(plans.map((p) => p.title).filter(Boolean)))
 
   return (
     <div className="mx-auto w-full max-w-3xl">

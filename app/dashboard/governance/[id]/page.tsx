@@ -8,6 +8,7 @@ import {
   getMemberVote,
   isMemberEligible,
   getProposalResult,
+  getProposalAnchor,
   proposalVoteCount,
 } from "@/lib/governance"
 import { explorerUrl } from "@/lib/xrpl"
@@ -39,7 +40,8 @@ export default async function MemberProposalPage({ params }: { params: Promise<{
     proposalVoteCount(id),
   ])
   const optionTally: Record<string, number> = result?.optionTally ? JSON.parse(result.optionTally) : {}
-  const anchorHash = result?.xrplTxHash ?? null
+  const anchor = showResults ? await getProposalAnchor(id) : null
+  const anchorHash = anchor?.txHash ?? null
 
   const canVote = proposal.status === "active" && eligibleVoter && onList && !existing
 
