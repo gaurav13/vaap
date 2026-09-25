@@ -25,8 +25,10 @@ import {
   Percent,
   PenSquare,
   Settings,
+  ShieldCheck,
   Users,
   UsersRound,
+  Vote,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { VaapLogo } from "@/components/vaap-logo"
@@ -67,6 +69,16 @@ const GROUPS: { heading: string; links: { href: string; label: string; icon: typ
       { href: "/admin/applications", label: "Applications", icon: FileText },
       { href: "/admin/messages", label: "Messages", icon: Inbox },
       { href: "/admin/users", label: "Users & Roles", icon: Users, adminOnly: true },
+    ],
+  },
+  {
+    heading: "Governance",
+    links: [
+ { href: "/admin/governance", label: "Proposals & Voting", icon: Vote },
+ { href: "/admin/elections", label: "Elections", icon: Vote },
+ { href: "/admin/governance/voting-rights", label: "Voting Approvals", icon: ShieldCheck, adminOnly: true },
+ { href: "/admin/governance/reports", label: "Reports & Audit", icon: FileText },
+ { href: "/admin/governance/xrpl-setup", label: "XRPL Setup", icon: ShieldCheck, adminOnly: true },
     ],
   },
   {

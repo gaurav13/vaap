@@ -1,6 +1,6 @@
 export async function uploadPageImageFile(
   file: File,
-  folder: "pages" | "news" | "articles" | "events" | "publications" = "pages",
+  folder: "pages" | "news" | "articles" | "events" | "publications" | "governance" = "pages",
 ): Promise<string> {
   const body = new FormData()
   body.set("file", file)

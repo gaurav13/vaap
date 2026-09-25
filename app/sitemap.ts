@@ -3,27 +3,12 @@ import { eq } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { pages, news } from "@/lib/db/schema"
 import { getMenuItems } from "@/lib/site-settings"
+import { getCoreRouteState } from "@/lib/core-routes"
 
 // Regenerate on every request so newly created pages, menu items, or CMS pages
 // appear in the sitemap immediately — no manual editing or redeploy needed.
 export const dynamic = "force-dynamic"
 
-// Built-in routes that always exist in the app.
-const CORE_ROUTES = [
-  "/",
-  "/about",
-  "/governance",
-  "/committees",
-  "/membership",
-  "/membership/apply",
-  "/membership/verify",
-  "/ecosystem",
-  "/knowledge",
-  "/community",
-  "/news",
-  "/events",
-  "/contact",
-]
 
 function resolveBaseUrl() {
   const candidate =
@@ -41,13 +26,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // De-duplicate by clean path; later writes win so CMS lastModified beats "now".
   const entries = new Map<string, { url: string; lastModified: Date }>()
 
+  const { visible, hiddenSet } = await getCoreRouteState()
+
   const add = (rawPath: string, lastModified: Date = now) => {
     if (!rawPath || /^(https?:)?\/\//.test(rawPath) || /^(mailto:|tel:)/.test(rawPath)) return
     const path = rawPath.startsWith("/") ? rawPath : `/${rawPath}`
+    if (hiddenSet.has(path)) return
     entries.set(path, { url: `${base}${path === "/" ? "" : path}`, lastModified })
   }
 
-  CORE_ROUTES.forEach((route) => add(route))
+  visible.forEach((route) => add(route.href))
 
   // Navigation menu (top-level items and their sub-items).
   try {

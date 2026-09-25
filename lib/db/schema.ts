@@ -617,3 +617,341 @@ export const notifications = pgTable("notifications", {
   read: boolean("read").notNull().default(false),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 })
+
+// ===========================================================================
+// Governance, Elections & XRPL verification system (see 005-governance-schema.sql)
+// ===========================================================================
+
+// Stable public-facing governance ID per member for the public voting register.
+export const governancePublicIds = pgTable("governance_public_ids", {
+  id: serial("id").primaryKey(),
+  memberId: integer("memberId").notNull(),
+  publicId: text("publicId").notNull().unique(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
+// Per-member governance capabilities layered on top of role-based access.
+export const governanceMemberPermissions = pgTable("governance_member_permissions", {
+  id: serial("id").primaryKey(),
+  memberId: integer("memberId").notNull(),
+  canPropose: boolean("canPropose").notNull().default(false),
+  canVote: boolean("canVote").notNull().default(true),
+  isElectionOfficer: boolean("isElectionOfficer").notNull().default(false),
+  note: text("note").notNull().default(""),
+  // Formal VAAP election voting right (Chair, Vice Chair, Exec Committee, ...).
+  // pending | approved | rejected | suspended | revoked
+  electionStatus: text("electionStatus").notNull().default("pending"),
+  electionApprovedBy: text("electionApprovedBy").notNull().default(""),
+  electionApprovedAt: timestamp("electionApprovedAt"),
+  electionReason: text("electionReason").notNull().default(""),
+  // Governance / project / DAO voting right. Same status lifecycle, independent
+  // of the election right.
+  governanceStatus: text("governanceStatus").notNull().default("pending"),
+  governanceApprovedBy: text("governanceApprovedBy").notNull().default(""),
+  governanceApprovedAt: timestamp("governanceApprovedAt"),
+  governanceReason: text("governanceReason").notNull().default(""),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
+// DAO governance proposals / resolutions.
+export const governanceProposals = pgTable("governance_proposals", {
+  id: serial("id").primaryKey(),
+  reference: text("reference").unique(),
+  title: text("title").notNull(),
+  summary: text("summary").notNull().default(""),
+  description: text("description").notNull().default(""),
+  category: text("category").notNull().default("Resolution"),
+  voteType: text("voteType").notNull().default("yes_no_abstain"), // yes_no_abstain | single_choice | multi_choice
+  visibility: text("visibility").notNull().default("open"), // open | secret
+  eligibilityMode: text("eligibilityMode").notNull().default("all_voting_members"), // all_voting_members | selected_members | category
+  eligibleCategory: text("eligibleCategory").notNull().default(""),
+  quorum: integer("quorum").notNull().default(0),
+  passThreshold: integer("passThreshold").notNull().default(50),
+  recordIndividualVotesOnXrpl: boolean("recordIndividualVotesOnXrpl").notNull().default(false),
+  anchorResultOnXrpl: boolean("anchorResultOnXrpl").notNull().default(true),
+  // Public-website visibility controls (super-admin per proposal).
+  showLiveResults: boolean("showLiveResults").notNull().default(false),
+  showIndividualVotesPublicly: boolean("showIndividualVotesPublicly").notNull().default(false),
+  showMemberNumberPublicly: boolean("showMemberNumberPublicly").notNull().default(false),
+  allowVoteChanges: boolean("allowVoteChanges").notNull().default(false),
+  bannerImageUrl: text("bannerImageUrl").notNull().default(""),
+  bannerAlt: text("bannerAlt").notNull().default(""),
+  // Extended proposal detail sections (all optional).
+  background: text("background").notNull().default(""),
+  objectives: text("objectives").notNull().default(""),
+  expectedImpact: text("expectedImpact").notNull().default(""),
+  implementationPlan: text("implementationPlan").notNull().default(""),
+  timelineText: text("timelineText").notNull().default(""),
+  budget: text("budget").notNull().default(""),
+  committee: text("committee").notNull().default(""),
+  proposalOwner: text("proposalOwner").notNull().default(""),
+  status: text("status").notNull().default("draft"), // draft | published | active | closed | archived
+  opensAt: timestamp("opensAt"),
+  closesAt: timestamp("closesAt"),
+  publishedAt: timestamp("publishedAt"),
+  closedAt: timestamp("closedAt"),
+  createdById: text("createdById"),
+  createdByName: text("createdByName").notNull().default(""),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+})
+
+export const governanceProposalOptions = pgTable("governance_proposal_options", {
+  id: serial("id").primaryKey(),
+  proposalId: integer("proposalId").notNull(),
+  label: text("label").notNull(),
+  sortOrder: integer("sortOrder").notNull().default(0),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
+export const governanceProposalEligibility = pgTable("governance_proposal_eligibility", {
+  id: serial("id").primaryKey(),
+  proposalId: integer("proposalId").notNull(),
+  memberId: integer("memberId").notNull(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
+// One ACTIVE final vote per (proposal, member) — enforced by a partial unique
+// index in SQL. Superseded votes are kept with isActive = false.
+export const governanceVotes = pgTable("governance_votes", {
+  id: serial("id").primaryKey(),
+  proposalId: integer("proposalId").notNull(),
+  memberId: integer("memberId").notNull(),
+  choice: text("choice").notNull(), // yes | no | abstain | option
+  optionId: integer("optionId"),
+  weight: integer("weight").notNull().default(1),
+  receiptCode: text("receiptCode").notNull().unique(),
+  isActive: boolean("isActive").notNull().default(true),
+  version: integer("version").notNull().default(1),
+  xrplStatus: text("xrplStatus").notNull().default("not_recorded"), // not_recorded | pending | verified | failed
+  castAt: timestamp("castAt").notNull().defaultNow(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
+export const governanceVoteVersions = pgTable("governance_vote_versions", {
+  id: serial("id").primaryKey(),
+  voteId: integer("voteId").notNull(),
+  proposalId: integer("proposalId").notNull(),
+  memberId: integer("memberId").notNull(),
+  choice: text("choice").notNull(),
+  optionId: integer("optionId"),
+  version: integer("version").notNull(),
+  supersededAt: timestamp("supersededAt").notNull().defaultNow(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
+export const governanceVoteReceipts = pgTable("governance_vote_receipts", {
+  id: serial("id").primaryKey(),
+  voteId: integer("voteId").notNull(),
+  proposalId: integer("proposalId").notNull(),
+  memberId: integer("memberId").notNull(),
+  receiptCode: text("receiptCode").notNull().unique(),
+  receiptHash: text("receiptHash").notNull(),
+  issuedAt: timestamp("issuedAt").notNull().defaultNow(),
+})
+
+export const elections = pgTable("elections", {
+  id: serial("id").primaryKey(),
+  reference: text("reference").unique(),
+  title: text("title").notNull(),
+  description: text("description").notNull().default(""),
+  eligibilityMode: text("eligibilityMode").notNull().default("all_voting_members"),
+  eligibleCategory: text("eligibleCategory").notNull().default(""),
+  status: text("status").notNull().default("draft"), // draft | published | active | closed | results_published | archived
+  opensAt: timestamp("opensAt"),
+  closesAt: timestamp("closesAt"),
+  snapshotAt: timestamp("snapshotAt"),
+  anchorResultOnXrpl: boolean("anchorResultOnXrpl").notNull().default(true),
+  createdById: text("createdById"),
+  createdByName: text("createdByName").notNull().default(""),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+})
+
+export const electionPositions = pgTable("election_positions", {
+  id: serial("id").primaryKey(),
+  electionId: integer("electionId").notNull(),
+  title: text("title").notNull(),
+  description: text("description").notNull().default(""),
+  seats: integer("seats").notNull().default(1),
+  sortOrder: integer("sortOrder").notNull().default(0),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
+export const electionCandidates = pgTable("election_candidates", {
+  id: serial("id").primaryKey(),
+  electionId: integer("electionId").notNull(),
+  positionId: integer("positionId").notNull(),
+  memberId: integer("memberId"),
+  name: text("name").notNull(),
+  organization: text("organization").notNull().default(""),
+  manifesto: text("manifesto").notNull().default(""),
+  photo: text("photo"),
+  sortOrder: integer("sortOrder").notNull().default(0),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
+export const electionVoterSnapshots = pgTable("election_voter_snapshots", {
+  id: serial("id").primaryKey(),
+  electionId: integer("electionId").notNull(),
+  memberId: integer("memberId").notNull(),
+  membershipId: text("membershipId").notNull().default(""),
+  memberName: text("memberName").notNull().default(""),
+  publicId: text("publicId"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
+export const electionParticipation = pgTable("election_participation", {
+  id: serial("id").primaryKey(),
+  electionId: integer("electionId").notNull(),
+  memberId: integer("memberId").notNull(),
+  participatedAt: timestamp("participatedAt").notNull().defaultNow(),
+  xrplStatus: text("xrplStatus").notNull().default("not_recorded"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
+// Secret ballot. voterTag is a keyed HMAC of the member — it prevents double
+// voting and allows re-voting without a plaintext identity→selection link.
+export const electionBallots = pgTable("election_ballots", {
+  id: serial("id").primaryKey(),
+  electionId: integer("electionId").notNull(),
+  voterTag: text("voterTag").notNull(),
+  ballotToken: text("ballotToken").notNull().unique(),
+  encryptedSelections: text("encryptedSelections").notNull(),
+  isActive: boolean("isActive").notNull().default(true),
+  version: integer("version").notNull().default(1),
+  castAt: timestamp("castAt").notNull().defaultNow(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
+export const electionBallotVersions = pgTable("election_ballot_versions", {
+  id: serial("id").primaryKey(),
+  ballotId: integer("ballotId").notNull(),
+  electionId: integer("electionId").notNull(),
+  encryptedSelections: text("encryptedSelections").notNull(),
+  version: integer("version").notNull(),
+  supersededAt: timestamp("supersededAt").notNull().defaultNow(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
+export const electionResults = pgTable("election_results", {
+  id: serial("id").primaryKey(),
+  electionId: integer("electionId").notNull(),
+  positionId: integer("positionId").notNull(),
+  candidateId: integer("candidateId").notNull(),
+  votes: integer("votes").notNull().default(0),
+  isWinner: boolean("isWinner").notNull().default(false),
+  resultHash: text("resultHash"),
+  computedAt: timestamp("computedAt").notNull().defaultNow(),
+})
+
+export const governanceResults = pgTable("governance_results", {
+  id: serial("id").primaryKey(),
+  proposalId: integer("proposalId").notNull(),
+  eligibleCount: integer("eligibleCount").notNull().default(0),
+  totalVotes: integer("totalVotes").notNull().default(0),
+  yesCount: integer("yesCount").notNull().default(0),
+  noCount: integer("noCount").notNull().default(0),
+  abstainCount: integer("abstainCount").notNull().default(0),
+  optionTally: text("optionTally").notNull().default(""), // JSON
+  outcome: text("outcome").notNull().default("pending"), // pending | passed | failed | no_quorum
+  resultHash: text("resultHash"),
+  computedAt: timestamp("computedAt").notNull().defaultNow(),
+})
+
+export const xrplTransactionQueue = pgTable("xrpl_transaction_queue", {
+  id: serial("id").primaryKey(),
+  jobType: text("jobType").notNull(), // vote | election_participation | result_anchor
+  refTable: text("refTable").notNull(),
+  refId: integer("refId").notNull(),
+  payloadHash: text("payloadHash").notNull(),
+  payload: text("payload").notNull().default(""),
+  status: text("status").notNull().default("pending"), // pending | processing | submitted | verified | failed
+  attempts: integer("attempts").notNull().default(0),
+  maxAttempts: integer("maxAttempts").notNull().default(5),
+  lastError: text("lastError").notNull().default(""),
+  idempotencyKey: text("idempotencyKey").notNull().unique(),
+  nextRunAt: timestamp("nextRunAt").notNull().defaultNow(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+})
+
+export const xrplTransactions = pgTable("xrpl_transactions", {
+  id: serial("id").primaryKey(),
+  queueId: integer("queueId"),
+  jobType: text("jobType").notNull(),
+  refTable: text("refTable").notNull(),
+  refId: integer("refId").notNull(),
+  network: text("network").notNull().default("testnet"),
+  txHash: text("txHash").unique(),
+  ledgerIndex: integer("ledgerIndex"),
+  account: text("account").notNull().default(""),
+  memoHash: text("memoHash").notNull().default(""),
+  status: text("status").notNull().default("pending"), // pending | submitted | verified | failed
+  validatedAt: timestamp("validatedAt"),
+  rawResult: text("rawResult").notNull().default(""),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+})
+
+export const xrplAnchors = pgTable("xrpl_anchors", {
+  id: serial("id").primaryKey(),
+  anchorType: text("anchorType").notNull(), // proposal_result | election_result
+  refId: integer("refId").notNull(),
+  resultHash: text("resultHash").notNull(),
+  txHash: text("txHash"),
+  network: text("network").notNull().default("testnet"),
+  status: text("status").notNull().default("pending"), // pending | submitted | verified | failed
+  anchoredAt: timestamp("anchoredAt"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
+export const governanceSettings = pgTable("governance_settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull().default(""),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
+export const governanceProposalDocuments = pgTable("governance_proposal_documents", {
+  id: serial("id").primaryKey(),
+  proposalId: integer("proposalId")
+    .notNull()
+    .references(() => governanceProposals.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  description: text("description").notNull().default(""),
+  fileUrl: text("fileUrl").notNull(),
+  fileName: text("fileName").notNull().default(""),
+  fileType: text("fileType").notNull().default(""),
+  fileSize: integer("fileSize").notNull().default(0),
+  uploadedById: text("uploadedById"),
+  uploadedByName: text("uploadedByName").notNull().default(""),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
+export const governanceProposalComments = pgTable("governance_proposal_comments", {
+  id: serial("id").primaryKey(),
+  proposalId: integer("proposalId")
+    .notNull()
+    .references(() => governanceProposals.id, { onDelete: "cascade" }),
+  userId: text("userId"),
+  memberId: integer("memberId"),
+  authorName: text("authorName").notNull().default(""),
+  authorRole: text("authorRole").notNull().default("member"),
+  body: text("body").notNull(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
+export const governanceAuditLogs = pgTable("governance_audit_logs", {
+  id: serial("id").primaryKey(),
+  actorId: text("actorId"),
+  actorName: text("actorName").notNull().default(""),
+  actorRole: text("actorRole").notNull().default(""),
+  action: text("action").notNull(),
+  entityType: text("entityType").notNull().default(""),
+  entityId: text("entityId").notNull().default(""),
+  detail: text("detail").notNull().default(""), // JSON
+  ipAddress: text("ipAddress").notNull().default(""),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})

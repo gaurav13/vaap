@@ -9,12 +9,12 @@ import { VaapGovernance } from "@/components/governance/vaap-governance"
 import { GovernanceDocuments } from "@/components/governance/governance-in-action"
 
 export const metadata = {
-  title: "Governance | VAAP",
+  title: "Governance Framework | VAAP",
   description:
     "A stronger framework for a responsible digital Pakistan. How VAAP fits into the national virtual asset ecosystem and how the association itself is governed.",
 }
 
-export default async function GovernancePage() {
+export default async function GovernanceFrameworkPage() {
   const [user, documents] = await Promise.all([getHeaderUser(), getDocuments()])
 
   return (

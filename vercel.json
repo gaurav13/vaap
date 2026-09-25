@@ -1,0 +1,3 @@
+{
+  "crons": [{ "path": "/api/governance/xrpl-worker", "schedule": "0 3 * * *" }]
+}

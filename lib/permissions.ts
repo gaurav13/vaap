@@ -30,6 +30,8 @@ export type Permission =
   | "rewards.own"
   | "payouts.request"
   | "dashboard.staff"
+  // Governance: only super admins run the governance / election system.
+  | "governance.manage"
 
 const PERMISSIONS: Record<UserRole, Permission[]> = {
   admin: [
@@ -42,6 +44,7 @@ const PERMISSIONS: Record<UserRole, Permission[]> = {
     "rewards.own",
     "payouts.request",
     "dashboard.staff",
+    "governance.manage",
   ],
   staff: ["articles.create", "referrals.own", "rewards.own", "payouts.request", "dashboard.staff"],
   committee_head: [
@@ -82,4 +85,10 @@ export function isElevated(role: UserRole | string | null | undefined): boolean 
 // Only super admins can review, approve, and pay out referral rewards.
 export function canManageRewards(role: UserRole | string | null | undefined): boolean {
   return can(role, "admin.full")
+}
+
+// Only super admins run the governance / election system: create proposals and
+// elections, choose eligibility, publish, close, compute results, and anchor to XRPL.
+export function canManageGovernance(role: UserRole | string | null | undefined): boolean {
+  return can(role, "governance.manage")
 }
