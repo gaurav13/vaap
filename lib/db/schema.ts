@@ -879,6 +879,13 @@ export const xrplAnchors = pgTable("xrpl_anchors", {
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 })
 
+export const governanceSettings = pgTable("governance_settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull().default(""),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
 export const governanceAuditLogs = pgTable("governance_audit_logs", {
   id: serial("id").primaryKey(),
   actorId: text("actorId"),
