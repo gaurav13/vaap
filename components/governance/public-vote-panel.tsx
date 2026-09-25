@@ -215,8 +215,8 @@ export function PublicVotePanel({
   // ---- Logged in, eligible: cast flow -----------------------------------
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-start gap-3 rounded-2xl border border-green-border bg-mint p-4 shadow-sm">
-        <ShieldCheck className="mt-0.5 size-7 shrink-0 fill-green text-mint" aria-hidden="true" />
+        <div className="flex items-start gap-3 rounded-2xl border border-gold/40 bg-gold-tint p-4 shadow-sm">
+          <ShieldCheck className="mt-0.5 size-7 shrink-0 fill-green text-gold-tint" aria-hidden="true" />
         <div className="text-sm leading-relaxed">
           <p className="font-semibold text-heading">You are eligible to vote</p>
           {voter.memberNumber && (

@@ -166,8 +166,8 @@ export default async function PublicProposalDetailPage({ params }: { params: Pro
       </section>
 
       {!detail.showResults && (
-        <div className="flex items-start gap-3 rounded-xl border border-green-border bg-mint p-4 text-sm leading-relaxed text-heading">
-          <Info className="mt-0.5 size-5 shrink-0 text-green" aria-hidden="true" />
+        <div className="flex items-start gap-3 rounded-xl border border-gold/40 bg-gold-tint p-4 text-sm leading-relaxed text-heading">
+          <Info className="mt-0.5 size-5 shrink-0 text-gold" aria-hidden="true" />
           <p>
             Results will be published once voting closes and the count is verified and anchored to the XRP Ledger to
             ensure transparency and immutability.
@@ -337,7 +337,7 @@ export default async function PublicProposalDetailPage({ params }: { params: Pro
             <div className="flex min-w-0 flex-col gap-6">
               {/* Hero */}
               <section className="relative overflow-hidden rounded-2xl border border-line bg-background shadow-sm">
-                <div className="absolute inset-y-0 right-0 hidden w-1/2 md:block" aria-hidden={!proposal.bannerImageUrl}>
+                <div className="absolute inset-y-0 right-0 hidden w-[55%] md:block" aria-hidden={!proposal.bannerImageUrl}>
                   <Image
                     src={bannerSrc || "/placeholder.svg"}
                     alt={bannerAlt}
@@ -346,7 +346,7 @@ export default async function PublicProposalDetailPage({ params }: { params: Pro
                     sizes="(min-width: 1024px) 480px, 50vw"
                     className="object-cover"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-r from-background via-background/60 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-background via-background/30 via-35% to-transparent" />
                 </div>
 
                 <div className="relative p-6 sm:p-8 md:max-w-[70%]">
@@ -366,12 +366,16 @@ export default async function PublicProposalDetailPage({ params }: { params: Pro
                     <p className="mt-4 max-w-xl text-pretty leading-relaxed text-muted-2">{proposal.summary}</p>
                   )}
 
-                  <dl className="mt-6 grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-3">
-                    <HeroMeta icon={<User className="size-6" />} label="Vote Type" value={voteTypeLabel} />
-                    <HeroMeta icon={<PieChart className="size-6" />} label="Pass Threshold" value={`${proposal.passThreshold}%`} />
-                    <HeroMeta icon={<Users className="size-6" />} label="Quorum" value={quorumLabel} />
-                    <HeroMeta icon={<CalendarDays className="size-6" />} label="Opens" value={fmtDate(proposal.opensAt)} />
-                    <HeroMeta icon={<CalendarClock className="size-6" />} label="Closes" value={fmtDate(proposal.closesAt)} />
+                  <dl className="mt-6 flex flex-col">
+                    <div className="grid grid-cols-2 gap-x-6 gap-y-5 pb-5 sm:grid-cols-3">
+                      <HeroMeta icon={<User className="size-6" />} label="Vote Type" value={voteTypeLabel} />
+                      <HeroMeta icon={<PieChart className="size-6" />} label="Pass Threshold" value={`${proposal.passThreshold}%`} />
+                      <HeroMeta icon={<Users className="size-6" />} label="Quorum" value={quorumLabel} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-x-6 gap-y-5 border-t border-line pt-5 sm:grid-cols-3">
+                      <HeroMeta icon={<CalendarDays className="size-6" />} label="Opens" value={fmtDate(proposal.opensAt)} />
+                      <HeroMeta icon={<CalendarClock className="size-6" />} label="Closes" value={fmtDate(proposal.closesAt)} />
+                    </div>
                   </dl>
                 </div>
               </section>
@@ -391,7 +395,7 @@ export default async function PublicProposalDetailPage({ params }: { params: Pro
             <aside className="lg:sticky lg:top-24 lg:self-start">
               <div className="flex flex-col gap-4">
                 {isOpen && proposal.closesAt && (
-                  <div className="rounded-2xl bg-green-hover p-5 shadow-sm">
+                  <div className="rounded-2xl bg-gradient-to-br from-green to-green-hover p-5 shadow-md">
                     <p className="mb-4 flex items-center gap-2.5 font-semibold text-primary-foreground">
                       <Clock className="size-5" aria-hidden="true" /> Voting Closes In
                     </p>
