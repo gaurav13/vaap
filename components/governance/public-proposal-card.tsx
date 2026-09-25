@@ -16,12 +16,17 @@ export function PublicProposalCard({ card, emphasis = false }: { card: CardData;
 
   return (
     <article className="group flex flex-col overflow-hidden rounded-2xl border border-line bg-card transition-shadow hover:shadow-lg">
-      <div className="relative">
-        <div className="absolute inset-y-0 right-0 w-1/2 overflow-hidden">
-          <img src={image || "/placeholder.svg"} alt="" className="h-full w-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-r from-card via-card/40 to-transparent" />
-        </div>
-        <div className="relative p-5 pr-[40%]">
+      <Link href={href} className="block aspect-[16/9] w-full overflow-hidden border-b border-line bg-mint-2">
+        <img
+          src={image || "/placeholder.svg"}
+          alt={proposal.bannerImageUrl ? `${proposal.title} banner` : ""}
+          className={`h-full w-full transition-transform duration-300 group-hover:scale-[1.02] ${
+            proposal.bannerImageUrl ? "object-contain" : "object-cover"
+          }`}
+        />
+      </Link>
+      <div>
+        <div className="p-5">
           <div className="flex flex-wrap items-center gap-2">
             <span className="rounded-full bg-mint px-3 py-1 text-xs font-semibold text-green">{proposal.category}</span>
             <StatusPill status={proposal.status} />
