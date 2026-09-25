@@ -9,6 +9,7 @@ import {
   Copy,
   ExternalLink,
   History,
+  Info,
   KeyRound,
   Loader2,
   Lock,
@@ -157,6 +158,103 @@ function Stat({ label, value, tone }: { label: string; value: React.ReactNode; t
 
 const actionBtn =
   "inline-flex items-center gap-2 rounded-lg border border-line bg-background px-3 py-2 text-sm font-semibold text-heading hover:bg-mint disabled:opacity-60"
+
+const gateVariants = {
+  primary: "bg-green text-white hover:bg-green-hover border border-green",
+  outline: "border border-green bg-card text-green hover:bg-mint",
+  neutral: "border border-line bg-background text-heading hover:bg-mint",
+  danger: "border border-destructive bg-card text-destructive hover:bg-destructive/5",
+} as const
+
+function InfoGate({
+  label,
+  icon,
+  title,
+  points,
+  acceptLabel = "Accept and continue",
+  onAccept,
+  disabled,
+  disabledReason,
+  busy,
+  variant = "neutral",
+}: {
+  label: string
+  icon?: React.ReactNode
+  title: string
+  points: string[]
+  acceptLabel?: string
+  onAccept: () => void
+  disabled?: boolean
+  disabledReason?: string
+  busy?: boolean
+  variant?: keyof typeof gateVariants
+}) {
+  const [open, setOpen] = useState(false)
+  const [agreed, setAgreed] = useState(false)
+  const close = () => {
+    setOpen(false)
+    setAgreed(false)
+  }
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        disabled={disabled || busy}
+        title={disabled ? disabledReason : undefined}
+        onClick={() => setOpen(true)}
+        className={`inline-flex w-fit items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold disabled:opacity-50 ${gateVariants[variant]}`}
+      >
+        {busy ? <Loader2 className="size-4 animate-spin" /> : icon}
+        {label}
+      </button>
+    )
+  }
+
+  const danger = variant === "danger"
+  return (
+    <div
+      role="region"
+      aria-label={title}
+      className={`flex w-full basis-full flex-col gap-3 rounded-xl border p-4 ${danger ? "border-destructive/40 bg-destructive/5" : "border-green/30 bg-mint"}`}
+    >
+      <h3 className="flex items-center gap-2 text-sm font-bold text-heading">
+        <Info className={`size-4 shrink-0 ${danger ? "text-destructive" : "text-green"}`} />
+        {title}
+      </h3>
+      <ul className="flex list-disc flex-col gap-1.5 pl-9 text-sm leading-relaxed text-heading">
+        {points.map((p) => (
+          <li key={p}>{p}</li>
+        ))}
+      </ul>
+      <label className="flex items-start gap-2 text-sm text-heading">
+        <input
+          type="checkbox"
+          checked={agreed}
+          onChange={(e) => setAgreed(e.target.checked)}
+          className="mt-0.5 size-4 accent-green"
+        />
+        <span className="leading-relaxed">I&apos;ve read this and understand what will happen.</span>
+      </label>
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          disabled={!agreed || busy}
+          onClick={() => {
+            onAccept()
+            close()
+          }}
+          className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold disabled:opacity-50 ${danger ? gateVariants.danger : gateVariants.primary}`}
+        >
+          <Check className="size-4" /> {acceptLabel}
+        </button>
+        <button type="button" onClick={close} className={actionBtn}>
+          Cancel
+        </button>
+      </div>
+    </div>
+  )
+}
 
 function GovernanceAccountCard({
   account,
@@ -358,14 +456,22 @@ function WalletSettings({
                   aria-label="Type REPLACE to confirm"
                 />
               </label>
-              <button
-                type="button"
-                disabled={pending || !seed.trim() || confirmText !== "REPLACE"}
-                onClick={() => run(() => activateMainnet(seed, true), setFeedback)}
-                className="inline-flex w-fit items-center gap-2 rounded-lg border border-destructive px-4 py-2 text-sm font-semibold text-destructive hover:bg-destructive/5 disabled:opacity-50"
-              >
-                Replace wallet
-              </button>
+              <InfoGate
+                label="Replace wallet"
+                variant="danger"
+                title="Before you replace the governance wallet"
+                points={[
+                  "All new vote records will be signed by the new account from now on.",
+                  "The old account will no longer be used. Move any XRP left in it out first — the app cannot do this for you.",
+                  "Records already on the ledger stay valid and verifiable.",
+                  "The new account must already be funded with at least 2 XRP, or recording will fail.",
+                ]}
+                acceptLabel="Replace wallet"
+                disabled={!seed.trim() || confirmText !== "REPLACE"}
+                disabledReason="Enter the new seed and type REPLACE first"
+                busy={pending}
+                onAccept={() => run(() => activateMainnet(seed, true), setFeedback)}
+              />
               <FeedbackLine feedback={feedback} />
             </div>
           </details>
@@ -398,10 +504,20 @@ function CreateAccount({
         This is done once. The account is saved securely on the server straight away, so it stays here after you leave
         the page and you can fund it whenever you&apos;re ready.
       </p>
-      <button
-        type="button"
-        disabled={creating}
-        onClick={() =>
+      <InfoGate
+        label="Create governance account"
+        icon={<Wallet className="size-4" />}
+        variant="primary"
+        title="Before you create the governance account"
+        points={[
+          "A new XRP Ledger account is created once and becomes the permanent VAAP Governance Account.",
+          "Its secret seed is shown only one time, right after creation. You must write it down and keep it offline.",
+          "The account is empty at first. It only works after you send it at least 2 XRP (5–10 recommended).",
+          "1 XRP stays locked by the XRP Ledger as a reserve and can't be spent.",
+        ]}
+        acceptLabel="Create account"
+        busy={creating}
+        onAccept={() =>
           startCreate(async () => {
             const res = await createGovernanceWallet()
             if (res.ok) {
@@ -410,11 +526,7 @@ function CreateAccount({
             } else setFeedback({ ok: false, text: res.error })
           })
         }
-        className="inline-flex w-fit items-center gap-2 rounded-lg bg-green px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-hover disabled:opacity-60"
-      >
-        {creating ? <Loader2 className="size-4 animate-spin" /> : <Wallet className="size-4" />}
-        Create governance account
-      </button>
+      />
       <FeedbackLine feedback={feedback} />
 
       <details className="rounded-xl border border-line bg-background p-4">
@@ -430,14 +542,23 @@ function CreateAccount({
             aria-label="Existing secret seed"
             className="rounded-lg border border-line bg-card px-3 py-2 font-mono text-sm text-heading outline-none focus:border-green"
           />
-          <button
-            type="button"
-            disabled={pending || pinned || !existingSeed.trim()}
-            onClick={() => run(() => activateMainnet(existingSeed), setExistingFeedback)}
-            className="inline-flex w-fit items-center gap-2 rounded-lg bg-green px-4 py-2 text-sm font-semibold text-white hover:bg-green-hover disabled:opacity-50"
-          >
-            <Rocket className="size-4" /> Save and go live
-          </button>
+          <InfoGate
+            label="Save and go live"
+            icon={<Rocket className="size-4" />}
+            variant="primary"
+            title="Before you save this account and go live"
+            points={[
+              "This account becomes the permanent VAAP Governance Account and is stored encrypted on the server.",
+              "Voting results will start being recorded on the XRP Ledger Mainnet, which is public and permanent.",
+              "Each record costs a tiny fee (about 0.00001 XRP), paid from this account.",
+              "Use a dedicated account only. Don't use your payment wallet or an exchange account.",
+            ]}
+            acceptLabel="Save and go live"
+            disabled={pinned || !existingSeed.trim()}
+            disabledReason={pinned ? "The network is fixed in Vars" : "Paste the secret seed first"}
+            busy={pending}
+            onAccept={() => run(() => activateMainnet(existingSeed), setExistingFeedback)}
+          />
           <FeedbackLine feedback={existingFeedback} />
         </div>
       </details>
@@ -524,30 +645,56 @@ export function XrplSetupWizard({
         </div>
         <p className="text-sm leading-relaxed text-muted-2">{status.message}</p>
         <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            disabled={pending}
-            onClick={() => run(runXrplQueueNow, setQueueFeedback)}
-            className="inline-flex items-center gap-2 rounded-lg border border-green bg-card px-4 py-2 text-sm font-semibold text-green hover:bg-mint disabled:opacity-60"
-          >
-            {pending ? <Loader2 className="size-4 animate-spin" /> : <PlayCircle className="size-4" />}
-            Record waiting results now
-          </button>
+          <InfoGate
+            label="Record waiting results now"
+            icon={<PlayCircle className="size-4" />}
+            variant="outline"
+            title="Before you record waiting results"
+            points={[
+              `Every result in the queue will be written to the XRP Ledger ${live ? "Mainnet" : "Testnet"} right now instead of waiting for the scheduled job.`,
+              "Records written to the ledger are public and can't be edited or deleted.",
+              live
+                ? "Each record costs a tiny fee (about 0.00001 XRP) from the governance account."
+                : "Testnet uses free test XRP, so nothing real is spent.",
+              "Results that fail are kept in the queue and retried automatically.",
+            ]}
+            acceptLabel="Record now"
+            busy={pending}
+            onAccept={() => run(runXrplQueueNow, setQueueFeedback)}
+          />
           {account && !live && !pinned && (
-            <button
-              type="button"
-              disabled={pending || !canGoLive}
-              onClick={() => run(activateSavedMainnet, setFeedback)}
-              className="inline-flex items-center gap-2 rounded-lg bg-green px-4 py-2 text-sm font-semibold text-white hover:bg-green-hover disabled:opacity-50"
-              title={canGoLive ? undefined : "Fund the governance account with at least 2 XRP first"}
-            >
-              <Rocket className="size-4" /> Go live on Mainnet
-            </button>
+            <InfoGate
+              label="Go live on Mainnet"
+              icon={<Rocket className="size-4" />}
+              variant="primary"
+              title="Before you go live on Mainnet"
+              points={[
+                "From now on, every closed proposal and vote record is written to the real XRP Ledger Mainnet.",
+                "Mainnet records are public, permanent and can be checked by anyone on the XRPL Explorer.",
+                "Fees are paid in real XRP from the VAAP Governance Account. Keep it topped up above 2 XRP.",
+                "Records already made on Testnet stay on Testnet. They are not copied to Mainnet.",
+              ]}
+              acceptLabel="Go live"
+              disabled={!canGoLive}
+              disabledReason="Fund the governance account with at least 2 XRP first"
+              busy={pending}
+              onAccept={() => run(activateSavedMainnet, setFeedback)}
+            />
           )}
           {live && !pinned && (
-            <button type="button" disabled={pending} onClick={() => run(activateTestnet, setFeedback)} className={actionBtn}>
-              Switch back to Testnet
-            </button>
+            <InfoGate
+              label="Switch back to Testnet"
+              title="Before you switch back to Testnet"
+              points={[
+                "New results will be recorded on Testnet, which is for testing only and has no real value.",
+                "Members' votes will no longer be anchored on the real ledger until you go live again.",
+                "Records already on Mainnet stay there and remain valid.",
+                "The VAAP Governance Account and its XRP are not changed.",
+              ]}
+              acceptLabel="Switch to Testnet"
+              busy={pending}
+              onAccept={() => run(activateTestnet, setFeedback)}
+            />
           )}
         </div>
         <FeedbackLine feedback={queueFeedback} />
