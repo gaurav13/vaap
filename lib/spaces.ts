@@ -41,6 +41,45 @@ export function publicSpaceUrl(key: string) {
 
 const IMAGE_FOLDERS = new Set(["pages", "news", "articles", "events", "publications", "governance"])
 
+export const DOCUMENT_TYPES = new Map([
+  ["application/pdf", "pdf"],
+  ["application/msword", "doc"],
+  ["application/vnd.openxmlformats-officedocument.wordprocessingml.document", "docx"],
+  ["application/vnd.ms-excel", "xls"],
+  ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "xlsx"],
+  ["application/vnd.ms-powerpoint", "ppt"],
+  ["application/vnd.openxmlformats-officedocument.presentationml.presentation", "pptx"],
+  ["text/csv", "csv"],
+  ["text/plain", "txt"],
+  ["image/jpeg", "jpg"],
+  ["image/png", "png"],
+])
+export const MAX_DOCUMENT_BYTES = 20 * 1024 * 1024
+const DOCUMENT_EXTENSIONS = new Set(DOCUMENT_TYPES.values())
+const EXTENSION_MIME = new Map([...DOCUMENT_TYPES].map(([mime, ext]) => [ext, mime]))
+
+export async function uploadProposalDocument(file: { bytes: Uint8Array; contentType: string; fileName: string }) {
+  const nameExt = file.fileName.toLowerCase().split(".").pop() ?? ""
+  const extension = DOCUMENT_TYPES.get(file.contentType) ?? (DOCUMENT_EXTENSIONS.has(nameExt) ? nameExt : undefined)
+  if (!extension) throw new Error("Upload a PDF, Word, Excel, PowerPoint, CSV, text, JPG, or PNG file.")
+  if (file.bytes.byteLength === 0) throw new Error("That file is empty.")
+  if (file.bytes.byteLength > MAX_DOCUMENT_BYTES) throw new Error("File is too large (max 20MB).")
+
+  const contentType = EXTENSION_MIME.get(extension) ?? "application/octet-stream"
+  const key = `governance-documents/${randomUUID()}.${extension}`
+  await spacesClient().send(
+    new PutObjectCommand({
+      Bucket: requiredEnv("SPACES_BUCKET"),
+      Key: key,
+      Body: file.bytes,
+      ContentType: contentType,
+      ACL: "public-read",
+      CacheControl: "public, max-age=31536000",
+    }),
+  )
+  return { url: publicSpaceUrl(key), extension, contentType }
+}
+
 export async function uploadPageImage(file: {
   bytes: Uint8Array
   contentType: string

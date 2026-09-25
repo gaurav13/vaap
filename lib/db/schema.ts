@@ -914,6 +914,35 @@ export const governanceSettings = pgTable("governance_settings", {
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 })
 
+export const governanceProposalDocuments = pgTable("governance_proposal_documents", {
+  id: serial("id").primaryKey(),
+  proposalId: integer("proposalId")
+    .notNull()
+    .references(() => governanceProposals.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  description: text("description").notNull().default(""),
+  fileUrl: text("fileUrl").notNull(),
+  fileName: text("fileName").notNull().default(""),
+  fileType: text("fileType").notNull().default(""),
+  fileSize: integer("fileSize").notNull().default(0),
+  uploadedById: text("uploadedById"),
+  uploadedByName: text("uploadedByName").notNull().default(""),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
+export const governanceProposalComments = pgTable("governance_proposal_comments", {
+  id: serial("id").primaryKey(),
+  proposalId: integer("proposalId")
+    .notNull()
+    .references(() => governanceProposals.id, { onDelete: "cascade" }),
+  userId: text("userId"),
+  memberId: integer("memberId"),
+  authorName: text("authorName").notNull().default(""),
+  authorRole: text("authorRole").notNull().default("member"),
+  body: text("body").notNull(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
 export const governanceAuditLogs = pgTable("governance_audit_logs", {
   id: serial("id").primaryKey(),
   actorId: text("actorId"),

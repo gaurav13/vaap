@@ -12,7 +12,6 @@ import {
   FileText,
   Hash,
   Info,
-  MessagesSquare,
   PieChart,
   ShieldCheck,
   User,
@@ -23,7 +22,10 @@ import {
 import { SiteHeaderServer } from "@/components/site-header-server"
 import { SiteFooter } from "@/components/site-footer"
 import { getHeaderUser } from "@/lib/header-user"
-import { getSession } from "@/lib/session"
+import { getSession, isStaff } from "@/lib/session"
+import { listProposalComments, listProposalDocuments } from "@/lib/proposal-extras"
+import { ProposalDocumentsList } from "@/components/governance/proposal-documents-list"
+import { ProposalDiscussion, type DiscussionComment } from "@/components/governance/proposal-discussion"
 import { getProposal, getMemberByUserId, getMemberVote, isMemberEligible } from "@/lib/governance"
 import { getPublicProposalDetail, getPublicParticipation } from "@/lib/governance-public"
 import { hasGovernanceRight } from "@/lib/voting-rights"
@@ -68,12 +70,15 @@ export default async function PublicProposalDetailPage({ params }: { params: Pro
     notFound()
   }
 
-  const [user, detail, participation, session] = await Promise.all([
+  const [user, detail, participation, session, docs, comments] = await Promise.all([
     getHeaderUser(),
     getPublicProposalDetail(proposal),
     getPublicParticipation(proposal),
     getSession(),
+    listProposalDocuments(proposalId),
+    listProposalComments(proposalId),
   ])
+  let memberStatus: string | null = null
 
   const isOpen = proposal.status === "active" && (!proposal.closesAt || new Date(proposal.closesAt).getTime() > Date.now())
 
@@ -94,6 +99,7 @@ export default async function PublicProposalDetailPage({ params }: { params: Pro
       voter.ineligibleReason = "No VAAP member profile is linked to your account."
     } else {
       voter.memberNumber = member.membershipId ?? null
+      memberStatus = member.status
       const [right, onList, existing] = await Promise.all([
         hasGovernanceRight(member.id),
         isMemberEligible(proposal, member.id),
@@ -114,6 +120,23 @@ export default async function PublicProposalDetailPage({ params }: { params: Pro
       }
     }
   }
+
+  const staffViewer = isStaff(session?.user?.role)
+  const discussionOpen = proposal.status !== "archived"
+  const canComment = Boolean(session?.user) && discussionOpen && (staffViewer || memberStatus === "active")
+  const commentBlockedReason = !session?.user
+    ? "Sign in as a VAAP member to join the discussion."
+    : !discussionOpen
+      ? "Discussion is closed for this archived proposal."
+      : "Only active VAAP members can take part in the discussion."
+  const discussionComments: DiscussionComment[] = comments.map((c) => ({
+    id: c.id,
+    authorName: c.authorName || "Member",
+    authorRole: c.authorRole,
+    body: c.body,
+    createdAt: fmtDate(c.createdAt),
+    canDelete: Boolean(session?.user) && (staffViewer || c.userId === session?.user?.id),
+  }))
 
   const ref = proposal.reference ?? `#${proposal.id}`
   const loginHref = `/sign-in?returnTo=${encodeURIComponent(`/voting/proposals/${proposalId}`)}`
@@ -192,18 +215,16 @@ export default async function PublicProposalDetailPage({ params }: { params: Pro
   )
 
   const documents = (
-    <EmptyState
-      icon={<FileText className="size-6" />}
-      title="No supporting documents"
-      body="Any official documents attached to this proposal will appear here."
-    />
+    <ProposalDocumentsList documents={docs} loggedIn={voter.loggedIn} loginHref={loginHref} />
   )
 
   const discussion = (
-    <EmptyState
-      icon={<MessagesSquare className="size-6" />}
-      title="No discussion yet"
-      body="Member discussion for this proposal has not started."
+    <ProposalDiscussion
+      proposalId={proposalId}
+      comments={discussionComments}
+      canPost={canComment}
+      blockedReason={commentBlockedReason}
+      loginHref={voter.loggedIn ? null : loginHref}
     />
   )
 
@@ -359,8 +380,8 @@ export default async function PublicProposalDetailPage({ params }: { params: Pro
                 initial={isOpen ? "overview" : "results"}
                 tabs={[
                   { id: "overview", label: "Overview", content: overview },
-                  { id: "documents", label: "Documents", content: documents },
-                  { id: "discussion", label: "Discussion (0)", content: discussion },
+                  { id: "documents", label: `Documents (${docs.length})`, content: documents },
+                  { id: "discussion", label: `Discussion (${comments.length})`, content: discussion },
                   { id: "results", label: "Results", content: results },
                 ]}
               />

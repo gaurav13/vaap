@@ -8,6 +8,8 @@ import { getProposal, getProposalResult, eligibleMemberIds, proposalVoteCount } 
 import { explorerUrl } from "@/lib/xrpl"
 import { StatusPill } from "@/components/governance/status-pill"
 import { ProposalAdminControls } from "@/components/governance/proposal-admin-controls"
+import { ProposalDocumentsManager, type ManagedDocument } from "@/components/governance/proposal-documents-manager"
+import { formatFileSize, listProposalDocuments } from "@/lib/proposal-extras"
 
 export const dynamic = "force-dynamic"
 
@@ -25,7 +27,7 @@ export default async function AdminProposalDetail({ params }: { params: Promise<
   if (!data) notFound()
   const { proposal, options } = data
 
-  const [result, eligible, voteCount, anchors] = await Promise.all([
+  const [result, eligible, voteCount, anchors, documents] = await Promise.all([
     getProposalResult(id),
     eligibleMemberIds(proposal),
     proposalVoteCount(id),
@@ -34,7 +36,18 @@ export default async function AdminProposalDetail({ params }: { params: Promise<
       .from(xrplAnchors)
       .where(and(eq(xrplAnchors.anchorType, "proposal_result"), eq(xrplAnchors.refId, id)))
       .orderBy(desc(xrplAnchors.createdAt)),
+    listProposalDocuments(id),
   ])
+  const managedDocuments: ManagedDocument[] = documents.map((d) => ({
+    id: d.id,
+    title: d.title,
+    description: d.description,
+    fileName: d.fileName,
+    fileType: d.fileType,
+    sizeLabel: formatFileSize(d.fileSize),
+    uploadedByName: d.uploadedByName,
+    createdAt: new Date(d.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }),
+  }))
   const anchor = anchors[0] ?? null
   const optionTally: Record<string, number> = result?.optionTally ? JSON.parse(result.optionTally) : {}
   const eligibleCount = eligible.length
@@ -94,6 +107,8 @@ export default async function AdminProposalDetail({ params }: { params: Promise<
       </div>
 
       <ProposalAdminControls id={id} status={proposal.status} />
+
+      <ProposalDocumentsManager proposalId={id} documents={managedDocuments} />
 
       {/* Resolution text */}
       {proposal.description && (
