@@ -7,6 +7,7 @@ import {
   Copy,
   ExternalLink,
   Loader2,
+  Lock,
   PlayCircle,
   RefreshCw,
   Rocket,
@@ -14,7 +15,7 @@ import {
   TriangleAlert,
   Wallet,
 } from "lucide-react"
-import { activateMainnet, activateTestnet, runXrplQueueNow } from "@/app/actions/xrpl-setup"
+import { activateMainnet, activateSavedMainnet, activateTestnet, runXrplQueueNow } from "@/app/actions/xrpl-setup"
 
 type Status = {
   network: "mainnet" | "testnet"
@@ -89,8 +90,19 @@ function FeedbackLine({ feedback }: { feedback: Feedback }) {
   )
 }
 
-export function XrplSetupWizard({ status, pinned }: { status: Status; pinned: boolean }) {
+export function XrplSetupWizard({
+  status,
+  pinned,
+  savedMainnetAddress,
+}: {
+  status: Status
+  pinned: boolean
+  savedMainnetAddress: string | null
+}) {
   const router = useRouter()
+  const [replaceSeed, setReplaceSeed] = useState("")
+  const [confirmReplace, setConfirmReplace] = useState(false)
+  const [replaceFeedback, setReplaceFeedback] = useState<Feedback>(null)
   const [pending, startTransition] = useTransition()
   const [wallet, setWallet] = useState<Generated | null>(null)
   const [seedInput, setSeedInput] = useState("")
@@ -190,6 +202,82 @@ export function XrplSetupWizard({ status, pinned }: { status: Status; pinned: bo
         )}
       </Step>
 
+      {savedMainnetAddress ? (
+        <Step n={2} title="Your permanent mainnet account">
+          <div className="flex flex-col gap-3 rounded-xl border border-green/30 bg-mint p-4">
+            <div className="flex items-center gap-2 text-sm font-semibold text-heading">
+              <Lock className="size-4 text-green" /> Saved and locked. This account is used for every vote record.
+            </div>
+            <CopyField label="Account address (public)" value={savedMainnetAddress} />
+            <a
+              href={explorerAccount("mainnet", savedMainnetAddress)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex w-fit items-center gap-1 text-sm font-medium text-green hover:underline"
+            >
+              View balance on explorer <ExternalLink className="size-3.5" />
+            </a>
+          </div>
+
+          {!live && !pinned && (
+            <div className="flex flex-col gap-2">
+              <p className="text-sm leading-relaxed text-muted-2">
+                Once it holds at least 2 XRP, switch the site to mainnet using this same account.
+              </p>
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => run(activateSavedMainnet, setFeedback)}
+                className="inline-flex w-fit items-center gap-2 rounded-lg bg-green px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-hover disabled:opacity-50"
+              >
+                {pending ? <Loader2 className="size-4 animate-spin" /> : <Rocket className="size-4" />}
+                Go live with this account
+              </button>
+              <FeedbackLine feedback={feedback} />
+            </div>
+          )}
+
+          {!pinned && (
+            <details className="rounded-xl border border-line bg-background p-4">
+              <summary className="cursor-pointer text-sm font-semibold text-heading">Replace account (advanced)</summary>
+              <div className="mt-3 flex flex-col gap-3">
+                <p className="text-sm leading-relaxed text-muted-2">
+                  Only do this if the secret was lost or leaked. Past records stay valid on the old account.
+                </p>
+                <input
+                  type="password"
+                  autoComplete="off"
+                  spellCheck={false}
+                  value={replaceSeed}
+                  onChange={(e) => setReplaceSeed(e.target.value)}
+                  placeholder="New secret seed (s…)"
+                  aria-label="New secret seed"
+                  className="rounded-lg border border-line bg-card px-3 py-2 font-mono text-sm text-heading outline-none focus:border-green"
+                />
+                <label className="flex items-start gap-2 text-sm text-heading">
+                  <input
+                    type="checkbox"
+                    checked={confirmReplace}
+                    onChange={(e) => setConfirmReplace(e.target.checked)}
+                    className="mt-0.5 size-4 accent-green"
+                  />
+                  <span className="leading-relaxed">I understand this changes the account used for new records.</span>
+                </label>
+                <button
+                  type="button"
+                  disabled={pending || !replaceSeed.trim() || !confirmReplace}
+                  onClick={() => run(() => activateMainnet(replaceSeed, true), setReplaceFeedback)}
+                  className="inline-flex w-fit items-center gap-2 rounded-lg border border-destructive px-4 py-2 text-sm font-semibold text-destructive hover:bg-destructive/5 disabled:opacity-50"
+                >
+                  Replace account
+                </button>
+                <FeedbackLine feedback={replaceFeedback} />
+              </div>
+            </details>
+          )}
+        </Step>
+      ) : (
+      <>
       <Step n={2} title="Create the mainnet account">
         <p className="text-sm leading-relaxed text-muted-2">
           This makes a brand-new XRPL account in your browser. Don&apos;t reuse the membership payment wallet.
@@ -280,6 +368,8 @@ export function XrplSetupWizard({ status, pinned }: { status: Status; pinned: bo
           <FeedbackLine feedback={feedback} />
         </div>
       </Step>
+      </>
+      )}
     </div>
   )
 }

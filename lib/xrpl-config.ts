@@ -79,6 +79,29 @@ export async function saveActiveNetwork(network: XrplNetwork): Promise<void> {
   await writeSetting(NETWORK_KEY, network)
 }
 
+/** The seed saved from the setup page (ignores the env override). */
+export async function getStoredMainnetSeed(): Promise<string | null> {
+  const stored = await readSetting(MAINNET_SEED_KEY).catch(() => null)
+  if (!stored) return null
+  try {
+    return decrypt(stored)
+  } catch {
+    return null
+  }
+}
+
+/** Public address of the permanent mainnet account, or null if none is saved. */
+export async function getSavedMainnetAddress(): Promise<string | null> {
+  const seed = await getMainnetSeed()
+  if (!seed) return null
+  try {
+    const { Wallet } = await import("xrpl")
+    return Wallet.fromSeed(seed).classicAddress
+  } catch {
+    return null
+  }
+}
+
 export async function saveMainnetSeed(seed: string): Promise<void> {
   await writeSetting(MAINNET_SEED_KEY, encrypt(seed))
 }

@@ -3,7 +3,7 @@ import { redirect } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 import { getSession, isAdmin } from "@/lib/session"
 import { getXrplStatus } from "@/lib/xrpl"
-import { isNetworkPinnedByEnv } from "@/lib/xrpl-config"
+import { getSavedMainnetAddress, isNetworkPinnedByEnv } from "@/lib/xrpl-config"
 import { XrplSetupWizard } from "@/components/governance/xrpl-setup-wizard"
 
 export const dynamic = "force-dynamic"
@@ -13,7 +13,7 @@ export default async function XrplSetupPage() {
   const session = await getSession()
   if (!isAdmin(session?.user?.role)) redirect("/admin/governance")
 
-  const status = await getXrplStatus()
+  const [status, savedMainnetAddress] = await Promise.all([getXrplStatus(), getSavedMainnetAddress()])
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
@@ -35,6 +35,7 @@ export default async function XrplSetupPage() {
           message: status.message,
         }}
         pinned={isNetworkPinnedByEnv()}
+        savedMainnetAddress={savedMainnetAddress}
       />
     </div>
   )

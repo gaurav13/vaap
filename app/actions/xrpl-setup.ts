@@ -3,7 +3,13 @@
 import { revalidatePath } from "next/cache"
 import { Client, Wallet, dropsToXrp } from "xrpl"
 import { getSession, isAdmin } from "@/lib/session"
-import { isNetworkPinnedByEnv, saveActiveNetwork, saveMainnetSeed } from "@/lib/xrpl-config"
+import {
+  getMainnetSeed,
+  getStoredMainnetSeed,
+  isNetworkPinnedByEnv,
+  saveActiveNetwork,
+  saveMainnetSeed,
+} from "@/lib/xrpl-config"
 import { drainXrplQueue } from "@/lib/xrpl-worker"
 
 type Result = { ok: true; message: string } | { ok: false; error: string }
@@ -51,8 +57,35 @@ export async function activateTestnet(): Promise<Result> {
   }
 }
 
-/** Go live: validate the seed, confirm the account is funded, store it encrypted, and switch to mainnet. */
-export async function activateMainnet(seed: string): Promise<Result> {
+/** Go live with the account that is already saved, without re-entering the seed. */
+export async function activateSavedMainnet(): Promise<Result> {
+  try {
+    await requireSuperAdmin()
+    if (isNetworkPinnedByEnv()) return { ok: false, error: "The network is fixed by the XRPL_NETWORK variable in Vars." }
+    const seed = await getMainnetSeed()
+    if (!seed) return { ok: false, error: "No mainnet account is saved yet." }
+    const wallet = Wallet.fromSeed(seed)
+    const balance = await mainnetBalance(wallet.classicAddress)
+    if (balance === null || balance < 1.1) {
+      return {
+        ok: false,
+        error: `Account ${wallet.classicAddress} needs at least 2 XRP before going live (current: ${balance ?? 0} XRP).`,
+      }
+    }
+    await saveActiveNetwork("mainnet")
+    await drainXrplQueue().catch(() => {})
+    refresh()
+    return { ok: true, message: `Mainnet is live with your account ${wallet.classicAddress} (${balance} XRP).` }
+  } catch (e) {
+    return { ok: false, error: (e as Error).message }
+  }
+}
+
+/**
+ * Save the permanent mainnet account and go live. A different account can only
+ * replace a saved one when `replace` is explicitly true.
+ */
+export async function activateMainnet(seed: string, replace = false): Promise<Result> {
   try {
     await requireSuperAdmin()
     if (isNetworkPinnedByEnv()) return { ok: false, error: "The network is fixed by the XRPL_NETWORK variable in Vars." }
@@ -62,6 +95,14 @@ export async function activateMainnet(seed: string): Promise<Result> {
       wallet = Wallet.fromSeed(seed.trim())
     } catch {
       return { ok: false, error: "That doesn't look like a valid XRPL secret seed (it should start with “s”)." }
+    }
+
+    const existing = await getStoredMainnetSeed()
+    if (existing && Wallet.fromSeed(existing).classicAddress !== wallet.classicAddress && !replace) {
+      return {
+        ok: false,
+        error: `A mainnet account (${Wallet.fromSeed(existing).classicAddress}) is already saved. Use "Replace account" only if you really want to change it.`,
+      }
     }
 
     const balance = await mainnetBalance(wallet.classicAddress)

@@ -96,6 +96,23 @@ export async function getGovernanceWallet(client: Client | null, network: XrplNe
   return funded.wallet
 }
 
+function isAccountNotFound(e: unknown): boolean {
+  return (e as { data?: { error?: string } })?.data?.error === "actNotFound"
+}
+
+/**
+ * Testnet is wiped periodically. Re-fund the SAME saved wallet instead of
+ * creating a new one, so the governance address never changes.
+ */
+async function ensureTestnetAccount(client: Client, wallet: Wallet): Promise<void> {
+  try {
+    await client.request({ command: "account_info", account: wallet.address, ledger_index: "validated" })
+  } catch (e) {
+    if (!isAccountNotFound(e)) throw e
+    await client.fundWallet(wallet)
+  }
+}
+
 async function connectWithFailover(network: XrplNetwork): Promise<Client> {
   let lastError: unknown
   for (const url of ENDPOINTS[network]) {
@@ -156,6 +173,8 @@ export async function submitMemo(memoType: string, memoData: string): Promise<Xr
           `Governance account balance too low (${funds.balanceXrp} XRP, reserve ${funds.reserveXrp} XRP). Top up ${wallet.address}.`,
         )
       }
+    } else {
+      await ensureTestnetAccount(client, wallet)
     }
 
     // AccountSet with no flags is a no-op on the account and carries the memo on-ledger.
@@ -246,6 +265,7 @@ export async function getXrplStatus(): Promise<XrplStatus> {
 
     return await withClient(network, async (client) => {
       try {
+        if (network === "testnet") await ensureTestnetAccount(client, wallet).catch(() => {})
         const funds = await getAccountFunds(client, wallet.address)
         const ready = network === "testnet" || funds.spendableXrp >= MIN_SPENDABLE_XRP
         return {
