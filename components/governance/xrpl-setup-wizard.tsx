@@ -188,6 +188,25 @@ export function XrplSetupWizard({
           On Testnet the site creates and funds its own account with free test XRP, and records every closed proposal
           automatically. Use it to rehearse a vote with members before going live.
         </p>
+        {!live && status.address && (
+          <div className="flex flex-col gap-3 rounded-xl border border-green/30 bg-mint p-4">
+            <div className="flex items-center gap-2 text-sm font-semibold text-heading">
+              <Lock className="size-4 text-green" /> Saved and locked. The same test account is reused for every record.
+            </div>
+            <CopyField label="Testnet account address (public)" value={status.address} />
+            {status.balanceXrp !== null && (
+              <p className="text-sm text-heading">Balance: {status.balanceXrp} test XRP</p>
+            )}
+            <a
+              href={explorerAccount("testnet", status.address)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex w-fit items-center gap-1 text-sm font-medium text-green hover:underline"
+            >
+              View on testnet explorer <ExternalLink className="size-3.5" />
+            </a>
+          </div>
+        )}
         {live && !pinned && (
           <div className="flex flex-col gap-2">
             <button
