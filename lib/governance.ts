@@ -18,7 +18,9 @@ import {
   xrplTransactions,
   xrplAnchors,
 } from "@/lib/db/schema"
+import { after } from "next/server"
 import { sha256Hex } from "@/lib/xrpl"
+import { drainXrplQueue } from "@/lib/xrpl-worker"
 import { approvedGovernanceMemberIds } from "@/lib/voting-rights"
 
 export type ProposalRow = typeof governanceProposals.$inferSelect
@@ -270,6 +272,11 @@ export async function enqueueXrplJob(job: {
       idempotencyKey,
     })
     .onConflictDoNothing({ target: xrplTransactionQueue.idempotencyKey })
+
+  // Anchor in the background once the response is sent; outside a request scope `after` throws, and the cron picks the job up instead.
+  try {
+    after(() => drainXrplQueue().catch((e) => console.error("[xrpl-worker] background drain failed:", e)))
+  } catch {}
 }
 
 // ---------------------------------------------------------------------------

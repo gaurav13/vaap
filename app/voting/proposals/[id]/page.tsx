@@ -31,13 +31,13 @@ import { getPublicProposalDetail, getPublicParticipation } from "@/lib/governanc
 import { hasGovernanceRight } from "@/lib/voting-rights"
 import { isHtml, sanitizeRichText } from "@/lib/sanitize"
 import { StatusPill } from "@/components/governance/status-pill"
+import { explorerUrl } from "@/lib/xrpl-network"
 import { VoteCountdown } from "@/components/governance/vote-countdown"
 import { ProposalTabs } from "@/components/governance/proposal-tabs"
 import { PublicVotePanel, type VoterState } from "@/components/governance/public-vote-panel"
 
 export const dynamic = "force-dynamic"
 
-const EXPLORER = "https://testnet.xrpl.org/transactions/"
 const FALLBACK_BANNER = "/images/support-faisal-mosque.png"
 
 const VOTE_TYPE_LABEL: Record<string, string> = {
@@ -594,7 +594,7 @@ function ResultsBlock({
 
       {anchorHash && (
         <a
-          href={`${EXPLORER}${anchorHash}`}
+          href={explorerUrl(anchorHash)}
           target="_blank"
           rel="noopener noreferrer"
           className="mt-4 inline-flex items-center gap-2 rounded-lg border border-green-border bg-mint px-4 py-2.5 text-sm font-semibold text-green hover:bg-mint-2"

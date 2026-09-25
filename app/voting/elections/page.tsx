@@ -1,10 +1,10 @@
 import Link from "next/link"
 import { listElections, getElection, getElectionResults, getElectionAnchor } from "@/lib/elections"
 import { StatusPill } from "@/components/governance/status-pill"
+import { explorerUrl } from "@/lib/xrpl-network"
 
 export const dynamic = "force-dynamic"
 
-const EXPLORER = "https://testnet.xrpl.org/transactions/"
 
 export const metadata = {
   title: "Elections | VAAP Governance",
@@ -34,7 +34,7 @@ export default async function PublicElectionsPage() {
         <h1 className="mt-2 text-pretty text-3xl font-bold text-foreground sm:text-4xl">Elections Register</h1>
         <p className="mt-3 max-w-2xl leading-relaxed text-muted-foreground">
           A public, tamper-evident record of VAAP office-bearer elections. Ballots are secret; only aggregate results
-          are published. Where a result has been anchored to the XRP Ledger (testnet), a verification link is shown.
+          are published. Where a result has been anchored to the XRP Ledger, a verification link is shown.
         </p>
         <div className="mt-4 flex flex-wrap gap-3 text-sm">
           <Link href="/voting/proposals" className="font-medium text-green hover:underline">
@@ -114,7 +114,7 @@ export default async function PublicElectionsPage() {
 
               {anchorHash && (
                 <a
-                  href={`${EXPLORER}${anchorHash}`}
+                  href={explorerUrl(anchorHash)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="mt-5 inline-flex items-center gap-2 rounded-lg border border-green/30 bg-green/5 px-3 py-2 text-sm font-medium text-green hover:bg-green/10"

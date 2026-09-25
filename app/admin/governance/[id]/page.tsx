@@ -5,7 +5,7 @@ import { and, desc, eq } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { xrplAnchors } from "@/lib/db/schema"
 import { getProposal, getProposalResult, eligibleMemberIds, proposalVoteCount } from "@/lib/governance"
-import { explorerUrl } from "@/lib/xrpl"
+import { explorerUrl, networkLabel } from "@/lib/xrpl"
 import { StatusPill } from "@/components/governance/status-pill"
 import { ProposalAdminControls } from "@/components/governance/proposal-admin-controls"
 import { DeleteProposalButton } from "@/components/governance/delete-proposal-button"
@@ -181,7 +181,7 @@ export default async function AdminProposalDetail({
       {/* XRPL anchor */}
       {proposal.anchorResultOnXrpl && (
         <div className="mt-6 rounded-2xl border border-line bg-card p-6">
-          <h2 className="mb-2 text-base font-bold text-heading">XRP Ledger anchor (testnet)</h2>
+          <h2 className="mb-2 text-base font-bold text-heading">XRP Ledger anchor ({networkLabel()})</h2>
           {!anchor ? (
             <p className="text-sm text-muted-2">Close the vote to anchor the result on-chain.</p>
           ) : (

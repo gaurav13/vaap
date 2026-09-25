@@ -159,7 +159,7 @@ export function ElectionForm({ categories }: { categories: string[] }) {
 
       <label className="flex items-center gap-2 text-sm text-heading">
         <input type="checkbox" name="anchorResultOnXrpl" defaultChecked className="size-4 rounded border-border" />
-        Anchor participation and final results on the XRP Ledger (testnet)
+        Anchor participation and final results on the XRP Ledger
       </label>
 
       {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}

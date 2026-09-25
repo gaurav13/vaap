@@ -4,6 +4,8 @@ import { listProposals } from "@/lib/governance"
 import { StatusPill } from "@/components/governance/status-pill"
 import { DeleteProposalButton } from "@/components/governance/delete-proposal-button"
 import { getSession, isAdmin } from "@/lib/session"
+import { networkLabel } from "@/lib/xrpl"
+import { XrplStatusPanel } from "@/components/governance/xrpl-status-panel"
 
 export const dynamic = "force-dynamic"
 
@@ -17,7 +19,7 @@ export default async function AdminGovernancePage() {
         <div>
           <h1 className="text-2xl font-bold text-heading">Proposals &amp; Voting</h1>
           <p className="mt-1 text-sm text-muted-2">
-            Create DAO resolutions, run member votes, and anchor results to the XRP Ledger (testnet).
+            Create DAO resolutions, run member votes, and anchor results to the XRP Ledger ({networkLabel()}).
           </p>
         </div>
         <Link
@@ -27,6 +29,8 @@ export default async function AdminGovernancePage() {
           <Plus className="size-4" /> New proposal
         </Link>
       </div>
+
+      <XrplStatusPanel />
 
       {proposals.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-line bg-card py-16 text-center">

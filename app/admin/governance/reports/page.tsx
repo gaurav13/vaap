@@ -23,7 +23,7 @@ const EXPORTS = [
   {
     kind: "xrpl",
     title: "XRPL ledger record",
-    description: "All testnet transactions with hashes, ledger index, and status.",
+    description: "All XRPL transactions with hashes, ledger index, and status.",
   },
 ]
 

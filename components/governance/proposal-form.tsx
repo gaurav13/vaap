@@ -216,7 +216,7 @@ export function ProposalForm({ categories }: { categories: string[] }) {
       </div>
 
       <div className="flex flex-col gap-3 rounded-xl border border-line bg-background p-4">
-        <p className="text-sm font-semibold text-heading">XRP Ledger anchoring (testnet)</p>
+        <p className="text-sm font-semibold text-heading">XRP Ledger anchoring</p>
         <label className="flex items-center gap-3 text-sm text-heading">
           <input type="checkbox" name="anchorResultOnXrpl" defaultChecked className="size-4 accent-[var(--color-green)]" />
           Anchor the final result hash on-chain
