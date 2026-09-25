@@ -2,11 +2,14 @@ import Link from "next/link"
 import { Plus, Vote, Eye } from "lucide-react"
 import { listProposals } from "@/lib/governance"
 import { StatusPill } from "@/components/governance/status-pill"
+import { DeleteProposalButton } from "@/components/governance/delete-proposal-button"
+import { getSession, isAdmin } from "@/lib/session"
 
 export const dynamic = "force-dynamic"
 
 export default async function AdminGovernancePage() {
-  const proposals = await listProposals()
+  const [proposals, session] = await Promise.all([listProposals(), getSession()])
+  const canDelete = isAdmin(session?.user?.role)
 
   return (
     <div className="mx-auto w-full max-w-5xl">
@@ -54,12 +57,17 @@ export default async function AdminGovernancePage() {
                     <StatusPill status={p.status} />
                   </td>
                   <td className="px-4 py-3 text-right">
+                    <div className="flex items-center justify-end gap-2">
                     <Link
                       href={`/admin/governance/${p.id}`}
                       className="inline-flex items-center gap-1.5 rounded-lg border border-green-border bg-mint px-3 py-1.5 text-sm font-semibold text-green transition-colors hover:bg-mint/70"
                     >
                       <Eye className="size-3.5" /> View &amp; manage
                     </Link>
+                    {canDelete && (
+                      <DeleteProposalButton id={p.id} reference={p.reference} title={p.title} variant="compact" />
+                    )}
+                    </div>
                   </td>
                 </tr>
               ))}

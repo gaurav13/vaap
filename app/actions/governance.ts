@@ -1,10 +1,20 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { eq } from "drizzle-orm"
+import { and, eq, inArray } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { getSession, isAdmin, isStaff } from "@/lib/session"
-import { governanceProposals, xrplAnchors } from "@/lib/db/schema"
+import {
+  governanceProposals,
+  governanceProposalOptions,
+  governanceProposalEligibility,
+  governanceVotes,
+  governanceVoteVersions,
+  governanceVoteReceipts,
+  governanceResults,
+  xrplAnchors,
+  xrplTransactionQueue,
+} from "@/lib/db/schema"
 import {
   createProposal,
   setProposalStatus,
@@ -151,6 +161,74 @@ export async function setProposalStatusAction(id: number, status: string) {
   } catch (e) {
     console.log("[v0] setProposalStatusAction error:", (e as Error).message)
     return { ok: false, error: "Could not update the proposal." }
+  }
+}
+
+export async function deleteProposalAction(id: number) {
+  const session = await getSession()
+  if (!session?.user || !isAdmin(session.user.role)) {
+    return { ok: false, error: "Only super admins can delete proposals." }
+  }
+  const user = session.user
+  if (!Number.isInteger(id) || id <= 0) return { ok: false, error: "Invalid proposal." }
+
+  try {
+    const [existing] = await db
+      .select({ id: governanceProposals.id, title: governanceProposals.title, reference: governanceProposals.reference })
+      .from(governanceProposals)
+      .where(eq(governanceProposals.id, id))
+      .limit(1)
+    if (!existing) return { ok: false, error: "Proposal not found." }
+
+    await db.transaction(async (tx) => {
+      await tx.delete(governanceVoteReceipts).where(eq(governanceVoteReceipts.proposalId, id))
+      await tx.delete(governanceVoteVersions).where(eq(governanceVoteVersions.proposalId, id))
+      await tx.delete(governanceVotes).where(eq(governanceVotes.proposalId, id))
+      await tx.delete(governanceResults).where(eq(governanceResults.proposalId, id))
+      await tx.delete(governanceProposalEligibility).where(eq(governanceProposalEligibility.proposalId, id))
+      await tx.delete(governanceProposalOptions).where(eq(governanceProposalOptions.proposalId, id))
+      await tx
+        .delete(xrplAnchors)
+        .where(and(eq(xrplAnchors.anchorType, "proposal_result"), eq(xrplAnchors.refId, id)))
+      await tx
+        .delete(xrplTransactionQueue)
+        .where(
+          and(
+            eq(xrplTransactionQueue.refTable, "governance_proposals"),
+            eq(xrplTransactionQueue.refId, id),
+            inArray(xrplTransactionQueue.status, ["pending", "failed"]),
+          ),
+        )
+      // Documents and discussion comments cascade via FK.
+      await tx.delete(governanceProposals).where(eq(governanceProposals.id, id))
+    })
+
+    await logGovernance({
+      actorId: user.id,
+      actorName: user.name,
+      actorRole: user.role,
+      action: "proposal.deleted",
+      entityType: "proposal",
+      entityId: id,
+      detail: { title: existing.title, reference: existing.reference },
+    })
+
+    for (const path of [
+      "/admin/governance",
+      "/dashboard/governance",
+      "/voting",
+      "/voting/active",
+      "/voting/upcoming",
+      "/voting/results",
+      "/voting/proposals",
+      `/voting/proposals/${id}`,
+    ]) {
+      revalidatePath(path)
+    }
+    return { ok: true }
+  } catch (e) {
+    console.log("[v0] deleteProposalAction error:", (e as Error).message)
+    return { ok: false, error: "Could not delete the proposal." }
   }
 }
 

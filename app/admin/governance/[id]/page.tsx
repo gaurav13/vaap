@@ -8,6 +8,8 @@ import { getProposal, getProposalResult, eligibleMemberIds, proposalVoteCount } 
 import { explorerUrl } from "@/lib/xrpl"
 import { StatusPill } from "@/components/governance/status-pill"
 import { ProposalAdminControls } from "@/components/governance/proposal-admin-controls"
+import { DeleteProposalButton } from "@/components/governance/delete-proposal-button"
+import { getSession, isAdmin } from "@/lib/session"
 import { ProposalDocumentsManager, type ManagedDocument } from "@/components/governance/proposal-documents-manager"
 import { formatFileSize, listProposalDocuments } from "@/lib/proposal-extras"
 
@@ -28,6 +30,8 @@ export default async function AdminProposalDetail({
   const { id: idStr } = await params
   const docsFailed = Number((await searchParams).docsFailed) || 0
   const id = Number(idStr)
+  const session = await getSession()
+  const canDelete = isAdmin(session?.user?.role)
   if (!Number.isFinite(id)) notFound()
 
   const data = await getProposal(id)
@@ -114,6 +118,18 @@ export default async function AdminProposalDetail({
       </div>
 
       <ProposalAdminControls id={id} status={proposal.status} />
+
+      {canDelete && (
+        <div className="mt-6">
+          <DeleteProposalButton
+            id={id}
+            reference={proposal.reference}
+            title={proposal.title}
+            voteCount={voteCount}
+            redirectTo="/admin/governance"
+          />
+        </div>
+      )}
 
       {docsFailed > 0 && (
         <p role="alert" className="mt-6 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
