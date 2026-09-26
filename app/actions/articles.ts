@@ -158,7 +158,10 @@ export async function submitArticle(id: number) {
 }
 
 export async function getArticleTimeline(id: number) {
-  await requireAuthor()
+  const me = await requireAuthor()
+  const [article] = await db.select({ authorId: articles.authorId }).from(articles).where(eq(articles.id, id)).limit(1)
+  if (!article) return []
+  if (article.authorId !== me.id && !can(me.role, "articles.publish")) return []
   return db
     .select()
     .from(articleApprovals)

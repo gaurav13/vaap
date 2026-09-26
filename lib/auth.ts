@@ -69,7 +69,7 @@ export const auth = betterAuth({
       const { subject, html, text } = passwordResetEmail(url)
       const sent = await sendEmail({ to: user.email, subject, html, text })
       if (!sent) {
-        console.log(`[v0] Password reset link for ${user.email}: ${url}`)
+        console.error("[auth] Password reset email could not be sent.")
       }
     },
   },
@@ -93,7 +93,7 @@ export const auth = betterAuth({
       })
       const sent = await sendEmail({ to: user.email, subject, html, text })
       if (!sent) {
-        console.log(`[v0] Email verification link for ${user.email}: ${url}`)
+        console.error("[auth] Verification email could not be sent.")
       }
     },
     afterEmailVerification: async (verifiedUser) => {

@@ -14,7 +14,7 @@ const STATUS_STYLES: Record<string, string> = {
 export default async function ApplicationsPage() {
   const session = await getSession()
   if (!session?.user) redirect("/sign-in")
-  const apps = await getMyApplications(session.user.email)
+  const apps = await getMyApplications()
 
   return (
     <div className="mx-auto w-full max-w-4xl">

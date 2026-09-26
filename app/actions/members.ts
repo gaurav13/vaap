@@ -153,7 +153,7 @@ export async function saveMember(id: number | null, input: MemberInput) {
     if (message.toLowerCase().includes("unique") || message.toLowerCase().includes("duplicate")) {
       return { ok: false, error: "That membership ID is already in use." }
     }
-    return { ok: false, error: message }
+    return { ok: false, error: "Save failed." }
   }
 
   revalidate()

@@ -80,17 +80,42 @@ export async function uploadProposalDocument(file: { bytes: Uint8Array; contentT
   return { url: publicSpaceUrl(key), extension, contentType }
 }
 
+function startsWith(bytes: Uint8Array, signature: number[]) {
+  if (bytes.length < signature.length) return false
+  return signature.every((byte, index) => bytes[index] === byte)
+}
+
+function sniffedType(bytes: Uint8Array): string | null {
+  if (startsWith(bytes, [0xff, 0xd8, 0xff])) return "image/jpeg"
+  if (startsWith(bytes, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) return "image/png"
+  if (startsWith(bytes, [0x47, 0x49, 0x46, 0x38])) return "image/gif"
+  if (
+    bytes.length >= 12 &&
+    startsWith(bytes, [0x52, 0x49, 0x46, 0x46]) &&
+    bytes[8] === 0x57 &&
+    bytes[9] === 0x45 &&
+    bytes[10] === 0x42 &&
+    bytes[11] === 0x50
+  ) {
+    return "image/webp"
+  }
+  if (bytes.length >= 12 && bytes[4] === 0x66 && bytes[5] === 0x74 && bytes[6] === 0x79 && bytes[7] === 0x70) {
+    const brand = String.fromCharCode(...bytes.slice(8, 12))
+    if (brand === "avif" || brand === "avis") return "image/avif"
+  }
+  if (startsWith(bytes, [0x25, 0x50, 0x44, 0x46])) return "application/pdf"
+  return null
+}
+
 export async function uploadPageImage(file: {
   bytes: Uint8Array
   contentType: string
   folder?: string
   fileName?: string
 }) {
-  const contentType = file.contentType || "application/octet-stream"
-  const namedPdf = file.fileName?.toLowerCase().endsWith(".pdf")
-  const extension =
-    FILE_TYPES.get(contentType) ?? (namedPdf && contentType === "application/octet-stream" ? "pdf" : undefined)
-  if (!extension) throw new Error("Upload a JPEG, PNG, WebP, GIF, AVIF image, or a PDF.")
+  const detected = sniffedType(file.bytes)
+  const extension = detected ? FILE_TYPES.get(detected) : undefined
+  if (!detected || !extension) throw new Error("Upload a JPEG, PNG, WebP, GIF, AVIF image, or a PDF.")
   if (extension === "pdf" && file.folder !== "publications") {
     throw new Error("Upload a JPEG, PNG, WebP, GIF, or AVIF image.")
   }
@@ -109,7 +134,7 @@ export async function uploadPageImage(file: {
       Bucket: bucket,
       Key: key,
       Body: file.bytes,
-      ContentType: extension === "pdf" ? "application/pdf" : file.contentType,
+      ContentType: detected,
       ACL: "public-read",
       CacheControl: "public, max-age=31536000",
     }),

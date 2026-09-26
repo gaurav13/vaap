@@ -108,7 +108,8 @@ export async function GET(req: Request) {
   page.drawImage(qr, { x: 1064, y: H - 799 - 96, width: 96, height: 96 })
 
   const pdf = await doc.save()
-  const filename = `VAAP-Certificate-${member.membershipId}.pdf`
+  const safeId = member.membershipId.replace(/[^A-Za-z0-9._-]/g, "")
+  const filename = `VAAP-Certificate-${safeId || "member"}.pdf`
   const inline = url.searchParams.get("preview") === "1"
 
   return new NextResponse(Buffer.from(pdf), {

@@ -1,6 +1,7 @@
 import Image from "next/image"
 import Link from "next/link"
 import { ArrowRight } from "lucide-react"
+import { plainTextToHtml, sanitizeRichHtml } from "@/lib/html"
 
 type Profile = {
   id: number
@@ -124,15 +125,7 @@ export function Leadership({ profiles }: { profiles: Profile[] }) {
 
 function RichBio({ html }: { html: string }) {
   const looksLikeHtml = /<[a-z][\s\S]*>/i.test(html)
-
-  // Clean up markup pasted from rich-text editors: drop framework attributes
-  // (data-*, class, style, id, dir) so only semantic tags and text remain.
-  const cleaned = looksLikeHtml
-    ? html.replace(/\s(?:data-[\w-]+|class|style|id|dir)="[^"]*"/gi, "")
-    : html
-        .split(/\n{2,}/)
-        .map((p) => `<p>${p.trim()}</p>`)
-        .join("")
+  const cleaned = looksLikeHtml ? sanitizeRichHtml(html) : plainTextToHtml(html)
 
   return (
     <div

@@ -80,8 +80,8 @@ export async function updateProfile(formData: FormData) {
         ...profileFields,
       })
     }
-  } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : "Update failed." }
+  } catch {
+    return { ok: false, error: "Update failed." }
   }
 
   revalidatePath("/dashboard")
@@ -214,11 +214,12 @@ export async function requestUpgrade(formData: FormData) {
   return { ok: true }
 }
 
-export async function getMyApplications(email: string) {
+export async function getMyApplications() {
+  const current = await requireUser()
   return db
     .select()
     .from(membershipApplications)
-    .where(eq(membershipApplications.email, email))
+    .where(sql`lower(${membershipApplications.email}) = ${current.email.toLowerCase()}`)
     .orderBy(desc(membershipApplications.createdAt))
 }
 
@@ -274,8 +275,8 @@ export async function submitMemberEvent(formData: FormData) {
       status: "pending",
       published: true,
     })
-  } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : "Could not submit event." }
+  } catch {
+    return { ok: false, error: "Could not submit event." }
   }
 
   revalidatePath("/dashboard/events")

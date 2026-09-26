@@ -14,7 +14,7 @@ import {
   membershipFaqs,
   auditLogs,
 } from "@/lib/db/schema"
-import { getSession } from "@/lib/session"
+import { getSession, isStaff } from "@/lib/session"
 import { desc, eq, and, isNull } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { ENTITIES, type EntityKey, type FieldDef } from "@/lib/cms/entities"
@@ -113,9 +113,8 @@ export async function saveEntity(key: EntityKey, id: number | null, formData: Fo
       await db.insert(table).values(values)
       await log(actor, `created ${config.singular}`, String(values[config.list.title] ?? ""))
     }
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Save failed."
-    return { ok: false, error: message }
+  } catch {
+    return { ok: false, error: "Save failed." }
   }
 
   for (const path of config.revalidate) revalidatePath(path)
@@ -143,9 +142,10 @@ function adminSlug(key: EntityKey) {
 
 // --- Public read helpers ---------------------------------------------------
 
-export async function getPublications(opts?: { includeMembersOnly?: boolean }) {
+export async function getPublications() {
+  const session = await getSession()
   const rows = await db.select().from(publications).where(eq(publications.published, true)).orderBy(desc(publications.createdAt))
-  if (opts?.includeMembersOnly) return rows
+  if (session?.user) return rows
   return rows.filter((r) => !r.membersOnly)
 }
 
@@ -189,6 +189,7 @@ export async function getMembershipFaqs() {
 }
 
 export async function getMembersDirectory() {
+  await requireStaff()
   return db
     .select()
     .from(members)
@@ -196,8 +197,11 @@ export async function getMembersDirectory() {
     .orderBy(desc(members.joinedAt))
 }
 
-export async function getMyMembership(userId: string) {
-  const rows = await db.select().from(members).where(eq(members.userId, userId)).limit(1)
+export async function getMyMembership(userId?: string) {
+  const session = await getSession()
+  if (!session?.user) return null
+  if (userId && userId !== session.user.id) return null
+  const rows = await db.select().from(members).where(eq(members.userId, session.user.id)).limit(1)
   return rows[0] ?? null
 }
 
@@ -348,9 +352,14 @@ function blankToNull(value: string | null | undefined) {
 // Public visitors only receive published pages. Staff and super admins can
 // preview drafts at the same URL.
 export async function getCmsPage(slug: string, parentSlug?: string | null, opts?: { includeDrafts?: boolean }) {
+  let includeDrafts = false
+  if (opts?.includeDrafts) {
+    const session = await getSession()
+    includeDrafts = isStaff(session?.user?.role)
+  }
   const rows = await db.select().from(pages).where(eq(pages.slug, slug)).limit(10)
   const parent = parentSlug === undefined ? undefined : blankToNull(parentSlug)
   const matched = rows.filter((row) => parent === undefined || blankToNull(row.parentSlug) === parent)
-  const visible = opts?.includeDrafts ? matched : matched.filter((row) => row.status === "published")
+  const visible = includeDrafts ? matched : matched.filter((row) => row.status === "published")
   return visible[0] ?? null
 }

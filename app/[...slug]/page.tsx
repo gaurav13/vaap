@@ -5,6 +5,7 @@ import { PageHero } from "@/components/page-hero"
 import { getHeaderUser } from "@/lib/header-user"
 import { getCmsPage } from "@/app/actions/cms"
 import { getSession, isStaff } from "@/lib/session"
+import { plainTextToHtml, sanitizeRichHtml } from "@/lib/html"
 
 type Params = { slug: string[] }
 
@@ -77,7 +78,7 @@ export default async function CmsPage({ params }: { params: Promise<Params> }) {
           ) : isHtml ? (
             <div
               className="text-pretty leading-relaxed text-body [&_a]:text-green [&_a]:underline [&_h2]:mb-3 [&_h2]:mt-8 [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:text-heading [&_h3]:mb-2 [&_h3]:mt-6 [&_h3]:text-xl [&_h3]:font-semibold [&_h3]:text-heading [&_h4]:mb-2 [&_h4]:mt-4 [&_h4]:font-semibold [&_h4]:text-heading [&_img]:my-6 [&_img]:w-full [&_img]:rounded-xl [&_li]:mb-1 [&_ol]:mb-4 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:mb-4 [&_strong]:font-semibold [&_strong]:text-heading [&_ul]:mb-4 [&_ul]:list-disc [&_ul]:pl-6"
-              dangerouslySetInnerHTML={{ __html: page.content }}
+              dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(page.content) }}
             />
           ) : (
             <div className="flex flex-col gap-5">

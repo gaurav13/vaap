@@ -252,8 +252,8 @@ export async function rsvpToEvent(formData: FormData) {
       .insert(eventRsvps)
       .values({ eventId, userId, name, email })
       .onConflictDoNothing()
-  } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : "Could not register." }
+  } catch {
+    return { ok: false, error: "Could not register." }
   }
 
   revalidatePath(`/events/${eventId}`)
@@ -351,6 +351,16 @@ function clean(value: string | undefined): string {
   return (value ?? "").trim()
 }
 
+async function canUpdateApplication(id: number, email: string) {
+  const [row] = await db
+    .select({ email: membershipApplications.email, completed: membershipApplications.completed })
+    .from(membershipApplications)
+    .where(eq(membershipApplications.id, id))
+    .limit(1)
+  if (!row || row.completed) return false
+  return row.email.trim().toLowerCase() === email.trim().toLowerCase()
+}
+
 function buildReference(id: number, createdAt?: Date | null): string {
   const year = new Date(createdAt ?? Date.now()).getFullYear()
   return `VAAP-${year}-${String(id).padStart(6, "0")}`
@@ -412,7 +422,9 @@ export async function saveIncompleteApplication(input: IncompleteInput) {
 
   try {
     if (input.applicationId) {
-      // Only refresh rows that are still incomplete; never touch a finished one.
+      if (!(await canUpdateApplication(input.applicationId, email))) {
+        return { ok: false as const }
+      }
       await db
         .update(membershipApplications)
         .set(values)
@@ -481,11 +493,15 @@ export async function submitFullApplication(input: ApplicationInput) {
     let reference: string | null = null
 
     if (input.applicationId) {
-      // Complete the existing draft row rather than duplicating it.
+      if (!(await canUpdateApplication(input.applicationId, email))) {
+        return { ok: false as const, error: "This application can no longer be updated." }
+      }
       await db
         .update(membershipApplications)
         .set(values)
-        .where(eq(membershipApplications.id, input.applicationId))
+        .where(
+          and(eq(membershipApplications.id, input.applicationId), eq(membershipApplications.completed, false)),
+        )
 
       const [row] = await db
         .select({ reference: membershipApplications.reference, createdAt: membershipApplications.createdAt })

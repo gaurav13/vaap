@@ -9,6 +9,7 @@ import { SiteHeaderServer } from "@/components/site-header-server"
 import { SiteFooter } from "@/components/site-footer"
 import { getHeaderUser } from "@/lib/header-user"
 import { ProfileSocials } from "@/components/profiles/profile-socials"
+import { plainTextToHtml, sanitizeRichHtml } from "@/lib/html"
 
 async function getProfile(id: number) {
   const rows = await db.select().from(leadership).where(eq(leadership.id, id)).limit(1)
@@ -29,12 +30,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 function RichBio({ html }: { html: string }) {
   const looksLikeHtml = /<[a-z][\s\S]*>/i.test(html)
-  const cleaned = looksLikeHtml
-    ? html.replace(/\s(?:data-[\w-]+|class|style|id|dir)="[^"]*"/gi, "")
-    : html
-        .split(/\n{2,}/)
-        .map((p) => `<p>${p.trim()}</p>`)
-        .join("")
+  const cleaned = looksLikeHtml ? sanitizeRichHtml(html) : plainTextToHtml(html)
   return (
     <div
       className="mt-6 max-w-2xl space-y-4 text-pretty leading-relaxed text-body [&_a]:font-medium [&_a]:text-green [&_a]:underline [&_h2]:mb-2 [&_h2]:mt-4 [&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-heading [&_h3]:mb-2 [&_h3]:mt-3 [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:text-heading [&_li]:ml-1 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:leading-relaxed [&_ul]:list-disc [&_ul]:pl-6"

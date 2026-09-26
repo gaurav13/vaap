@@ -1,10 +1,15 @@
 import { getSession, isStaff } from "@/lib/session"
 import { uploadPageImage } from "@/lib/spaces"
+import { isSameOrigin } from "@/lib/request-origin"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
 export async function POST(request: Request) {
+  if (!isSameOrigin(request)) {
+    return Response.json({ error: "Cross-origin uploads are rejected." }, { status: 403 })
+  }
+
   const session = await getSession()
   if (!session?.user) {
     return Response.json({ error: "Unauthorized" }, { status: 401 })
