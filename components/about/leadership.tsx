@@ -29,7 +29,7 @@ export function Leadership({ profiles }: { profiles: Profile[] }) {
   const committee = rest.filter((p) => !grouped.has(p.id))
 
   return (
-    <section className="bg-background">
+    <section id="leadership" className="scroll-mt-24 bg-background">
       <div className="vaap-container py-14 lg:py-20">
         {/* Eyebrow */}
         <div className="flex items-center gap-3">

@@ -47,7 +47,7 @@ export default async function TeamProfilePage({ params }: { params: Promise<{ id
   const [profile, user] = await Promise.all([getProfile(numericId), getHeaderUser()])
   if (!profile) notFound()
 
-  const backHref = profile.kind === "Chairman" || profile.kind === "message" ? "/about" : "/governance"
+  const backHref = "/about#leadership"
 
   return (
     <>
