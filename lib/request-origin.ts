@@ -34,17 +34,24 @@ function isAllowedHost(host: string) {
   return process.env.NODE_ENV !== "production" && PREVIEW_HOST_PATTERNS.some((pattern) => pattern.test(host))
 }
 
-/** True when the browser Origin matches this request's Host and an allowlisted site. */
+/**
+ * True when the browser Origin is this site. Proxies (v0 preview, Vercel aliases)
+ * can rewrite Host, so an Origin matching either Host header or an allowlisted
+ * site domain is accepted.
+ */
 export function isSameOrigin(request: Request) {
   const origin = request.headers.get("origin")
-  const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host")
-  if (!origin || !host) return false
+  if (!origin) return false
   let originHost = ""
   try {
     originHost = new URL(origin).host
   } catch {
     return false
   }
-  if (originHost !== host) return false
+  const requestHosts = [request.headers.get("x-forwarded-host"), request.headers.get("host")]
+    .flatMap((value) => value?.split(",") ?? [])
+    .map((value) => value.trim())
+    .filter(Boolean)
+  if (requestHosts.includes(originHost)) return true
   return isAllowedHost(originHost)
 }
