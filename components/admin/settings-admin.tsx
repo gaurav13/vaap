@@ -1064,6 +1064,7 @@ function LinksEditor({ initial }: { initial: SocialLinks }) {
     { name: "youtube", label: "YouTube", placeholder: "https://youtube.com/@…" },
     { name: "instagram", label: "Instagram", placeholder: "https://instagram.com/…" },
     { name: "facebook", label: "Facebook", placeholder: "https://facebook.com/…" },
+    { name: "tiktok", label: "TikTok", placeholder: "https://tiktok.com/@…" },
   ]
 
   return (

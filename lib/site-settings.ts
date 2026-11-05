@@ -9,6 +9,7 @@ export type SocialLinks = {
   youtube: string
   instagram: string
   facebook: string
+  tiktok: string
 }
 export type General = {
   siteTitle: string
@@ -217,6 +218,7 @@ export const DEFAULT_SOCIAL: SocialLinks = {
   youtube: "",
   instagram: "",
   facebook: "",
+  tiktok: "",
 }
 
 export const DEFAULT_GENERAL: General = {

@@ -67,6 +67,7 @@ export async function saveSocial(formData: FormData) {
     youtube: String(formData.get("youtube") ?? "").trim(),
     instagram: String(formData.get("instagram") ?? "").trim(),
     facebook: String(formData.get("facebook") ?? "").trim(),
+    tiktok: String(formData.get("tiktok") ?? "").trim(),
   }
   await put("social", value, actor)
   return { ok: true as const }
