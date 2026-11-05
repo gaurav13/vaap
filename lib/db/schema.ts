@@ -89,6 +89,9 @@ export const events = pgTable("events", {
   // Public-facing host / organizer name (e.g. a member's org or "VAAP").
   hostName: text("hostName").notNull().default(""),
   coverImage: text("coverImage"),
+  category: text("category").notNull().default(""),
+  city: text("city").notNull().default(""),
+  format: text("format").notNull().default(""),
   // Set when a member submits the event; null for admin-created events.
   submittedByUserId: text("submittedByUserId"),
   submittedByName: text("submittedByName").notNull().default(""),

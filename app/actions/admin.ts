@@ -1,6 +1,7 @@
 "use server"
 
 import { db } from "@/lib/db"
+import { EVENT_CATEGORIES, EVENT_CITIES, EVENT_FORMATS, pickOption } from "@/lib/event-options"
 import { news, events, membershipApplications, contactMessages, user, members, account, referralPartners } from "@/lib/db/schema"
 import { getSession } from "@/lib/session"
 import { auth } from "@/lib/auth"
@@ -117,6 +118,9 @@ export async function createEvent(formData: FormData) {
   const coverImage = String(formData.get("coverImage") ?? "").trim()
   const startsAtRaw = String(formData.get("startsAt") ?? "").trim()
   const published = formData.get("published") === "on"
+  const category = pickOption(EVENT_CATEGORIES, formData.get("category"))
+  const city = pickOption(EVENT_CITIES, formData.get("city"))
+  const format = pickOption(EVENT_FORMATS, formData.get("format"))
 
   if (!title) return { ok: false, error: "Title is required." }
 
@@ -126,6 +130,9 @@ export async function createEvent(formData: FormData) {
     description,
     location,
     timeLabel,
+    category,
+    city,
+    format,
     hostName: hostName || null,
     coverImage: coverImage || null,
     startsAt: startsAtRaw ? new Date(startsAtRaw) : new Date(),
@@ -148,6 +155,9 @@ export async function updateEvent(id: number, formData: FormData) {
   const coverImage = String(formData.get("coverImage") ?? "").trim()
   const startsAtRaw = String(formData.get("startsAt") ?? "").trim()
   const published = formData.get("published") === "on"
+  const category = pickOption(EVENT_CATEGORIES, formData.get("category"))
+  const city = pickOption(EVENT_CITIES, formData.get("city"))
+  const format = pickOption(EVENT_FORMATS, formData.get("format"))
 
   await db
     .update(events)
@@ -156,6 +166,9 @@ export async function updateEvent(id: number, formData: FormData) {
       description,
       location,
       timeLabel,
+      category,
+      city,
+      format,
       hostName: hostName || null,
       coverImage: coverImage || null,
       ...(startsAtRaw ? { startsAt: new Date(startsAtRaw) } : {}),

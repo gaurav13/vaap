@@ -192,6 +192,15 @@ export async function getPublishedEvents(limit?: number) {
   return typeof limit === "number" ? rows.slice(0, limit) : rows
 }
 
+/** Every approved, published event (upcoming and past), soonest first. */
+export async function getAllPublicEvents() {
+  return db
+    .select()
+    .from(events)
+    .where(and(eq(events.published, true), eq(events.status, "approved")))
+    .orderBy(events.startsAt)
+}
+
 export async function getEventById(id: number) {
   const rows = await db
     .select()

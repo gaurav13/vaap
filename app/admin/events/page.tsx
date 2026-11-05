@@ -17,6 +17,9 @@ export default async function AdminEventsPage() {
       hostName: events.hostName,
       coverImage: events.coverImage,
       submittedByName: events.submittedByName,
+      category: events.category,
+      city: events.city,
+      format: events.format,
     })
     .from(events)
     .orderBy(desc(events.startsAt))
@@ -45,6 +48,9 @@ export default async function AdminEventsPage() {
           hostName: r.hostName ?? "",
           coverImage: r.coverImage ?? "",
           submittedByName: r.submittedByName ?? "",
+          category: r.category ?? "",
+          city: r.city ?? "",
+          format: r.format ?? "",
         }))}
       />
     </div>
