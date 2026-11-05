@@ -1,128 +1,102 @@
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowRight, Handshake, Users, BarChart3 } from "lucide-react"
+import { ArrowRight, BarChart3, Network, QrCode, ShieldCheck, Users } from "lucide-react"
 
 const features = [
-  { icon: Handshake, label: ["Stronger", "Policy Dialogue"] },
-  { icon: Users, label: ["A Safer", "Community"] },
-  { icon: BarChart3, label: ["A More Inclusive", "Digital Economy"] },
+  { icon: Users, label: ["Industry", "Representation"] },
+  { icon: ShieldCheck, label: ["Verified", "Membership"] },
+  { icon: Network, label: ["Governance", "& Committees"] },
+  { icon: BarChart3, label: ["Policy, Research", "& Advocacy"] },
 ]
+
+const taglines = ["Unifying Industry", "Representing Stakeholders", "Driving Responsible Growth"]
 
 export function MembershipHero() {
   return (
-    <section className="relative overflow-hidden bg-[#f5f3ee]">
-      {/* Desktop background photo, bleeding to the right edge */}
-      <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[52%] lg:block">
-        <Image
-          src="/images/hero-islamabad.png"
-          alt=""
-          fill
-          className="object-cover object-center"
-          priority
-          aria-hidden
-        />
-        {/* Fade the photo into the cream panel on its left edge */}
-        <div
-          className="absolute inset-0 bg-gradient-to-r from-[#f5f3ee] via-[#f5f3ee]/70 via-25% to-transparent"
-          aria-hidden
-        />
-        {/* Overlay tagline */}
-        <div className="absolute left-[14%] top-1/2 flex -translate-y-1/2 items-stretch gap-4">
-          <span className="w-[3px] rounded-full bg-gold" aria-hidden />
-          <p className="text-sm font-bold uppercase leading-[1.55] tracking-[0.08em] text-white drop-shadow-[0_1px_6px_rgba(0,0,0,0.35)] xl:text-base">
-            People.
-            <br />
-            Policy.
-            <br />
-            Innovation.
-            <br />A Stronger
-            <br />
-            Pakistan.
-          </p>
-        </div>
+    <section className="relative overflow-hidden bg-white">
+      {/* Desktop photo with curved left edge and green swoosh */}
+      <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[56%] lg:block" aria-hidden>
+        <Image src="/images/hero-islamabad.png" alt="" fill priority className="object-cover object-center" />
+        <div className="absolute inset-0 bg-gradient-to-r from-white via-white/40 via-20% to-transparent" />
+        <svg
+          className="absolute inset-0 h-full w-full"
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+          fill="none"
+        >
+          <path d="M0 0 H14 C4 30 6 70 30 100 H0 Z" className="fill-white" />
+          <path d="M18 100 C55 96 85 70 100 30 V100 Z" className="fill-white" />
+          <path d="M22 100 C58 95 86 68 100 26" stroke="#1b4332" vectorEffect="non-scaling-stroke" style={{ strokeWidth: 10 }} />
+          <path d="M30 100 C62 94 88 72 100 40" stroke="#2d6a4f" strokeOpacity="0.5" vectorEffect="non-scaling-stroke" style={{ strokeWidth: 3 }} />
+        </svg>
       </div>
 
-      <div className="relative mx-auto grid max-w-7xl grid-cols-1 gap-0 px-5 py-12 sm:px-6 lg:grid-cols-2 lg:px-8 lg:py-16">
-        <div className="lg:max-w-xl">
-          <div className="flex items-center gap-4">
-            <p className="text-xs font-bold uppercase tracking-[0.22em] text-gold sm:text-sm">Membership</p>
-            <span className="h-px w-12 bg-gold/60 sm:w-16" aria-hidden />
-          </div>
-
-          <h1 className="mt-6 text-balance font-serif text-4xl font-bold leading-[1.06] text-navy sm:text-5xl xl:text-6xl">
-            Build Together
-            <br />A Stronger <span className="text-gold">Digital Pakistan</span>
-          </h1>
-
-          <p className="mt-6 max-w-lg text-pretty text-lg leading-relaxed text-body">
-            Join VAAP and be part of a transparent, innovative and inclusive virtual asset ecosystem.
+      <div className="relative mx-auto max-w-7xl px-5 pb-10 pt-12 sm:px-6 lg:px-8 lg:pb-12 lg:pt-16">
+        <div className="lg:max-w-[46%]">
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-heading sm:text-sm">
+            VAAP Membership Platform For
           </p>
 
-          {/* Feature highlights */}
-          <ul className="mt-8 flex flex-col gap-6 sm:flex-row sm:items-center sm:gap-0">
-            {features.map((feature, index) => {
-              const Icon = feature.icon
-              return (
-                <li
-                  key={feature.label.join(" ")}
-                  className={`flex items-center gap-3 sm:px-5 ${index === 0 ? "sm:pl-0" : ""} ${
-                    index > 0 ? "sm:border-l sm:border-line" : ""
-                  }`}
-                >
-                  <Icon className="size-8 shrink-0 text-gold" strokeWidth={1.5} aria-hidden />
-                  <span className="text-sm font-semibold leading-snug text-heading">
-                    {feature.label[0]}
-                    <br />
-                    {feature.label[1]}
-                  </span>
-                </li>
-              )
-            })}
-          </ul>
+          <h1 className="mt-4 text-balance font-serif text-4xl font-bold leading-[1.05] text-[#1b4332] sm:text-5xl xl:text-6xl">
+            Virtual Assets, Blockchain &amp; Digital Economy
+          </h1>
 
-          {/* CTAs */}
-          <div className="mt-10 flex flex-col items-start gap-5 sm:flex-row sm:items-center sm:gap-8">
+          <p className="mt-5 text-pretty text-base leading-relaxed text-heading sm:text-lg">
+            {taglines[0]}
+            <span className="mx-3 text-line" aria-hidden>
+              |
+            </span>
+            {taglines[1]}
+            <br />
+            {taglines[2]}
+          </p>
+
+          <div className="mt-8 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
             <Link
               href="/membership/apply"
-              className="inline-flex items-center gap-2.5 rounded-md bg-[#1b4332] px-7 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-[#143728]"
+              className="inline-flex items-center gap-2.5 rounded-lg bg-[#1b4332] px-7 py-3.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#143728]"
             >
               Become a Member
-              <ArrowRight className="size-4" />
+              <ArrowRight className="size-4" aria-hidden />
             </Link>
             <Link
-              href="#categories"
-              className="group inline-flex items-center gap-2 border-b-2 border-heading pb-1 text-sm font-semibold text-heading transition-colors hover:border-gold hover:text-gold"
+              href="/membership/verify"
+              className="inline-flex items-center gap-2.5 rounded-lg border-2 border-[#1b4332] bg-white px-6 py-3 text-sm font-semibold text-[#1b4332] transition-colors hover:bg-[#1b4332]/5"
             >
-              Learn More About Membership
-              <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+              <QrCode className="size-5" aria-hidden />
+              Verify Membership
             </Link>
           </div>
         </div>
 
         {/* Mobile / tablet photo */}
-        <div className="relative mt-10 block lg:hidden">
-          <div className="relative aspect-[16/10] overflow-hidden rounded-2xl border border-line shadow-sm">
-            <Image
-              src="/images/hero-islamabad.png"
-              alt="Faisal Mosque framed by the Margalla Hills in Islamabad, Pakistan"
-              fill
-              className="object-cover"
-            />
-            <div className="absolute left-5 top-1/2 flex -translate-y-1/2 items-stretch gap-3">
-              <span className="w-[3px] rounded-full bg-gold" aria-hidden />
-              <p className="text-xs font-bold uppercase leading-[1.55] tracking-[0.08em] text-white drop-shadow-[0_1px_6px_rgba(0,0,0,0.4)]">
-                People.
-                <br />
-                Policy.
-                <br />
-                Innovation.
-                <br />A Stronger
-                <br />
-                Pakistan.
-              </p>
-            </div>
-          </div>
+        <div className="relative mt-10 aspect-[16/9] overflow-hidden rounded-2xl border border-line lg:hidden">
+          <Image
+            src="/images/hero-islamabad.png"
+            alt="Faisal Mosque framed by the Margalla Hills in Islamabad, Pakistan"
+            fill
+            className="object-cover"
+          />
         </div>
+
+        <ul className="mt-10 grid grid-cols-2 gap-6 sm:grid-cols-4 sm:gap-0 lg:mt-14 lg:max-w-[64%]">
+          {features.map((feature, index) => {
+            const Icon = feature.icon
+            return (
+              <li
+                key={feature.label.join(" ")}
+                className={`flex items-center gap-3 sm:px-5 ${index === 0 ? "sm:pl-0" : "sm:border-l sm:border-line"}`}
+              >
+                <Icon className="size-9 shrink-0 text-[#1b4332]" strokeWidth={1.5} aria-hidden />
+                <span className="text-sm font-medium leading-snug text-heading">
+                  {feature.label[0]}
+                  <br />
+                  {feature.label[1]}
+                </span>
+              </li>
+            )
+          })}
+        </ul>
       </div>
     </section>
   )

@@ -1,6 +1,7 @@
 import { SiteHeaderServer } from "@/components/site-header-server"
 import { SiteFooter } from "@/components/site-footer"
 import { MembershipHero } from "@/components/membership/membership-hero"
+import { MembershipSystem } from "@/components/membership/membership-system"
 import { MembershipTypes, type MembershipPlan } from "@/components/membership/membership-types"
 import { MembershipEligibility } from "@/components/membership/membership-eligibility"
 import { MembershipProcess } from "@/components/membership/membership-process"
@@ -61,6 +62,7 @@ export default async function MembershipPage() {
       <SiteHeaderServer active="Membership" user={user} />
       <main>
         <MembershipHero />
+        <MembershipSystem />
         <MembershipBenefits />
         <MembershipProcess />
         <MembershipEligibility />

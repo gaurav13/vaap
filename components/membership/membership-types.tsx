@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import {
@@ -193,8 +193,40 @@ function PlanDetail({
   )
 }
 
+const PLAN_KEYWORDS: Record<string, string[]> = {
+  corporate: ["corporate"],
+  international: ["international", "associate"],
+  individual: ["individual", "community", "holder", "professional"],
+  student: ["student", "academic"],
+}
+
+function findPlanIndex(plans: MembershipPlan[], slug: string): number {
+  const keywords = PLAN_KEYWORDS[slug] ?? [slug]
+  return plans.findIndex((plan) => {
+    const title = plan.title.toLowerCase()
+    return keywords.some((keyword) => title.includes(keyword))
+  })
+}
+
 export function MembershipTypes({ plans, header }: { plans: MembershipPlan[]; header: Membership }) {
   const [active, setActive] = useState(0)
+  const sectionRef = useRef<HTMLElement>(null)
+
+  // Category cards above link to "#plan-<slug>"; open that plan and bring its details into view.
+  useEffect(() => {
+    function openFromHash() {
+      const match = window.location.hash.match(/^#plan-([a-z-]+)$/)
+      if (!match) return
+      const index = findPlanIndex(plans, match[1])
+      if (index >= 0) setActive(index)
+      sectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+      // Reset the hash so clicking the same category again still triggers a change.
+      history.replaceState(null, "", "#categories")
+    }
+    openFromHash()
+    window.addEventListener("hashchange", openFromHash)
+    return () => window.removeEventListener("hashchange", openFromHash)
+  }, [plans])
 
   if (plans.length === 0) {
     return (
@@ -209,7 +241,7 @@ export function MembershipTypes({ plans, header }: { plans: MembershipPlan[]; he
   const statementLines = header.statement.split("\n").filter(Boolean)
 
   return (
-    <section id="categories" className="relative overflow-hidden bg-background">
+    <section id="categories" ref={sectionRef} className="relative scroll-mt-20 overflow-hidden bg-background">
       <div className="mx-auto max-w-7xl px-5 py-12 lg:px-8 lg:py-16">
         {/* Header */}
         <div className="relative min-h-[200px] lg:min-h-[240px]">

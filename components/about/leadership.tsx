@@ -16,12 +16,20 @@ type Profile = {
 
 export function Leadership({ profiles }: { profiles: Profile[] }) {
   // The Chairman is the profile whose Type is "Chairman" (fallback to the
-  // first), and the Executive Committee is everyone else, in admin sort order.
+  // first). Remaining profiles are grouped by Type in admin sort order; any
+  // legacy/unknown type falls into the Executive Committee.
   const chairman = profiles.find((p) => p.kind === "Chairman") ?? profiles[0] ?? null
-  const committee = profiles.filter((p) => p.id !== chairman?.id)
+  const rest = profiles.filter((p) => p.id !== chairman?.id)
+  const viceChairs = [
+    ...rest.filter((p) => p.kind === "Sr. Vice Chairman"),
+    ...rest.filter((p) => p.kind === "Vice Chairman"),
+  ]
+  const advisory = rest.filter((p) => p.kind === "Advisory Committee Members")
+  const grouped = new Set([...viceChairs, ...advisory].map((p) => p.id))
+  const committee = rest.filter((p) => !grouped.has(p.id))
 
   return (
-    <section className="bg-background">
+    <section id="leadership" className="scroll-mt-24 bg-background">
       <div className="vaap-container py-14 lg:py-20">
         {/* Eyebrow */}
         <div className="flex items-center gap-3">
@@ -73,53 +81,110 @@ export function Leadership({ profiles }: { profiles: Profile[] }) {
           </p>
         )}
 
-        {/* Executive Committee */}
-        {committee.length > 0 ? (
-          <>
-            <div className="mt-16 flex items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <span className="h-px w-8 bg-green" aria-hidden />
-                <h2 className="fluid-h3 font-bold text-heading">Executive Committee</h2>
-              </div>
-              <Link
-                href="/governance"
-                className="group inline-flex items-center gap-2 text-sm font-semibold text-green transition-colors hover:text-green-hover"
-              >
-                View Governance
-                <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
-              </Link>
-            </div>
-
-            <ul className="mt-8 grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-5">
-              {committee.map((m) => (
-                <li key={m.id}>
-                  <Link
-                    href={`/team/${m.id}`}
-                    className="group block h-full rounded-2xl border border-line bg-card p-4 text-center shadow-sm transition-all hover:border-green-border hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green"
-                  >
-                    <div className="relative mx-auto aspect-square w-full overflow-hidden rounded-xl bg-surface">
-                      <Image
-                        src={m.photo || "/placeholder.svg?height=200&width=200&query=committee%20member%20portrait"}
-                        alt={`${m.name} portrait`}
-                        fill
-                        sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 18vw"
-                        className="object-cover"
-                      />
-                    </div>
-                    <h4 className="mt-4 font-bold text-heading group-hover:text-green">{m.name}</h4>
-                    {m.position ? <p className="mt-1 text-sm font-semibold text-heading">{m.position}</p> : null}
-                    {m.organization ? <p className="mt-0.5 text-sm text-muted-2">{m.organization}</p> : null}
-                    <span className="mt-3 inline-block text-xs font-semibold text-green opacity-0 transition-opacity group-hover:opacity-100">
-                      View profile
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </>
+        {viceChairs.length > 0 ? (
+          <ProfileGroup title="Sr. Vice Chairman & Vice Chairman" members={viceChairs} variant="featured" />
         ) : null}
+
+        {committee.length > 0 ? <ProfileGroup title="Executive Committee" members={committee} showGovernanceLink /> : null}
+
+        {advisory.length > 0 ? <ProfileGroup title="Advisory Committee Members" members={advisory} /> : null}
       </div>
     </section>
+  )
+}
+
+function ProfileGroup({
+  title,
+  members,
+  variant = "grid",
+  showGovernanceLink = false,
+}: {
+  title: string
+  members: Profile[]
+  variant?: "grid" | "featured"
+  showGovernanceLink?: boolean
+}) {
+  const featured = variant === "featured"
+  return (
+    <>
+      <div className="mt-16 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <span className="h-px w-8 bg-green" aria-hidden />
+          <h2 className="fluid-h3 font-bold text-heading">{title}</h2>
+        </div>
+        {showGovernanceLink ? (
+          <Link
+            href="/governance"
+            className="group inline-flex items-center gap-2 text-sm font-semibold text-green transition-colors hover:text-green-hover"
+          >
+            View Governance
+            <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+          </Link>
+        ) : null}
+      </div>
+
+      <ul
+        className={
+          featured
+            ? "mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3"
+            : "mt-8 grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-5"
+        }
+      >
+        {members.map((m) =>
+          featured ? (
+            <li key={m.id}>
+              <Link
+                href={`/team/${m.id}`}
+                className="group flex h-full items-center gap-4 rounded-2xl border border-line bg-card p-4 shadow-sm transition-all hover:border-green-border hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green"
+              >
+                <div className="relative aspect-[4/5] w-24 shrink-0 overflow-hidden rounded-xl bg-surface">
+                  <Image
+                    src={m.photo || "/placeholder.svg?height=150&width=120&query=vice%20chairman%20portrait"}
+                    alt={`${m.name} portrait`}
+                    fill
+                    sizes="96px"
+                    className="object-cover"
+                  />
+                </div>
+                <div className="min-w-0">
+                  <span className="inline-block rounded-full bg-mint px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-green">
+                    {m.kind}
+                  </span>
+                  <h3 className="mt-2 text-lg font-bold leading-snug text-heading group-hover:text-green">{m.name}</h3>
+                  {m.position && m.position !== m.kind ? (
+                    <p className="mt-0.5 text-sm font-semibold text-heading">{m.position}</p>
+                  ) : null}
+                  {m.organization ? <p className="mt-0.5 text-sm text-muted-2">{m.organization}</p> : null}
+                </div>
+              </Link>
+            </li>
+          ) : (
+            <li key={m.id}>
+              <Link
+                href={`/team/${m.id}`}
+                className="group block h-full rounded-2xl border border-line bg-card p-4 text-center shadow-sm transition-all hover:border-green-border hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green"
+              >
+                <div className="relative mx-auto aspect-square w-full overflow-hidden rounded-xl bg-surface">
+                  <Image
+                    src={m.photo || "/placeholder.svg?height=200&width=200&query=committee%20member%20portrait"}
+                    alt={`${m.name} portrait`}
+                    fill
+                    sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 18vw"
+                    className="object-cover"
+                  />
+                </div>
+                <h4 className="mt-4 font-bold text-heading group-hover:text-green">{m.name}</h4>
+                {m.position ? <p className="mt-1 text-sm font-semibold text-heading">{m.position}</p> : null}
+                {m.organization ? <p className="mt-0.5 text-sm text-muted-2">{m.organization}</p> : null}
+                <span className="mt-3 inline-block text-xs font-semibold text-green opacity-0 transition-opacity group-hover:opacity-100">
+                  View profile
+                </span>
+              </Link>
+            </li>
+          ),
+        )}
+      </ul>
+    </>
   )
 }
 
