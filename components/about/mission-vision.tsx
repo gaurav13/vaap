@@ -15,7 +15,7 @@ const ITEMS = [
 
 export function MissionVision() {
   return (
-    <section className="bg-surface">
+    <section id="mission" className="scroll-mt-24 bg-surface">
       <div className="vaap-container grid gap-5 py-12 sm:grid-cols-2 lg:py-16">
         {ITEMS.map(({ icon: Icon, title, desc }) => (
           <div
