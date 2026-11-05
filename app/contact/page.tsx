@@ -1,4 +1,4 @@
-import { Mail, Phone } from "lucide-react"
+import { Mail, MapPin } from "lucide-react"
 import { SiteHeaderServer } from "@/components/site-header-server"
 import { SiteFooter } from "@/components/site-footer"
 import { PageHero } from "@/components/page-hero"
@@ -26,7 +26,7 @@ export default async function ContactPage() {
           <div className="grid gap-5">
             {[
               { icon: Mail, label: "Email", value: "support@vaap.org.pk" },
-              { icon: Phone, label: "Phone", value: "+92 51 000 0000" },
+              { icon: MapPin, label: "Address", value: "G, 2nd Floor, Eagle Plaza, Block, Blue Area, Islamabad, 46000" },
             ].map(({ icon: Icon, label, value }) => (
               <div key={label} className="flex items-start gap-4 rounded-xl border border-line bg-card p-5">
                 <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-mint text-green">
