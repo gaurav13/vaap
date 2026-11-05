@@ -12,6 +12,16 @@ import { notify } from "@/lib/notifications"
 const PRODUCTION_URL = "https://vaap.org.pk"
 const productionOrigins = [PRODUCTION_URL, "https://www.vaap.org.pk"]
 
+// Vercel also serves the app from project/branch aliases (e.g.
+// vaap-hinzas-projects.vercel.app, vaap-git-main-hinzas-projects.vercel.app)
+// that are never exposed via VERCEL_URL. Requests carrying cookies from those
+// hosts were rejected with "Invalid origin", breaking password reset there.
+// Scope the wildcard to this project + team so other apps stay untrusted.
+const vercelAliasOrigins = [
+  "https://vaap-hinzas-projects.vercel.app",
+  "https://vaap-*-hinzas-projects.vercel.app",
+]
+
 const configuredOrigins = [
   process.env.BETTER_AUTH_URL,
   process.env.V0_RUNTIME_URL,
@@ -19,6 +29,7 @@ const configuredOrigins = [
   process.env.V0_BUILD_URL,
   process.env.V0_SANDBOX_URL,
   process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined,
+  process.env.VERCEL_BRANCH_URL ? `https://${process.env.VERCEL_BRANCH_URL}` : undefined,
   process.env.VERCEL_PROJECT_PRODUCTION_URL
     ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
     : undefined,
@@ -168,6 +179,7 @@ export const auth = betterAuth({
   trustedOrigins: [
     "http://localhost:3000",
     ...productionOrigins,
+    ...vercelAliasOrigins,
     ...configuredOrigins,
     ...versionedV0Origins,
   ],
