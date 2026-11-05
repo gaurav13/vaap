@@ -113,10 +113,10 @@ function EventsColumn({ events }: { events: EventItem[] }) {
           No upcoming events. Check back soon.
         </p>
       ) : (
-        <div className="flex flex-col gap-4 rounded-3xl border border-line bg-card p-3 shadow-sm">
-          <article className="overflow-hidden rounded-2xl border border-line bg-card">
+        <div className="flex flex-1 flex-col gap-4">
+          <article className="overflow-hidden rounded-2xl border border-line bg-card shadow-sm">
             <Banner src={featured.coverImage} alt={`${featured.title} banner`} className="aspect-[16/9]" />
-            <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-end sm:justify-between">
+            <div className="flex flex-col gap-4 border-t border-line p-5 sm:flex-row sm:items-end sm:justify-between">
               <div className="min-w-0">
                 {featured.category && (
                   <span className="text-xs font-bold uppercase tracking-wider text-green">{featured.category}</span>
@@ -149,24 +149,28 @@ function EventsColumn({ events }: { events: EventItem[] }) {
           </article>
 
           {rest.length > 0 && (
-            <ul className="grid gap-4 sm:grid-cols-2">
-              {rest.slice(0, 2).map((e) => (
+            <ul className="flex flex-col divide-y divide-line overflow-hidden rounded-2xl border border-line bg-card shadow-sm">
+              {rest.slice(0, 3).map((e) => (
                 <li key={e.id}>
                   <Link
                     href={`/events/${e.id}`}
-                    className="group flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-card transition-colors hover:border-green-border"
+                    className="group flex items-center gap-4 p-3 transition-colors hover:bg-mint"
                   >
-                    <Banner src={e.coverImage} alt="" className="aspect-[16/9]" />
-                    <div className="flex flex-1 flex-col gap-1.5 p-4">
-                      <h3 className="flex items-start gap-2 text-sm font-bold leading-snug text-heading">
-                        <CalendarDays className="mt-0.5 size-4 shrink-0 text-green" aria-hidden="true" />
-                        <span className="group-hover:text-green">{e.title}</span>
-                      </h3>
-                      {e.description && (
-                        <p className="line-clamp-2 text-sm leading-relaxed text-muted-2">{stripHtml(e.description)}</p>
+                    <Banner src={e.coverImage} alt="" className="aspect-video w-28 shrink-0 rounded-lg sm:w-36" />
+                    <div className="flex min-w-0 flex-1 flex-col gap-1">
+                      <p className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-green">
+                        <CalendarDays className="size-3.5" aria-hidden="true" />
+                        {formatDate(e.startsAt)}
+                      </p>
+                      <h3 className="line-clamp-2 text-sm font-bold leading-snug text-heading group-hover:text-green">{e.title}</h3>
+                      {e.location && (
+                        <p className="inline-flex min-w-0 items-center gap-1.5 text-xs text-muted-2">
+                          <MapPin className="size-3.5 shrink-0" aria-hidden="true" />
+                          <span className="truncate">{e.location}</span>
+                        </p>
                       )}
-                      <p className="mt-auto pt-1 text-xs font-medium text-muted-2">{formatDate(e.startsAt)}</p>
                     </div>
+                    <ArrowRight className="size-4 shrink-0 text-muted-2 transition-transform group-hover:translate-x-0.5 group-hover:text-green" aria-hidden="true" />
                   </Link>
                 </li>
               ))}
@@ -188,7 +192,7 @@ function MaybeLink({ url, className, children, label }: { url: string | null; cl
   )
 }
 
-function Thumb({ item, className = "" }: { item: MediaItem; className?: string }) {
+function Thumb({ item, className = "", compact = false }: { item: MediaItem; className?: string; compact?: boolean }) {
   const isVideo = Boolean(item.duration) || item.kind === "TV Interview" || item.kind === "Video"
   return (
     <div className={`relative overflow-hidden bg-navy-dark ${className}`}>
@@ -201,12 +205,14 @@ function Thumb({ item, className = "" }: { item: MediaItem; className?: string }
       )}
       {isVideo && item.image && (
         <span className="absolute inset-0 flex items-center justify-center bg-navy-dark/20">
-          <span className="flex size-12 items-center justify-center rounded-full border-2 border-white bg-navy-dark/40 text-white backdrop-blur-sm">
-            <Play className="ml-0.5 size-5 fill-current" aria-hidden="true" />
+          <span
+            className={`flex items-center justify-center rounded-full border-2 border-white bg-navy-dark/40 text-white backdrop-blur-sm ${compact ? "size-8" : "size-14"}`}
+          >
+            <Play className={`ml-0.5 fill-current ${compact ? "size-3.5" : "size-6"}`} aria-hidden="true" />
           </span>
         </span>
       )}
-      {item.duration && (
+      {item.duration && !compact && (
         <span className="absolute bottom-2 right-2 rounded-md bg-navy-dark/85 px-2 py-0.5 text-xs font-semibold text-white">
           {item.duration}
         </span>
@@ -215,11 +221,11 @@ function Thumb({ item, className = "" }: { item: MediaItem; className?: string }
   )
 }
 
-function KindLabel({ kind }: { kind: string }) {
+function KindLabel({ kind }: { kind: string; small?: boolean }) {
   const Icon = KIND_ICONS[kind] ?? PlayCircle
   return (
-    <span className="inline-flex items-center gap-1.5 text-sm font-bold text-heading">
-      <Icon className="size-4 text-green" aria-hidden="true" />
+    <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-green">
+      <Icon className="size-3.5" aria-hidden="true" />
       {kind}
     </span>
   )
@@ -245,34 +251,35 @@ function MediaColumn({ items, social }: { items: MediaItem[]; social: SocialLink
           Media highlights are coming soon.
         </p>
       ) : (
-        <div className="flex flex-col gap-4 rounded-3xl border border-line bg-card p-3 shadow-sm">
+        <div className="flex flex-col gap-4">
           <MaybeLink
             url={featured.url}
             label={featured.title}
-            className="group flex flex-col overflow-hidden rounded-2xl border border-line bg-card sm:flex-row"
+            className="group flex flex-col overflow-hidden rounded-2xl border border-line bg-card shadow-sm"
           >
-            <Thumb item={featured} className="aspect-video sm:w-3/5 sm:shrink-0" />
-            <div className="flex flex-col justify-center gap-2 p-5">
+            <Thumb item={featured} className="aspect-video" />
+            <div className="flex flex-col gap-1.5 border-t border-line p-5">
               <KindLabel kind={featured.kind} />
-              <h3 className="text-base font-semibold leading-snug text-heading text-pretty group-hover:text-green">{featured.title}</h3>
-              {featured.description && <p className="line-clamp-3 text-sm leading-relaxed text-muted-2">{featured.description}</p>}
+              <h3 className="line-clamp-2 text-lg font-bold leading-snug text-heading text-pretty group-hover:text-green">{featured.title}</h3>
+              {featured.description && <p className="line-clamp-2 text-sm leading-relaxed text-muted-2">{featured.description}</p>}
             </div>
           </MaybeLink>
 
           {rest.length > 0 && (
-            <ul className="grid gap-4 sm:grid-cols-2">
-              {rest.slice(0, 2).map((m) => (
+            <ul className="flex flex-col divide-y divide-line overflow-hidden rounded-2xl border border-line bg-card shadow-sm">
+              {rest.slice(0, 3).map((m) => (
                 <li key={m.id}>
                   <MaybeLink
                     url={m.url}
                     label={m.title}
-                    className="group flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-card transition-colors hover:border-green-border"
+                    className="group flex items-center gap-4 p-3 transition-colors hover:bg-mint"
                   >
-                    <Thumb item={m} className="aspect-video" />
-                    <div className="flex flex-1 flex-col gap-1.5 p-4">
-                      <KindLabel kind={m.kind} />
-                      <p className="line-clamp-2 text-sm leading-relaxed text-muted-2">{m.title}</p>
+                    <Thumb item={m} compact className="aspect-video w-28 shrink-0 rounded-lg sm:w-36" />
+                    <div className="flex min-w-0 flex-1 flex-col gap-1">
+                      <KindLabel kind={m.kind} small />
+                      <p className="line-clamp-2 text-sm font-bold leading-snug text-heading group-hover:text-green">{m.title}</p>
                     </div>
+                    <ArrowRight className="size-4 shrink-0 text-muted-2 transition-transform group-hover:translate-x-0.5 group-hover:text-green" aria-hidden="true" />
                   </MaybeLink>
                 </li>
               ))}
