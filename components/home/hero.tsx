@@ -9,11 +9,11 @@ const FEATURES: { icon: LucideIcon; label: string }[] = [
   { icon: TrendingUp, label: "A Stronger\nDigital Pakistan" },
 ]
 
-const STATS: { icon: LucideIcon; value: string; label: string }[] = [
-  { icon: Users, value: "40M+", label: "Crypto Users\nin Pakistan" },
-  { icon: Building2, value: "200+", label: "Companies & Startups\n(Industry Engagement)" },
-  { icon: Globe, value: "Global", label: "Partnership\nOpportunities" },
-  { icon: TrendingUp, value: "A $100B+", label: "Opportunity\nFor Pakistan's Digital Economy" },
+const STATS: { icon: LucideIcon; value: string; title: string; caption: string }[] = [
+  { icon: Users, value: "40M+", title: "Crypto Users", caption: "Across Pakistan" },
+  { icon: Building2, value: "200+", title: "Companies & Startups", caption: "Industry engagement" },
+  { icon: Globe, value: "Global", title: "Partnerships", caption: "Cross-border opportunities" },
+  { icon: TrendingUp, value: "$100B+", title: "Economic Opportunity", caption: "Pakistan's digital economy" },
 ]
 
 export function Hero() {
@@ -116,52 +116,50 @@ export function Hero() {
       </div>
 
       {/* Bottom: stats band */}
-      <div className="relative isolate overflow-hidden border-t border-gold/15 bg-navy-dark text-white">
-        {/* Scenic Pakistan landscape backdrop */}
+      <div className="relative isolate overflow-hidden border-t border-white/10 bg-navy-dark text-white">
         <Image
           src="/images/stats-landscape.png"
           alt=""
           aria-hidden="true"
           fill
           sizes="100vw"
-          className="-z-10 object-cover object-center opacity-60"
+          className="-z-10 object-cover object-center opacity-25"
         />
-        {/* Deep teal wash keeps the stats readable over the photo */}
         <div
           aria-hidden="true"
-          className="absolute inset-0 -z-10 bg-gradient-to-b from-navy-dark/85 via-navy-dark/70 to-navy-dark/90"
+          className="absolute inset-0 -z-10 bg-gradient-to-b from-navy-dark/90 via-navy-dark/85 to-navy-dark"
         />
 
         <div className="relative mx-auto max-w-7xl px-6 py-12 sm:px-10 lg:py-14">
-          <div className="grid grid-cols-1 gap-y-8 sm:grid-cols-2 md:grid-cols-4 md:divide-x md:divide-gold/30">
-            {STATS.map(({ icon: Icon, value, label }) => (
-              <div
-                key={value}
-                className="flex items-center gap-4 md:px-5 md:first:pl-0 md:last:pr-0 lg:px-8"
-              >
-                <span className="relative flex size-14 shrink-0 items-center justify-center rounded-full ring-1 ring-gold/50 sm:size-16">
-                  <span
-                    aria-hidden="true"
-                    className="absolute inset-0 rounded-full bg-gradient-to-br from-gold/25 via-gold/5 to-transparent"
-                  />
-                  <Icon className="relative size-6 text-gold sm:size-7" strokeWidth={1.5} />
-                </span>
-                <div className="flex flex-col gap-1">
-                  <p className="whitespace-nowrap font-serif text-3xl font-bold leading-none text-gold sm:text-4xl">
-                    {value}
-                  </p>
-                  <p className="whitespace-pre-line text-sm leading-snug text-white/85">{label}</p>
+          <dl className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4 lg:gap-0 lg:divide-x lg:divide-white/10">
+            {STATS.map(({ icon: Icon, value, title, caption }) => (
+              <div key={title} className="flex flex-col gap-4 lg:px-8 lg:first:pl-0 lg:last:pr-0">
+                <div className="flex items-center gap-3">
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-gold/30 bg-gold/10">
+                    <Icon className="size-5 text-gold" strokeWidth={1.75} aria-hidden="true" />
+                  </span>
+                  <dt className="text-xs font-semibold uppercase tracking-[0.14em] text-white/70">{title}</dt>
                 </div>
+                <dd className="flex flex-col gap-1.5">
+                  <span className="whitespace-nowrap font-sans text-4xl font-bold leading-none tracking-tight text-white tabular-nums lg:text-[2.75rem]">
+                    {value}
+                  </span>
+                  <span className="flex items-center gap-2 text-sm leading-relaxed text-white/60">
+                    <span className="h-px w-5 bg-gold" aria-hidden="true" />
+                    {caption}
+                  </span>
+                </dd>
               </div>
             ))}
-          </div>
+          </dl>
 
-          <div className="mt-10 flex flex-col items-center gap-4 text-center">
-            <span className="h-px w-12 bg-gold" aria-hidden="true" />
-            <p className="text-[11px] font-semibold uppercase leading-[1.8] tracking-[0.28em] text-white/90 sm:text-xs">
-              Real People <span className="mx-1.5 text-gold">&bull;</span> Real Potential{" "}
-              <span className="mx-1.5 text-gold">&bull;</span> A Digital Pakistan
+          <div className="mt-12 flex items-center gap-4 border-t border-white/10 pt-8">
+            <span className="hidden h-px flex-1 bg-gradient-to-r from-transparent to-gold/40 sm:block" aria-hidden="true" />
+            <p className="text-center text-[11px] font-semibold uppercase leading-[1.8] tracking-[0.28em] text-white/80 sm:text-xs">
+              Real People <span className="mx-2 text-gold">&bull;</span> Real Potential{" "}
+              <span className="mx-2 text-gold">&bull;</span> A Digital Pakistan
             </p>
+            <span className="hidden h-px flex-1 bg-gradient-to-l from-transparent to-gold/40 sm:block" aria-hidden="true" />
           </div>
         </div>
       </div>
