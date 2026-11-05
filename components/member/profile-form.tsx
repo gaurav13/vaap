@@ -4,6 +4,7 @@ import { useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Camera } from "lucide-react"
 import { updateProfile } from "@/app/actions/member"
+import { readImageAsDataUrl } from "@/lib/client-image"
 
 const ASSET_TYPES = [
   { value: "", label: "Select a category…" },
@@ -35,16 +36,14 @@ export function ProfileForm(props: ProfileValues) {
   const [image, setImage] = useState(props.image)
   const fileRef = useRef<HTMLInputElement>(null)
 
-  function onPickPhoto(e: React.ChangeEvent<HTMLInputElement>) {
+  async function onPickPhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-    if (file.size > 1_500_000) {
-      setStatus({ ok: false, msg: "Photo must be smaller than 1.5 MB." })
-      return
+    try {
+      setImage(await readImageAsDataUrl(file, 300_000, 640))
+    } catch (err) {
+      setStatus({ ok: false, msg: err instanceof Error ? err.message : "Could not use that photo." })
     }
-    const reader = new FileReader()
-    reader.onload = () => setImage(String(reader.result))
-    reader.readAsDataURL(file)
   }
 
   async function action(formData: FormData) {
