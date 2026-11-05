@@ -60,7 +60,7 @@ function PublisherMark({ item, size }: { item: HomeNewsItem; size: "lg" | "sm" }
       <img
         src={item.publisherLogo || "/placeholder.svg"}
         alt={item.publisherName || "Publisher logo"}
-        className={cn("w-auto object-contain", size === "lg" ? "h-14 max-w-40" : "h-10 max-w-32")}
+        className={cn("w-auto object-contain", size === "lg" ? "h-14 max-w-40" : "h-8 max-w-28")}
       />
     )
   }
@@ -132,13 +132,26 @@ export function LatestNewsMedia({ items }: { items: HomeNewsItem[] }) {
       ) : (
         <div className="mt-8 grid gap-5 lg:grid-cols-2">
           <article className="relative flex flex-col overflow-hidden rounded-2xl border border-line bg-card shadow-sm md:flex-row">
-            <div className="flex flex-1 flex-col gap-4 p-6 md:p-7">
-              <div className="flex flex-wrap items-center gap-4">
-                <PublisherMark item={featured} size="lg" />
-                <ReadLink item={featured} />
+            <div className="relative aspect-video overflow-hidden bg-muted md:order-last md:aspect-auto md:w-1/2 md:shrink-0">
+              <img
+                src={featured.image || "/images/news-skyline.png"}
+                alt=""
+                aria-hidden="true"
+                className="absolute inset-0 size-full scale-110 object-cover opacity-60 blur-xl"
+              />
+              <img
+                src={featured.image || "/images/news-skyline.png"}
+                alt=""
+                className="absolute inset-0 size-full object-contain"
+              />
+            </div>
+            <div className="flex flex-1 flex-col gap-3 p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <PublisherMark item={featured} size="sm" />
+                <ReadLink item={featured} className="px-4 py-1.5" />
               </div>
-              <h3 className="text-2xl font-bold leading-tight text-heading text-pretty">{featured.title}</h3>
-              <p className="text-sm leading-relaxed text-body line-clamp-3">{featured.excerpt}</p>
+              <h3 className="text-xl font-bold leading-snug text-heading text-pretty line-clamp-3">{featured.title}</h3>
+              <p className="text-sm leading-relaxed text-body line-clamp-2">{featured.excerpt}</p>
               <div className="mt-auto flex items-center gap-3 text-sm">
                 <CalendarDays className="size-4 text-green" aria-hidden="true" />
                 <time dateTime={featured.createdAt} className="text-muted-2">
@@ -147,13 +160,6 @@ export function LatestNewsMedia({ items }: { items: HomeNewsItem[] }) {
                 <span aria-hidden="true" className="h-4 w-px bg-line" />
                 <span className="font-semibold text-green">{featured.category}</span>
               </div>
-            </div>
-            <div className="relative h-52 md:h-auto md:w-[44%] md:shrink-0">
-              <img
-                src={featured.image || "/images/news-skyline.png"}
-                alt=""
-                className="absolute inset-0 size-full object-cover md:[clip-path:polygon(18%_0,100%_0,100%_100%,0_100%)]"
-              />
             </div>
           </article>
 
@@ -166,14 +172,16 @@ export function LatestNewsMedia({ items }: { items: HomeNewsItem[] }) {
               rest.map((item) => (
                 <article
                   key={item.id}
-                  className="flex flex-col gap-4 rounded-2xl border border-line bg-card p-5 shadow-sm sm:flex-row sm:items-center"
+                  className="flex flex-1 flex-col gap-3 rounded-2xl border border-line bg-card px-5 py-4 shadow-sm sm:flex-row sm:items-center"
                 >
-                  <div className="flex w-36 shrink-0 items-center sm:justify-center">
+                  <div className="flex w-28 shrink-0 items-center sm:justify-center">
                     <PublisherMark item={item} size="sm" />
                   </div>
-                  <span aria-hidden="true" className="hidden h-12 w-0.5 bg-green sm:block" />
-                  <h3 className="flex-1 text-lg font-bold leading-snug text-heading text-pretty">{item.title}</h3>
-                  <ReadLink item={item} />
+                  <span aria-hidden="true" className="hidden h-10 w-0.5 bg-green sm:block" />
+                  <h3 className="flex-1 text-base font-bold leading-snug text-heading text-pretty line-clamp-2">
+                    {item.title}
+                  </h3>
+                  <ReadLink item={item} className="px-4 py-1.5" />
                 </article>
               ))
             )}
