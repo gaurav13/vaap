@@ -70,6 +70,10 @@ export const news = pgTable("news", {
   excerpt: text("excerpt").notNull(),
   content: text("content").notNull().default(""),
   image: text("image"),
+  // Media coverage: the outlet that published the story and the link to it.
+  publisherName: text("publisherName").notNull().default(""),
+  publisherLogo: text("publisherLogo"),
+  externalUrl: text("externalUrl"),
   // Optional link to a committee — when set, the post also surfaces in the
   // "Committee News / Latest Updates" section of the Committees page.
   committeeId: integer("committeeId"),

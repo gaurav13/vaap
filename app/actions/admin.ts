@@ -2,6 +2,7 @@
 
 import { db } from "@/lib/db"
 import { EVENT_CATEGORIES, EVENT_CITIES, EVENT_FORMATS, pickOption } from "@/lib/event-options"
+import { normalizeUrl } from "@/lib/news-options"
 import { news, events, membershipApplications, contactMessages, user, members, account, referralPartners } from "@/lib/db/schema"
 import { getSession } from "@/lib/session"
 import { auth } from "@/lib/auth"
@@ -37,6 +38,17 @@ function slugify(input: string) {
 
 // --- News ------------------------------------------------------------------
 
+function readPublisher(formData: FormData) {
+  const publisherName = String(formData.get("publisherName") ?? "").trim().slice(0, 80)
+  const publisherLogo = String(formData.get("publisherLogo") ?? "").trim() || null
+  const rawUrl = String(formData.get("externalUrl") ?? "").trim()
+  const externalUrl = normalizeUrl(rawUrl)
+  if (rawUrl && !externalUrl) {
+    return { publisherName, publisherLogo, externalUrl: null, error: "Article link must be a valid http(s) URL." }
+  }
+  return { publisherName, publisherLogo, externalUrl, error: null as string | null }
+}
+
 export async function createNews(formData: FormData) {
   const author = await requireStaff()
   const title = String(formData.get("title") ?? "").trim()
@@ -47,8 +59,10 @@ export async function createNews(formData: FormData) {
   const committeeRaw = String(formData.get("committeeId") ?? "").trim()
   const committeeId = committeeRaw ? Number.parseInt(committeeRaw, 10) : null
   const published = formData.get("published") === "on"
+  const publisher = readPublisher(formData)
 
   if (!title || !excerpt) return { ok: false, error: "Title and excerpt are required." }
+  if (publisher.error) return { ok: false, error: publisher.error }
 
   await db.insert(news).values({
     title,
@@ -56,6 +70,9 @@ export async function createNews(formData: FormData) {
     excerpt,
     content,
     image: image || null,
+    publisherName: publisher.publisherName,
+    publisherLogo: publisher.publisherLogo,
+    externalUrl: publisher.externalUrl,
     committeeId: committeeId && !Number.isNaN(committeeId) ? committeeId : null,
     published,
     authorId: author.id,
@@ -77,6 +94,10 @@ export async function updateNews(id: number, formData: FormData) {
   const committeeRaw = String(formData.get("committeeId") ?? "").trim()
   const committeeId = committeeRaw ? Number.parseInt(committeeRaw, 10) : null
   const published = formData.get("published") === "on"
+  const publisher = readPublisher(formData)
+
+  if (!title || !excerpt) return { ok: false, error: "Title and excerpt are required." }
+  if (publisher.error) return { ok: false, error: publisher.error }
 
   await db
     .update(news)
@@ -86,6 +107,9 @@ export async function updateNews(id: number, formData: FormData) {
       excerpt,
       content,
       image: image || null,
+      publisherName: publisher.publisherName,
+      publisherLogo: publisher.publisherLogo,
+      externalUrl: publisher.externalUrl,
       committeeId: committeeId && !Number.isNaN(committeeId) ? committeeId : null,
       published,
     })

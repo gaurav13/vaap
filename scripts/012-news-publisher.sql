@@ -1,0 +1,3 @@
+ALTER TABLE news ADD COLUMN IF NOT EXISTS "publisherName" text NOT NULL DEFAULT '';
+ALTER TABLE news ADD COLUMN IF NOT EXISTS "publisherLogo" text;
+ALTER TABLE news ADD COLUMN IF NOT EXISTS "externalUrl" text;
