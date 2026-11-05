@@ -2,11 +2,11 @@ import Link from "next/link"
 import type { ComponentType, ReactNode } from "react"
 import {
   ArrowRight,
-  ArrowUpRight,
   BadgeCheck,
   CalendarDays,
   Clock,
   Headphones,
+  Megaphone,
   MapPin,
   Mic,
   Play,
@@ -84,37 +84,6 @@ function isVideo(item: MediaItem) {
   return Boolean(item.duration) || item.kind === "TV Interview" || item.kind === "Video"
 }
 
-function ColumnHeader({
-  id,
-  icon: Icon,
-  title,
-  href,
-  linkLabel,
-}: {
-  id: string
-  icon: ComponentType<{ className?: string }>
-  title: string
-  href: string
-  linkLabel: string
-}) {
-  return (
-    <div className="flex items-center gap-3">
-      <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-navy text-white shadow-sm">
-        <Icon className="size-5" aria-hidden="true" />
-      </span>
-      <h2 id={id} className="text-xl font-bold text-heading md:text-2xl text-balance">
-        {title}
-      </h2>
-      <span className="hidden h-px min-w-6 flex-1 bg-line sm:block" aria-hidden="true" />
-      <Link
-        href={href}
-        className="ml-auto inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-navy transition-colors hover:text-green"
-      >
-        {linkLabel} <ArrowRight className="size-4" aria-hidden="true" />
-      </Link>
-    </div>
-  )
-}
 
 function Media({
   src,
@@ -170,7 +139,7 @@ function PlayBadge({ small = false }: { small?: boolean }) {
 function DateBlock({ date }: { date: Date | string }) {
   const { day, month, year } = dateParts(date)
   return (
-    <div className="flex w-16 shrink-0 flex-col overflow-hidden rounded-xl border border-line text-center">
+    <div className="flex w-16 shrink-0 flex-col overflow-hidden rounded-xl border border-line bg-card text-center shadow-md">
       <span className="bg-navy py-0.5 text-[11px] font-bold uppercase tracking-widest text-white">{month}</span>
       <span className="pt-1 text-2xl font-bold leading-none text-heading">{day}</span>
       <span className="pb-1.5 text-[11px] font-medium text-muted-2">{year}</span>
@@ -186,26 +155,14 @@ function Pill({ children }: { children: ReactNode }) {
   )
 }
 
-function CardFooter({ label, external = false }: { label: string; external?: boolean }) {
-  const Icon = external ? ArrowUpRight : ArrowRight
+
+function GoldCorner() {
   return (
-    <div className="mt-auto flex items-center justify-between border-t border-line px-5 py-3">
-      <span className="text-sm font-semibold text-navy transition-colors group-hover:text-green">{label}</span>
-      <span className="flex size-8 items-center justify-center rounded-full bg-navy text-white transition-colors group-hover:bg-green">
-        <Icon className="size-4" aria-hidden="true" />
-      </span>
-    </div>
+    <span aria-hidden="true" className="pointer-events-none absolute right-0 top-0 size-20 overflow-hidden">
+      <span className="absolute inset-0 bg-gold [clip-path:polygon(100%_0,30%_0,100%_70%)]" />
+      <span className="absolute inset-0 bg-navy [clip-path:polygon(100%_0,48%_0,100%_52%)]" />
+    </span>
   )
-}
-
-const featuredCard =
-  "group flex flex-col overflow-hidden rounded-2xl border border-line bg-card shadow-sm transition-shadow hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green"
-
-const smallCard =
-  "group flex h-full overflow-hidden rounded-xl border border-line bg-card shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green"
-
-function SmallGrid({ count, children }: { count: number; children: ReactNode }) {
-  return <ul className={`grid gap-4 ${count > 1 ? "sm:grid-cols-2" : ""}`}>{children}</ul>
 }
 
 function EventsColumn({ events }: { events: EventItem[] }) {
@@ -213,17 +170,22 @@ function EventsColumn({ events }: { events: EventItem[] }) {
   const more = rest.slice(0, 2)
 
   return (
-    <div className="flex flex-col gap-5">
-      <ColumnHeader id="events-programs-heading" icon={CalendarDays} title="Events & Programs" href="/events" linkLabel="View All Events" />
+    <div className="flex flex-col gap-4">
+      <h2 id="events-programs-heading" className="sr-only">
+        Events &amp; Programs
+      </h2>
 
       {!featured ? (
         <p className="rounded-2xl border border-dashed border-line bg-card p-8 text-center text-sm text-muted-2">
           No upcoming events. Check back soon.
         </p>
       ) : (
-        <div className="flex flex-col gap-4">
-          <Link href={`/events/${featured.id}`} className={featuredCard}>
-            <div className="overflow-hidden border-b border-line bg-mint">
+        <>
+          <Link
+            href={`/events/${featured.id}`}
+            className="group relative flex flex-col overflow-hidden rounded-2xl bg-navy shadow-lg ring-1 ring-line transition-shadow hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green"
+          >
+            <div className="relative overflow-hidden bg-mint">
               {featured.coverImage ? (
                 <img
                   src={featured.coverImage || "/placeholder.svg"}
@@ -236,71 +198,71 @@ function EventsColumn({ events }: { events: EventItem[] }) {
                   <CalendarDays className="size-10 text-white/40" aria-hidden="true" />
                 </div>
               )}
+              <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-navy px-3 py-1 text-xs font-bold uppercase tracking-wider text-white shadow-md">
+                <CalendarDays className="size-3.5" aria-hidden="true" />
+                {featured.category || "Event"}
+              </span>
+              <GoldCorner />
             </div>
-            <div className="flex items-start gap-4 p-5">
-              <DateBlock date={featured.startsAt} />
-              <div className="flex min-w-0 flex-1 flex-col gap-2">
-                <div className="flex items-center justify-between gap-3">
-                  {featured.category ? <Pill>{featured.category}</Pill> : <span />}
-                  <span className="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-navy transition-colors group-hover:text-green">
-                    Details
-                    <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
-                  </span>
-                </div>
-                <h3 className="line-clamp-2 text-lg font-bold leading-snug text-heading text-pretty group-hover:text-green">
-                  {featured.title}
-                </h3>
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-2">
+            <span className="h-1 w-full bg-gold" aria-hidden="true" />
+            <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:gap-5 sm:px-5">
+              <div className="flex min-w-0 flex-1 items-center gap-4">
+                <DateBlock date={featured.startsAt} />
+                <span className="hidden h-12 w-px bg-white/20 sm:block" aria-hidden="true" />
+                <div className="flex min-w-0 flex-col gap-1.5">
+                  <h3 className="sr-only">{featured.title}</h3>
                   {featured.location && (
-                    <span className="inline-flex min-w-0 items-center gap-1.5">
-                      <MapPin className="size-4 shrink-0 text-green" aria-hidden="true" />
+                    <span className="inline-flex min-w-0 items-center gap-2 text-sm text-white">
+                      <MapPin className="size-4 shrink-0 text-gold" aria-hidden="true" />
                       <span className="truncate">{featured.location}</span>
                     </span>
                   )}
                   {featured.timeLabel && (
-                    <span className="inline-flex items-center gap-1.5">
-                      <Clock className="size-4 shrink-0 text-green" aria-hidden="true" />
+                    <span className="inline-flex items-center gap-2 text-sm text-white">
+                      <Clock className="size-4 shrink-0 text-gold" aria-hidden="true" />
                       {featured.timeLabel}
                     </span>
                   )}
                 </div>
               </div>
+              <span className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-gold px-5 py-2.5 text-sm font-bold text-navy-dark shadow-md transition-transform group-hover:translate-x-0.5">
+                Event Details
+                <ArrowRight className="size-4" aria-hidden="true" />
+              </span>
             </div>
           </Link>
 
-          {more.length > 0 && (
-            <ul className="flex flex-col gap-3">
-              {more.map((e) => (
-                <li key={e.id}>
-                  <Link
-                    href={`/events/${e.id}`}
-                    className="group flex items-center gap-4 rounded-xl border border-line bg-card p-3 shadow-sm transition-all hover:-translate-y-0.5 hover:border-green/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green"
-                  >
-                    <Media src={e.coverImage} alt="" className="aspect-[16/10] w-28 shrink-0 rounded-lg sm:w-36" />
-                    <div className="flex min-w-0 flex-1 flex-col gap-1">
-                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-green">
-                        <CalendarDays className="size-3.5" aria-hidden="true" />
-                        {formatDate(e.startsAt)}
-                      </span>
-                      <h3 className="line-clamp-2 text-sm font-bold leading-snug text-heading text-pretty group-hover:text-green">
-                        {e.title}
-                      </h3>
-                      {e.location && (
-                        <p className="inline-flex min-w-0 items-center gap-1.5 text-xs text-muted-2">
-                          <MapPin className="size-3.5 shrink-0" aria-hidden="true" />
-                          <span className="truncate">{e.location}</span>
-                        </p>
-                      )}
-                    </div>
-                    <span className="hidden size-8 shrink-0 items-center justify-center rounded-full border border-line text-navy transition-colors group-hover:border-green group-hover:bg-green group-hover:text-white sm:flex">
-                      <ArrowRight className="size-4" aria-hidden="true" />
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+          {more.map((e) => (
+            <Link
+              key={e.id}
+              href={`/events/${e.id}`}
+              className="group flex flex-col gap-4 rounded-2xl border border-line bg-card p-3 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green sm:flex-row sm:items-center"
+            >
+              <Media src={e.coverImage} alt="" className="aspect-video w-full shrink-0 rounded-xl sm:w-2/5" />
+              <div className="flex min-w-0 flex-1 flex-col gap-2 sm:py-1">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <Pill>
+                    <Megaphone className="size-3.5" aria-hidden="true" />
+                    {e.category || "Announcement"}
+                  </Pill>
+                  <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-2">
+                    <CalendarDays className="size-3.5 text-green" aria-hidden="true" />
+                    {formatDate(e.startsAt)}
+                  </span>
+                </div>
+                <h3 className="line-clamp-3 text-base font-bold leading-snug text-heading text-pretty group-hover:text-green">{e.title}</h3>
+                {e.description && <p className="line-clamp-2 text-sm leading-relaxed text-muted-2">{stripHtml(e.description)}</p>}
+              </div>
+              <span className="hidden size-9 shrink-0 items-center justify-center rounded-full border border-line text-navy transition-colors group-hover:border-green group-hover:bg-green group-hover:text-white sm:flex">
+                <ArrowRight className="size-4" aria-hidden="true" />
+              </span>
+            </Link>
+          ))}
+
+          <Link href="/events" className="inline-flex items-center gap-1.5 self-end text-sm font-semibold text-navy transition-colors hover:text-green">
+            View All Events <ArrowRight className="size-4" aria-hidden="true" />
+          </Link>
+        </>
       )}
     </div>
   )
@@ -327,9 +289,7 @@ function KindLabel({ kind }: { kind: string }) {
 }
 
 function MediaColumn({ items, social }: { items: MediaItem[]; social: SocialLinks }) {
-  const [featured, ...rest] = items
-  const more = rest.slice(0, 2)
-  const single = more.length === 1
+  const list = items.slice(0, 3)
   const socials = [
     { Icon: LinkedinIcon, href: social.linkedin, label: "LinkedIn" },
     { Icon: XIcon, href: social.x, label: "X" },
@@ -340,70 +300,62 @@ function MediaColumn({ items, social }: { items: MediaItem[]; social: SocialLink
   ].filter((s) => s.href)
 
   return (
-    <div className="flex flex-col gap-5">
-      <ColumnHeader id="media-highlights-heading" icon={PlayCircle} title="Media & Social Highlights" href="/news" linkLabel="View All Media" />
-
-      {!featured ? (
-        <p className="rounded-2xl border border-dashed border-line bg-card p-8 text-center text-sm text-muted-2">
-          Media highlights are coming soon.
-        </p>
-      ) : (
-        <div className="flex flex-col gap-4">
-          <MaybeLink url={featured.url} label={featured.title} className={featuredCard}>
-            <Media src={featured.image} alt="" contain fallback={PlayCircle} className="aspect-[21/9]">
-              {isVideo(featured) && featured.image && <PlayBadge />}
-              {featured.duration && (
-                <span className="absolute bottom-3 right-3 rounded-md bg-navy-dark/85 px-2 py-0.5 text-xs font-semibold text-white">
-                  {featured.duration}
-                </span>
-              )}
-            </Media>
-            <div className="flex flex-col gap-1.5 p-5">
-              <span>
-                <KindLabel kind={featured.kind} />
-              </span>
-              <h3 className="line-clamp-2 text-lg font-bold leading-snug text-heading text-pretty group-hover:text-green">
-                {featured.title}
-              </h3>
-              {featured.description && <p className="line-clamp-1 text-sm leading-relaxed text-muted-2">{featured.description}</p>}
-            </div>
-            <CardFooter label={linkLabel(featured.url)} external={Boolean(featured.url)} />
-          </MaybeLink>
-
-          {more.length > 0 && (
-            <SmallGrid count={more.length}>
-              {more.map((m) => (
-                <li key={m.id}>
-                  <MaybeLink url={m.url} label={m.title} className={`${smallCard} ${single ? "flex-row" : "flex-col"}`}>
-                    <Media src={m.image} alt="" fallback={PlayCircle} className={single ? "w-40 shrink-0 sm:w-52" : "aspect-video"}>
-                      {isVideo(m) && m.image && <PlayBadge small />}
-                      {m.duration && (
-                        <span className="absolute bottom-2 right-2 rounded bg-navy-dark/85 px-1.5 py-0.5 text-[11px] font-semibold text-white">
-                          {m.duration}
-                        </span>
-                      )}
-                    </Media>
-                    <div className="flex min-w-0 flex-1 flex-col gap-1.5 p-4">
-                      <span>
-                        <KindLabel kind={m.kind} />
-                      </span>
-                      <p className="line-clamp-2 text-sm font-bold leading-snug text-heading group-hover:text-green">{m.title}</p>
-                      {single && m.description && <p className="line-clamp-2 text-xs leading-relaxed text-muted-2">{m.description}</p>}
-                    </div>
-                  </MaybeLink>
-                </li>
-              ))}
-            </SmallGrid>
-          )}
+    <div className="flex flex-col gap-4">
+      <div className="overflow-hidden rounded-2xl border border-line bg-card shadow-lg">
+        <div className="relative flex items-center gap-3 overflow-hidden bg-navy px-5 py-4">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-full ring-2 ring-white/80">
+            <Play className="ml-0.5 size-4 fill-white text-white" aria-hidden="true" />
+          </span>
+          <h2 id="media-highlights-heading" className="text-lg font-bold text-white md:text-xl text-balance">
+            Media &amp; Social Highlights
+          </h2>
+          <Link
+            href="/news"
+            className="relative z-10 ml-auto inline-flex shrink-0 items-center gap-1.5 text-sm font-medium text-white/90 transition-colors hover:text-gold"
+          >
+            View All Media <ArrowRight className="size-4" aria-hidden="true" />
+          </Link>
+          <span aria-hidden="true" className="absolute -bottom-px right-0 h-3 w-40 bg-gold [clip-path:polygon(100%_0,100%_100%,0_100%)]" />
         </div>
-      )}
+
+        {list.length === 0 ? (
+          <p className="p-8 text-center text-sm text-muted-2">Media highlights are coming soon.</p>
+        ) : (
+          <ul className="flex flex-col divide-y divide-line px-4">
+            {list.map((m) => (
+              <li key={m.id} className="py-4">
+                <MaybeLink url={m.url} label={m.title} className="group flex items-start gap-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green">
+                  <Media src={m.image} alt="" fallback={PlayCircle} className="aspect-video w-2/5 shrink-0 rounded-xl shadow-sm">
+                    {isVideo(m) && m.image && <PlayBadge small />}
+                    {m.duration && (
+                      <span className="absolute bottom-2 right-2 rounded bg-navy-dark/85 px-1.5 py-0.5 text-[11px] font-semibold text-white">
+                        {m.duration}
+                      </span>
+                    )}
+                  </Media>
+                  <div className="flex min-w-0 flex-1 flex-col gap-2">
+                    <span>
+                      <KindLabel kind={m.kind} />
+                    </span>
+                    <h3 className="line-clamp-3 text-sm font-bold leading-snug text-heading text-pretty group-hover:text-green sm:text-base">
+                      {m.title}
+                    </h3>
+                    <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-green">
+                      {linkLabel(m.url)}
+                      <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+                    </span>
+                  </div>
+                </MaybeLink>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
 
       {socials.length > 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-navy px-5 py-4">
-          <div>
-            <p className="text-base font-bold text-white">Follow VAAP</p>
-            <p className="text-xs text-white/70">Announcements, interviews and event highlights</p>
-          </div>
+        <div className="relative flex flex-wrap items-center gap-4 overflow-hidden rounded-2xl border border-green-border bg-mint px-5 py-4">
+          <p className="text-lg font-bold text-heading">Follow VAAP</p>
+          <span className="hidden h-8 w-px bg-green-border sm:block" aria-hidden="true" />
           <ul className="flex flex-wrap items-center gap-2">
             {socials.map(({ Icon, href, label }) => (
               <li key={label}>
@@ -412,13 +364,14 @@ function MediaColumn({ items, social }: { items: MediaItem[]; social: SocialLink
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={`VAAP on ${label} (opens in a new tab)`}
-                  className="flex size-10 items-center justify-center rounded-full bg-white/10 text-white ring-1 ring-white/20 transition-colors hover:bg-green hover:ring-green"
+                  className="flex size-10 items-center justify-center rounded-xl bg-navy text-white shadow-sm transition-colors hover:bg-green"
                 >
                   <Icon className="size-[18px]" />
                 </a>
               </li>
             ))}
           </ul>
+          <span aria-hidden="true" className="absolute bottom-0 right-0 h-3 w-28 bg-gold [clip-path:polygon(100%_0,100%_100%,0_100%)]" />
         </div>
       )}
     </div>
