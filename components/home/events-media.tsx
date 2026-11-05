@@ -140,7 +140,7 @@ function DateBlock({ date }: { date: Date | string }) {
   const { day, month, year } = dateParts(date)
   return (
     <div className="flex w-16 shrink-0 flex-col overflow-hidden rounded-xl border border-line bg-card text-center shadow-md">
-      <span className="bg-navy py-0.5 text-[11px] font-bold uppercase tracking-widest text-white">{month}</span>
+      <span className="bg-green py-0.5 text-[11px] font-bold uppercase tracking-widest text-white">{month}</span>
       <span className="pt-1 text-2xl font-bold leading-none text-heading">{day}</span>
       <span className="pb-1.5 text-[11px] font-medium text-muted-2">{year}</span>
     </div>
@@ -155,15 +155,6 @@ function Pill({ children }: { children: ReactNode }) {
   )
 }
 
-
-function GoldCorner() {
-  return (
-    <span aria-hidden="true" className="pointer-events-none absolute right-0 top-0 size-20 overflow-hidden">
-      <span className="absolute inset-0 bg-gold [clip-path:polygon(100%_0,30%_0,100%_70%)]" />
-      <span className="absolute inset-0 bg-navy [clip-path:polygon(100%_0,48%_0,100%_52%)]" />
-    </span>
-  )
-}
 
 function EventsColumn({ events }: { events: EventItem[] }) {
   const [featured, ...rest] = events
@@ -183,7 +174,7 @@ function EventsColumn({ events }: { events: EventItem[] }) {
         <>
           <Link
             href={`/events/${featured.id}`}
-            className="group relative flex flex-col overflow-hidden rounded-2xl bg-navy shadow-lg ring-1 ring-line transition-shadow hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green"
+            className="group relative flex flex-col overflow-hidden rounded-3xl border border-line bg-card shadow-lg transition-shadow hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green"
           >
             <div className="relative overflow-hidden bg-mint">
               {featured.coverImage ? (
@@ -202,30 +193,28 @@ function EventsColumn({ events }: { events: EventItem[] }) {
                 <CalendarDays className="size-3.5" aria-hidden="true" />
                 {featured.category || "Event"}
               </span>
-              <GoldCorner />
             </div>
-            <span className="h-1 w-full bg-gold" aria-hidden="true" />
-            <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:gap-5 sm:px-5">
+            <div className="relative z-10 -mt-6 flex flex-col gap-4 rounded-tl-[2.5rem] bg-card px-5 pb-5 pt-5 sm:flex-row sm:items-center sm:gap-5 sm:px-6">
               <div className="flex min-w-0 flex-1 items-center gap-4">
                 <DateBlock date={featured.startsAt} />
-                <span className="hidden h-12 w-px bg-white/20 sm:block" aria-hidden="true" />
+                <span className="hidden h-12 w-px bg-line sm:block" aria-hidden="true" />
                 <div className="flex min-w-0 flex-col gap-1.5">
                   <h3 className="sr-only">{featured.title}</h3>
                   {featured.location && (
-                    <span className="inline-flex min-w-0 items-center gap-2 text-sm text-white">
-                      <MapPin className="size-4 shrink-0 text-gold" aria-hidden="true" />
+                    <span className="inline-flex min-w-0 items-center gap-2 text-sm font-medium text-heading">
+                      <MapPin className="size-4 shrink-0 text-green" aria-hidden="true" />
                       <span className="truncate">{featured.location}</span>
                     </span>
                   )}
                   {featured.timeLabel && (
-                    <span className="inline-flex items-center gap-2 text-sm text-white">
-                      <Clock className="size-4 shrink-0 text-gold" aria-hidden="true" />
+                    <span className="inline-flex items-center gap-2 text-sm font-medium text-heading">
+                      <Clock className="size-4 shrink-0 text-green" aria-hidden="true" />
                       {featured.timeLabel}
                     </span>
                   )}
                 </div>
               </div>
-              <span className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-gold px-5 py-2.5 text-sm font-bold text-navy-dark shadow-md transition-transform group-hover:translate-x-0.5">
+              <span className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-navy-dark px-5 py-3 text-sm font-bold text-white shadow-md transition-colors group-hover:bg-green">
                 Event Details
                 <ArrowRight className="size-4" aria-hidden="true" />
               </span>
@@ -236,7 +225,7 @@ function EventsColumn({ events }: { events: EventItem[] }) {
             <Link
               key={e.id}
               href={`/events/${e.id}`}
-              className="group flex flex-col gap-4 rounded-2xl border border-line bg-card p-3 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green sm:flex-row sm:items-center"
+              className="group flex flex-col gap-4 rounded-3xl border border-line bg-card p-3 shadow-md transition-all hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green sm:flex-row sm:items-center"
             >
               <Media src={e.coverImage} alt="" className="aspect-video w-full shrink-0 rounded-xl sm:w-2/5" />
               <div className="flex min-w-0 flex-1 flex-col gap-2 sm:py-1">
@@ -301,21 +290,20 @@ function MediaColumn({ items, social }: { items: MediaItem[]; social: SocialLink
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="overflow-hidden rounded-2xl border border-line bg-card shadow-lg">
-        <div className="relative flex items-center gap-3 overflow-hidden bg-navy px-5 py-4">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-full ring-2 ring-white/80">
-            <Play className="ml-0.5 size-4 fill-white text-white" aria-hidden="true" />
+      <div className="overflow-hidden rounded-3xl border border-line bg-card shadow-lg">
+        <div className="flex items-center gap-3 border-b border-line px-5 py-4">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-full ring-2 ring-navy">
+            <Play className="ml-0.5 size-4 fill-navy text-navy" aria-hidden="true" />
           </span>
-          <h2 id="media-highlights-heading" className="text-lg font-bold text-white md:text-xl text-balance">
+          <h2 id="media-highlights-heading" className="text-lg font-bold text-heading md:text-xl text-balance">
             Media &amp; Social Highlights
           </h2>
           <Link
             href="/news"
-            className="relative z-10 ml-auto inline-flex shrink-0 items-center gap-1.5 text-sm font-medium text-white/90 transition-colors hover:text-gold"
+            className="ml-auto inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-green transition-colors hover:text-navy"
           >
             View All Media <ArrowRight className="size-4" aria-hidden="true" />
           </Link>
-          <span aria-hidden="true" className="absolute -bottom-px right-0 h-3 w-40 bg-gold [clip-path:polygon(100%_0,100%_100%,0_100%)]" />
         </div>
 
         {list.length === 0 ? (
@@ -353,9 +341,9 @@ function MediaColumn({ items, social }: { items: MediaItem[]; social: SocialLink
       </div>
 
       {socials.length > 0 && (
-        <div className="relative flex flex-wrap items-center gap-4 overflow-hidden rounded-2xl border border-green-border bg-mint px-5 py-4">
+        <div className="flex flex-wrap items-center gap-4 rounded-3xl border border-line bg-card px-6 py-5 shadow-md">
           <p className="text-lg font-bold text-heading">Follow VAAP</p>
-          <span className="hidden h-8 w-px bg-green-border sm:block" aria-hidden="true" />
+          <span className="hidden h-8 w-px bg-line sm:block" aria-hidden="true" />
           <ul className="flex flex-wrap items-center gap-2">
             {socials.map(({ Icon, href, label }) => (
               <li key={label}>
@@ -364,14 +352,13 @@ function MediaColumn({ items, social }: { items: MediaItem[]; social: SocialLink
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={`VAAP on ${label} (opens in a new tab)`}
-                  className="flex size-10 items-center justify-center rounded-xl bg-navy text-white shadow-sm transition-colors hover:bg-green"
+                  className="flex size-10 items-center justify-center rounded-xl bg-green text-white shadow-sm transition-colors hover:bg-navy"
                 >
                   <Icon className="size-[18px]" />
                 </a>
               </li>
             ))}
           </ul>
-          <span aria-hidden="true" className="absolute bottom-0 right-0 h-3 w-28 bg-gold [clip-path:polygon(100%_0,100%_100%,0_100%)]" />
         </div>
       )}
     </div>
