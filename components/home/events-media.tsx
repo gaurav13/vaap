@@ -211,7 +211,6 @@ function SmallGrid({ count, children }: { count: number; children: ReactNode }) 
 function EventsColumn({ events }: { events: EventItem[] }) {
   const [featured, ...rest] = events
   const more = rest.slice(0, 2)
-  const single = more.length === 1
 
   return (
     <div className="flex flex-col gap-5">
@@ -224,21 +223,33 @@ function EventsColumn({ events }: { events: EventItem[] }) {
       ) : (
         <div className="flex flex-col gap-4">
           <Link href={`/events/${featured.id}`} className={featuredCard}>
-            <Media src={featured.coverImage} alt={`${featured.title} banner`} contain className="aspect-[21/9]" />
-            <div className="flex gap-4 p-5">
+            <div className="overflow-hidden border-b border-line bg-mint">
+              {featured.coverImage ? (
+                <img
+                  src={featured.coverImage || "/placeholder.svg"}
+                  alt={`${featured.title} banner`}
+                  loading="lazy"
+                  className="block h-auto w-full transition-transform duration-500 group-hover:scale-[1.02]"
+                />
+              ) : (
+                <div className="flex aspect-[2/1] items-center justify-center bg-navy-dark">
+                  <CalendarDays className="size-10 text-white/40" aria-hidden="true" />
+                </div>
+              )}
+            </div>
+            <div className="flex items-start gap-4 p-5">
               <DateBlock date={featured.startsAt} />
-              <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-                {featured.category && (
-                  <span>
-                    <Pill>{featured.category}</Pill>
+              <div className="flex min-w-0 flex-1 flex-col gap-2">
+                <div className="flex items-center justify-between gap-3">
+                  {featured.category ? <Pill>{featured.category}</Pill> : <span />}
+                  <span className="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-navy transition-colors group-hover:text-green">
+                    Details
+                    <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
                   </span>
-                )}
+                </div>
                 <h3 className="line-clamp-2 text-lg font-bold leading-snug text-heading text-pretty group-hover:text-green">
                   {featured.title}
                 </h3>
-                {featured.description && (
-                  <p className="line-clamp-1 text-sm leading-relaxed text-muted-2">{stripHtml(featured.description)}</p>
-                )}
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-2">
                   {featured.location && (
                     <span className="inline-flex min-w-0 items-center gap-1.5">
@@ -255,32 +266,39 @@ function EventsColumn({ events }: { events: EventItem[] }) {
                 </div>
               </div>
             </div>
-            <CardFooter label="View event details" />
           </Link>
 
           {more.length > 0 && (
-            <SmallGrid count={more.length}>
+            <ul className="flex flex-col gap-3">
               {more.map((e) => (
                 <li key={e.id}>
-                  <Link href={`/events/${e.id}`} className={`${smallCard} ${single ? "flex-row" : "flex-col"}`}>
-                    <Media src={e.coverImage} alt="" className={single ? "w-40 shrink-0 sm:w-52" : "aspect-video"} />
-                    <div className="flex min-w-0 flex-1 flex-col gap-1.5 p-4">
+                  <Link
+                    href={`/events/${e.id}`}
+                    className="group flex items-center gap-4 rounded-xl border border-line bg-card p-3 shadow-sm transition-all hover:-translate-y-0.5 hover:border-green/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green"
+                  >
+                    <Media src={e.coverImage} alt="" className="aspect-[16/10] w-28 shrink-0 rounded-lg sm:w-36" />
+                    <div className="flex min-w-0 flex-1 flex-col gap-1">
                       <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-green">
                         <CalendarDays className="size-3.5" aria-hidden="true" />
                         {formatDate(e.startsAt)}
                       </span>
-                      <h3 className="line-clamp-2 text-sm font-bold leading-snug text-heading group-hover:text-green">{e.title}</h3>
+                      <h3 className="line-clamp-2 text-sm font-bold leading-snug text-heading text-pretty group-hover:text-green">
+                        {e.title}
+                      </h3>
                       {e.location && (
-                        <p className="mt-auto inline-flex min-w-0 items-center gap-1.5 text-xs text-muted-2">
+                        <p className="inline-flex min-w-0 items-center gap-1.5 text-xs text-muted-2">
                           <MapPin className="size-3.5 shrink-0" aria-hidden="true" />
                           <span className="truncate">{e.location}</span>
                         </p>
                       )}
                     </div>
+                    <span className="hidden size-8 shrink-0 items-center justify-center rounded-full border border-line text-navy transition-colors group-hover:border-green group-hover:bg-green group-hover:text-white sm:flex">
+                      <ArrowRight className="size-4" aria-hidden="true" />
+                    </span>
                   </Link>
                 </li>
               ))}
-            </SmallGrid>
+            </ul>
           )}
         </div>
       )}
