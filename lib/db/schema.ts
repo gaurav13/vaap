@@ -284,6 +284,22 @@ export const partners = pgTable("partners", {
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 })
 
+// --- Media & social highlights (home page) ---------------------------------
+
+export const mediaHighlights = pgTable("media_highlights", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description").notNull().default(""),
+  kind: text("kind").notNull().default("Video"),
+  image: text("image"),
+  url: text("url"),
+  duration: text("duration").notNull().default(""),
+  featured: boolean("featured").notNull().default(false),
+  sortOrder: serial("sortOrder"),
+  published: boolean("published").notNull().default(true),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
 // --- Official status blocks (CMS-controlled credibility content) -----------
 
 export const officialStatus = pgTable("official_status", {
