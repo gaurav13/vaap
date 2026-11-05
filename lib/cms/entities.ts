@@ -111,7 +111,7 @@ export const ENTITIES: Record<EntityKey, EntityConfig> = {
       { name: "name", label: "Full name", type: "text", required: true },
       { name: "position", label: "Position", type: "text" },
       { name: "organization", label: "Organization", type: "text" },
-      { name: "kind", label: "Type", type: "select", options: ["Chairman", "Executive Committee"], help: "Chairman shows as the featured profile at the top; Executive Committee members show in the grid below." },
+      { name: "kind", label: "Type", type: "select", options: ["Chairman", "Sr. Vice Chairman", "Vice Chairman", "Executive Committee", "Advisory Committee Members"], help: "Chairman is featured at the top, followed by the Sr. Vice Chairman and Vice Chairman, then the Executive Committee and Advisory Committee grids." },
       { name: "responsibility", label: "Responsibility / portfolio", type: "text" },
       { name: "bio", label: "Bio / message", type: "richtext", fullWidth: true, placeholder: "Write the bio or leadership message." },
       { name: "photo", label: "Photo", type: "image", nullable: true },

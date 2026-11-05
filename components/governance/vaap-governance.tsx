@@ -101,6 +101,21 @@ export function VaapGovernance() {
 
             <span aria-hidden className="h-5 w-px bg-line" />
 
+            {/* Sr. Vice Chairman & Vice Chairman */}
+            <div className="grid w-full max-w-[420px] grid-cols-2 gap-3">
+              {["Sr. Vice Chairman", "Vice Chairman"].map((role) => (
+                <div
+                  key={role}
+                  className="flex items-center justify-center gap-2 rounded-xl border border-green-border bg-card px-3 py-3 text-center"
+                >
+                  <User className="size-5 shrink-0 text-green" strokeWidth={1.75} aria-hidden />
+                  <span className="text-xs font-bold uppercase tracking-wide text-heading">{role}</span>
+                </div>
+              ))}
+            </div>
+
+            <span aria-hidden className="h-5 w-px bg-line" />
+
             {/* Executive Committee */}
             <div className="flex w-full max-w-[420px] items-center gap-3 rounded-xl bg-teal px-6 py-4 shadow-sm">
               <UsersRound className="size-7 shrink-0 text-white" strokeWidth={1.75} aria-hidden />
@@ -109,6 +124,19 @@ export function VaapGovernance() {
                   Executive Committee
                 </span>
                 <span className="block text-xs text-white/75">Leadership &amp; Oversight</span>
+              </span>
+            </div>
+
+            <span aria-hidden className="h-5 w-px border-l border-dashed border-line" />
+
+            {/* Advisory Committee */}
+            <div className="flex w-full max-w-[420px] items-center gap-3 rounded-xl border border-dashed border-green-border bg-card px-6 py-3.5">
+              <Lightbulb className="size-6 shrink-0 text-green" strokeWidth={1.75} aria-hidden />
+              <span>
+                <span className="block text-sm font-bold uppercase tracking-wide text-heading">
+                  Advisory Committee Members
+                </span>
+                <span className="block text-xs text-body">Expert Guidance &amp; Counsel</span>
               </span>
             </div>
 
