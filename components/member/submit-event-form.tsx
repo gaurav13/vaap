@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Loader2 } from "lucide-react"
 import { submitMemberEvent } from "@/app/actions/member"
+import { EVENT_CATEGORIES, EVENT_CITIES, EVENT_FORMATS } from "@/lib/event-options"
 
 const field =
   "w-full rounded-lg border border-line bg-background px-3 py-2.5 text-sm text-body outline-none transition focus:border-green focus:ring-2 focus:ring-green/20"
@@ -51,9 +52,51 @@ export function SubmitEventForm() {
         </div>
       </div>
 
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-1.5">
+          <label htmlFor="ev-category" className={label}>
+            Category
+          </label>
+          <select id="ev-category" name="category" required defaultValue="" className={field}>
+            <option value="" disabled>
+              Choose…
+            </option>
+            {EVENT_CATEGORIES.map((o) => (
+              <option key={o}>{o}</option>
+            ))}
+          </select>
+        </div>
+        <div className="grid gap-1.5">
+          <label htmlFor="ev-city" className={label}>
+            City
+          </label>
+          <select id="ev-city" name="city" required defaultValue="" className={field}>
+            <option value="" disabled>
+              Choose…
+            </option>
+            {EVENT_CITIES.map((o) => (
+              <option key={o}>{o}</option>
+            ))}
+          </select>
+        </div>
+        <div className="grid gap-1.5">
+          <label htmlFor="ev-format" className={label}>
+            Format
+          </label>
+          <select id="ev-format" name="format" required defaultValue="" className={field}>
+            <option value="" disabled>
+              Choose…
+            </option>
+            {EVENT_FORMATS.map((o) => (
+              <option key={o}>{o}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
       <div className="grid gap-1.5">
         <label htmlFor="ev-location" className={label}>
-          Location
+          Venue / location
         </label>
         <input id="ev-location" name="location" placeholder="Venue or online link" className={field} />
       </div>

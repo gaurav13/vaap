@@ -84,7 +84,7 @@ export default async function MemberElectionDetailPage({ params }: { params: Pro
                   .sort((a, b) => b.votes - a.votes)
                 return (
                   <div key={pos.id}>
-                    <h3 className="text-sm font-medium text-heading">{pos.title}</h3>
+                    <h3 className="text-sm font-bold text-heading">{pos.title}</h3>
                     <ul className="mt-2 space-y-1.5">
                       {posResults.map((r) => {
                         const candidate = candidates.find((c) => c.id === r.candidateId)

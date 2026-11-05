@@ -1280,7 +1280,7 @@ function CryptoPayment({
 
             {/* After payment */}
             <div className="mt-5 border-t border-line pt-5">
-              <h4 className="text-sm font-semibold text-heading">After Payment</h4>
+              <h4 className="text-sm font-bold text-heading">After Payment</h4>
               <p className="mt-0.5 text-xs leading-relaxed text-muted-2">
                 Once the transaction is completed, paste your Transaction ID (TxID) below so we can verify your payment.
               </p>

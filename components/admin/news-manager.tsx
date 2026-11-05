@@ -6,6 +6,7 @@ import { Eye, Pencil, Plus, Trash2, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { FileUpload } from "@/components/admin/file-upload"
 import { createNews, updateNews, deleteNews } from "@/app/actions/admin"
+import { NEWS_CATEGORIES } from "@/lib/news-options"
 
 type NewsItem = {
   id: number
@@ -14,6 +15,9 @@ type NewsItem = {
   excerpt: string
   content: string
   image: string | null
+  publisherName: string
+  publisherLogo: string | null
+  externalUrl: string | null
   committeeId: number | null
   published: boolean
   createdAt: string
@@ -21,7 +25,7 @@ type NewsItem = {
 
 type CommitteeOption = { id: number; name: string }
 
-const CATEGORIES = ["Industry Update", "Partnership", "Community", "Announcement", "Education"]
+const CATEGORIES = NEWS_CATEGORIES
 
 export function NewsManager({ items, committees = [] }: { items: NewsItem[]; committees?: CommitteeOption[] }) {
   const router = useRouter()
@@ -110,6 +114,44 @@ export function NewsManager({ items, committees = [] }: { items: NewsItem[]; com
                 onBusyChange={setUploading}
               />
             </div>
+            <fieldset className="grid gap-4 rounded-lg border border-line p-4">
+              <legend className="px-1 text-sm font-semibold text-heading">News publisher (optional)</legend>
+              <p className="-mt-1 text-xs text-muted-2">
+                For media coverage, add the outlet and a link to the original article. The home page shows a
+                &quot;Read on …&quot; button that opens this link.
+              </p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Publisher name">
+                  <input
+                    name="publisherName"
+                    defaultValue={editing?.publisherName}
+                    placeholder="e.g. Dawn"
+                    maxLength={80}
+                    className={inputCls}
+                  />
+                </Field>
+                <Field label="Article link">
+                  <input
+                    name="externalUrl"
+                    type="url"
+                    defaultValue={editing?.externalUrl ?? ""}
+                    placeholder="https://www.dawn.com/news/..."
+                    className={inputCls}
+                  />
+                </Field>
+              </div>
+              <div>
+                <span className="mb-1.5 block text-sm font-medium text-body">Publisher logo</span>
+                <FileUpload
+                  name="publisherLogo"
+                  kind="image"
+                  storage="spaces"
+                  folder="news"
+                  defaultValue={editing?.publisherLogo ?? ""}
+                  onBusyChange={setUploading}
+                />
+              </div>
+            </fieldset>
             <Field label="Committee (optional)">
               <select name="committeeId" defaultValue={editing?.committeeId ? String(editing.committeeId) : ""} className={inputCls}>
                 <option value="">Not linked to a committee</option>

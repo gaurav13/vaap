@@ -6,6 +6,7 @@ import { CalendarDays, Check, Eye, MapPin, Pencil, Plus, Trash2, User, X } from 
 import { Button } from "@/components/ui/button"
 import { FileUpload } from "@/components/admin/file-upload"
 import { createEvent, updateEvent, deleteEvent, setEventStatus } from "@/app/actions/admin"
+import { EVENT_CATEGORIES, EVENT_CITIES, EVENT_FORMATS } from "@/lib/event-options"
 
 type EventItem = {
   id: number
@@ -19,6 +20,9 @@ type EventItem = {
   hostName: string
   coverImage: string
   submittedByName: string
+  category?: string
+  city?: string
+  format?: string
 }
 
 const STATUS_BADGE: Record<string, string> = {
@@ -125,6 +129,32 @@ export function EventsManager({ items }: { items: EventItem[] }) {
               </Field>
               <Field label="Host name">
                 <input name="hostName" defaultValue={editing?.hostName} placeholder="Organizer or partner" className={inputCls} />
+              </Field>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <Field label="Category">
+                <select name="category" defaultValue={editing?.category ?? ""} className={inputCls}>
+                  <option value="">Uncategorized</option>
+                  {EVENT_CATEGORIES.map((o) => (
+                    <option key={o}>{o}</option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="City">
+                <select name="city" defaultValue={editing?.city ?? ""} className={inputCls}>
+                  <option value="">Not set</option>
+                  {EVENT_CITIES.map((o) => (
+                    <option key={o}>{o}</option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Format">
+                <select name="format" defaultValue={editing?.format ?? ""} className={inputCls}>
+                  <option value="">Not set</option>
+                  {EVENT_FORMATS.map((o) => (
+                    <option key={o}>{o}</option>
+                  ))}
+                </select>
               </Field>
             </div>
             <div>

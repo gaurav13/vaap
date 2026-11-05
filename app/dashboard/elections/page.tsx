@@ -65,7 +65,7 @@ export default async function MemberElectionsPage() {
           >
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="font-medium text-heading">{election.title}</h2>
+                <h2 className="font-bold text-heading">{election.title}</h2>
                 <StatusPill status={election.status} />
                 {hasVoted && election.status === "active" && (
                   <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">

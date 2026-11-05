@@ -72,7 +72,7 @@ export function Legitimacy() {
         <div className="mt-12 grid items-center gap-x-12 gap-y-10 lg:grid-cols-[1fr_1.15fr]">
           {/* Left copy */}
           <div>
-            <h3 className="font-sans text-3xl font-extrabold leading-[1.1] tracking-tight text-navy text-balance lg:text-[2.6rem]">
+            <h3 className="text-3xl font-bold leading-[1.1] tracking-tight text-navy text-balance lg:text-[2.6rem]">
               Building Pakistan&apos;s Unified Virtual Asset Industry Platform
             </h3>
             <span className="mt-6 block h-1.5 w-20 rounded-full bg-green" aria-hidden="true" />
@@ -98,7 +98,7 @@ export function Legitimacy() {
                   <Cog className="size-4" aria-hidden="true" />
                   Industry Development
                 </span>
-                <h4 className="mt-5 font-sans text-2xl font-extrabold leading-tight tracking-tight text-navy text-balance lg:text-[1.75rem]">
+                <h4 className="mt-5 text-2xl font-bold leading-tight tracking-tight text-navy text-balance lg:text-[1.75rem]">
                   Industry Development &amp; Regulatory Alignment
                 </h4>
                 <p className="mt-4 text-sm leading-relaxed text-body text-pretty">

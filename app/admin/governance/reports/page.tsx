@@ -90,7 +90,7 @@ export default async function GovernanceReportsPage() {
       </div>
 
       <div className="mt-8">
-        <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted-2">
+        <h2 className="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-muted-2">
           <Download className="size-4" /> Exports
         </h2>
         <div className="grid gap-4 sm:grid-cols-2">

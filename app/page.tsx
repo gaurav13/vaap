@@ -3,7 +3,8 @@ import { SiteFooter } from "@/components/site-footer"
 import { Hero } from "@/components/home/hero"
 import { Legitimacy } from "@/components/home/legitimacy"
 import { Framework } from "@/components/home/framework"
-import { NewsEvents } from "@/components/home/news-events"
+import { LatestNewsMedia } from "@/components/home/latest-news-media"
+import { UpcomingEvents } from "@/components/home/upcoming-events"
 import { getSession } from "@/lib/session"
 import { getMenuItems, getNewsAlert } from "@/lib/site-settings"
 import { getPublishedNews, getPublishedEvents } from "@/app/actions/public"
@@ -13,19 +14,32 @@ export default async function Home() {
   const [session, nav, news, events, newsAlert] = await Promise.all([
     getSession(),
     getMenuItems(),
-    getPublishedNews(3),
+    getPublishedNews(24),
     getPublishedEvents(3),
     getNewsAlert(),
   ])
 
+  const newsItems = news.map((n) => ({
+    id: n.id,
+    title: n.title,
+    category: n.category,
+    excerpt: n.excerpt,
+    image: n.image,
+    publisherName: n.publisherName,
+    publisherLogo: n.publisherLogo,
+    externalUrl: n.externalUrl,
+    createdAt: n.createdAt.toISOString(),
+  }))
+
   return (
     <div className="flex min-h-screen flex-col bg-background">
-        <SiteHeader variant="solid" active="Home" user={toHeaderUser(session)} nav={nav} newsAlert={newsAlert} />
+      <SiteHeader variant="solid" active="Home" user={toHeaderUser(session)} nav={nav} newsAlert={newsAlert} />
       <main className="flex-1">
         <Hero />
+        <LatestNewsMedia items={newsItems} />
+        <UpcomingEvents events={events} />
         <Legitimacy />
         <Framework />
-        <NewsEvents news={news} events={events} />
       </main>
       <SiteFooter />
     </div>

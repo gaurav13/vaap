@@ -1,6 +1,7 @@
 "use server"
 
 import { db } from "@/lib/db"
+import { EVENT_CATEGORIES, EVENT_CITIES, EVENT_FORMATS, pickOption } from "@/lib/event-options"
 import {
   user,
   members,
@@ -255,8 +256,19 @@ export async function submitMemberEvent(formData: FormData) {
   const timeLabel = String(formData.get("timeLabel") ?? "").trim()
   const dateStr = String(formData.get("date") ?? "").trim()
   const coverImage = String(formData.get("coverImage") ?? "").trim()
+  const category = pickOption(EVENT_CATEGORIES, formData.get("category"))
+  const city = pickOption(EVENT_CITIES, formData.get("city"))
+  const format = pickOption(EVENT_FORMATS, formData.get("format"))
 
   if (!title) return { ok: false, error: "Event title is required." }
+  if (title.length > 160) return { ok: false, error: "Event title is too long." }
+  if (description.length > 4000) return { ok: false, error: "Description is too long." }
+  if (!category) return { ok: false, error: "Please choose an event category." }
+  if (!city) return { ok: false, error: "Please choose a city." }
+  if (!format) return { ok: false, error: "Please choose an event format." }
+  if (coverImage && !/^https:\/\/\S+$/i.test(coverImage)) {
+    return { ok: false, error: "Cover image must be an https:// URL." }
+  }
   if (!dateStr) return { ok: false, error: "Please choose a date for the event." }
   const startsAt = new Date(dateStr)
   if (Number.isNaN(startsAt.getTime())) return { ok: false, error: "That date isn't valid." }
@@ -270,6 +282,9 @@ export async function submitMemberEvent(formData: FormData) {
       startsAt,
       hostName: member.organization || member.name,
       coverImage: coverImage || null,
+      category,
+      city,
+      format,
       submittedByUserId: current.id,
       submittedByName: member.name,
       status: "pending",
