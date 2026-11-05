@@ -23,9 +23,9 @@ export default async function Home() {
         <SiteHeader variant="solid" active="Home" user={toHeaderUser(session)} nav={nav} newsAlert={newsAlert} />
       <main className="flex-1">
         <Hero />
+        <NewsEvents news={news} events={events} />
         <Legitimacy />
         <Framework />
-        <NewsEvents news={news} events={events} />
       </main>
       <SiteFooter />
     </div>
