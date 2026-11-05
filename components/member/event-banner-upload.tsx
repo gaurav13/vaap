@@ -3,6 +3,7 @@
 import { useRef, useState } from "react"
 import Image from "next/image"
 import { ImagePlus, Loader2, X } from "lucide-react"
+import { postImageUpload } from "@/lib/client-image"
 
 type Props = {
   name: string
@@ -22,12 +23,7 @@ export function EventBannerUpload({ name, onBusyChange }: Props) {
     setUploading(true)
     onBusyChange?.(true)
     try {
-      const body = new FormData()
-      body.set("file", file)
-      const res = await fetch("/api/member/upload", { method: "POST", body })
-      const payload = (await res.json().catch(() => null)) as { url?: string; error?: string } | null
-      if (!res.ok || !payload?.url) throw new Error(payload?.error || "Image upload failed.")
-      setUrl(payload.url)
+      setUrl(await postImageUpload("/api/member/upload", file))
     } catch (err) {
       setError(err instanceof Error ? err.message : "Image upload failed.")
     } finally {
