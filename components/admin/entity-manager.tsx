@@ -4,15 +4,24 @@ import { useEffect, useRef, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { ExternalLink, Pencil, Plus, Trash2, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { saveEntity, deleteEntity } from "@/app/actions/cms"
+async function callEntityApi(method: "POST" | "DELETE", entity: string, id: number | null, body?: FormData) {
+  const params = new URLSearchParams({ entity })
+  if (id !== null) params.set("id", String(id))
+  let res: Response
+  try {
+    res = await fetch(`/api/admin/entities?${params}`, { method, body })
+  } catch {
+    throw new Error("Network error. Check your connection and try again.")
+  }
+  if (res.status === 413) throw new Error("This entry is too large to save. Use a smaller image or shorter content.")
+  const data = (await res.json().catch(() => null)) as { ok?: boolean; error?: string } | null
+  if (!res.ok || !data || data.ok === false) {
+    throw new Error(data?.error || `Save failed (HTTP ${res.status}).`)
+  }
+}
 
 function actionErrorMessage(err: unknown) {
-  const message = err instanceof Error ? err.message : ""
-  if (/Unauthorized|Forbidden/.test(message)) return "Your admin session has expired. Sign in again and retry."
-  if (/Server Action|Failed to fetch|fetch failed/i.test(message)) {
-    return "The site was updated since this page opened. Reload the page and try again."
-  }
-  return "Save failed. Reload the page and try again."
+  return err instanceof Error && err.message ? err.message : "Save failed. Reload the page and try again."
 }
 import { ENTITIES, type EntityKey, type FieldDef } from "@/lib/cms/entities"
 import { RichTextEditor } from "@/components/admin/rich-text-editor"
@@ -37,11 +46,7 @@ export function EntityManager({ entity, items }: { entity: EntityKey; items: Row
     const formData = new FormData(e.currentTarget)
     startTransition(async () => {
       try {
-        const res = await saveEntity(entity, editing ? editing.id : null, formData)
-        if (res && !res.ok) {
-          setError(res.error ?? "Something went wrong.")
-          return
-        }
+        await callEntityApi("POST", entity, editing ? editing.id : null, formData)
         setEditing(null)
         setCreating(false)
         router.refresh()
@@ -56,7 +61,7 @@ export function EntityManager({ entity, items }: { entity: EntityKey; items: Row
     setError(null)
     startTransition(async () => {
       try {
-        await deleteEntity(entity, id)
+        await callEntityApi("DELETE", entity, id)
         router.refresh()
       } catch (err) {
         setError(actionErrorMessage(err))
