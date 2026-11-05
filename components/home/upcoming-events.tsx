@@ -12,8 +12,8 @@ type EventItem = {
 function monthDay(d: Date | string) {
   const date = new Date(d)
   return {
-    month: date.toLocaleDateString("en-US", { month: "short" }).toUpperCase(),
-    day: date.toLocaleDateString("en-US", { day: "2-digit" }),
+    month: date.toLocaleDateString("en-US", { month: "short", timeZone: "Asia/Karachi" }).toUpperCase(),
+    day: date.toLocaleDateString("en-US", { day: "2-digit", timeZone: "Asia/Karachi" }),
   }
 }
 

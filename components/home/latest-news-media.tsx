@@ -19,7 +19,12 @@ export type HomeNewsItem = {
 }
 
 function formatDate(d: string) {
-  return new Date(d).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })
+  return new Date(d).toLocaleDateString("en-US", {
+    month: "short",
+    day: "2-digit",
+    year: "numeric",
+    timeZone: "Asia/Karachi",
+  })
 }
 
 function readLabel(item: HomeNewsItem) {
