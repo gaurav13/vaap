@@ -127,32 +127,31 @@ function EventCard({ event: e }: { event: PublicEvent }) {
   const place = e.city || e.location
 
   return (
-    <article className="flex h-full gap-4 rounded-2xl border border-line bg-card p-3 shadow-sm transition hover:shadow-md">
-      <div className="relative w-32 shrink-0 overflow-hidden rounded-xl sm:w-40">
+    <article className="flex h-full flex-col gap-4 rounded-2xl border border-line bg-card p-3 shadow-sm transition hover:shadow-md">
+      <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-mint">
         <Image
           src={eventCover(e.coverImage, e.category) || "/placeholder.svg"}
           alt=""
           fill
-          sizes="160px"
-          className="object-cover"
+          sizes="(min-width: 1280px) 400px, (min-width: 768px) 50vw, 100vw"
+          className="object-contain"
         />
-        <div className="absolute left-3 top-3 flex flex-col items-center rounded-lg bg-card px-2.5 py-1.5 text-center text-heading shadow">
-          <span className="text-2xl font-extrabold leading-none">
-            {d.toLocaleString("en-US", { day: "numeric", timeZone: "Asia/Karachi" })}
-          </span>
-          <span className="text-sm font-semibold leading-tight">
-            {d.toLocaleString("en-US", { month: "short", timeZone: "Asia/Karachi" })}
-          </span>
-          <span className="text-xs font-semibold">
-            {d.toLocaleString("en-US", { year: "numeric", timeZone: "Asia/Karachi" })}
-          </span>
-        </div>
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col gap-3 py-2 pr-2">
-        {e.category && (
-          <span className="self-start rounded-full bg-mint px-3 py-1 text-xs font-bold text-green">{e.category}</span>
-        )}
+      <div className="flex min-w-0 flex-1 flex-col gap-3 px-2 pb-2">
+        <div className="flex items-center gap-3">
+          <div className="flex shrink-0 flex-col items-center rounded-lg border border-line bg-card px-2.5 py-1 text-center text-heading">
+            <span className="text-xl font-extrabold leading-none">
+              {d.toLocaleString("en-US", { day: "numeric", timeZone: "Asia/Karachi" })}
+            </span>
+            <span className="text-xs font-semibold leading-tight">
+              {d.toLocaleString("en-US", { month: "short", year: "numeric", timeZone: "Asia/Karachi" })}
+            </span>
+          </div>
+          {e.category && (
+            <span className="rounded-full bg-mint px-3 py-1 text-xs font-bold text-green">{e.category}</span>
+          )}
+        </div>
         <h3 className="text-pretty text-lg font-bold leading-snug text-heading">{e.title}</h3>
         {(place || e.format) && (
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-body">
