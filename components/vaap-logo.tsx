@@ -10,7 +10,7 @@ export function VaapLogo({
   onDark?: boolean
   height?: number
 }) {
-  const width = Math.round(height * 3.22)
+  const width = Math.round(height * 2.77)
   return (
     <span
       className={cn(
@@ -20,8 +20,8 @@ export function VaapLogo({
       )}
     >
       <Image
-        src="/vaap-logo.png"
-        alt="VAAP — Virtual Assets Association of Pakistan"
+        src="/vaap-logo-alliance.png"
+        alt="VAAP — Virtual Asset Industry Alliance of Pakistan"
         width={width}
         height={height}
         priority

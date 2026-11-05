@@ -36,7 +36,7 @@ const playfair = Playfair_Display({
 })
 
 export const metadata: Metadata = {
-  title: 'VAAP — Virtual Assets Association of Pakistan',
+  title: 'VAAP — Virtual Asset Industry Alliance of Pakistan',
   description:
     'Building a responsible, innovative and connected virtual asset ecosystem for Pakistan. People. Innovation. Collaboration.',
   generator: 'v0.app',

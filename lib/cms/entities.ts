@@ -129,7 +129,7 @@ export const ENTITIES: Record<EntityKey, EntityConfig> = {
     label: "Committees",
     singular: "Committee",
     description: "Industry-led committees and their heads, shown on the Committees page.",
-    revalidate: ["/committees", "/governance"],
+    revalidate: ["/working-groups", "/governance"],
     fields: [
       { name: "name", label: "Committee name", type: "text", required: true, placeholder: "Policy, Legal & Regulatory Committee" },
       { name: "headName", label: "Committee head — full name", type: "text", placeholder: "Ali Raza Khan" },
@@ -145,7 +145,7 @@ export const ENTITIES: Record<EntityKey, EntityConfig> = {
       { name: "published", label: "Published", type: "checkbox" },
     ],
     list: { title: "name", subtitle: "headName" },
-    viewUrl: (row) => `/committees/${row.id}`,
+    viewUrl: (row) => `/working-groups/${row.id}`,
   },
   partners: {
     label: "Partners",

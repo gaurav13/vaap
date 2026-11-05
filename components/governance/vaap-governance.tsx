@@ -119,7 +119,7 @@ export function VaapGovernance() {
               <Settings className="size-7 shrink-0 text-green" strokeWidth={1.75} aria-hidden />
               <span>
                 <span className="block text-[15px] font-bold uppercase tracking-wide text-heading">
-                  Specialized Committees
+                  Working groups
                 </span>
                 <span className="block text-xs text-body">Focus Areas &amp; Working Groups</span>
               </span>

@@ -8,7 +8,7 @@ import { getHeaderUser } from "@/lib/header-user"
 
 export const metadata = {
   title: "Media & Events | VAAP",
-  description: "Upcoming events, webinars, and programs from the Virtual Assets Association of Pakistan.",
+  description: "Upcoming events, webinars, and programs from the Virtual Asset Industry Alliance of Pakistan.",
 }
 
 export default async function EventsPage() {

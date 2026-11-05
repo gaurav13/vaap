@@ -84,7 +84,7 @@ export const auth = betterAuth({
         subject: "Verify your VAAP email address",
         heading: "Confirm your email address",
         intro: [
-          `Welcome to the Virtual Assets Association of Pakistan, ${user.name || "there"}.`,
+          `Welcome to the Virtual Asset Industry Alliance of Pakistan, ${user.name || "there"}.`,
           "Please confirm this email address so we can keep your account and membership updates secure.",
         ],
         ctaLabel: "Verify email address",
@@ -120,10 +120,10 @@ export const auth = betterAuth({
             body: "Your account has been created. Explore your member dashboard to get started.",
             link: "/dashboard",
             emailTemplate: {
-              subject: "Welcome to the Virtual Assets Association of Pakistan",
+              subject: "Welcome to the Virtual Asset Industry Alliance of Pakistan",
               heading: `Welcome aboard, ${createdUser.name || "member"}`,
               intro: [
-                "Thank you for joining the Virtual Assets Association of Pakistan.",
+                "Thank you for joining the Virtual Asset Industry Alliance of Pakistan.",
                 "Your account is ready. From your dashboard you can manage your profile, track your membership, register to vote, and stay up to date with events and resources.",
               ],
               ctaLabel: "Open your dashboard",

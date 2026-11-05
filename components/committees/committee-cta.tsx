@@ -9,14 +9,14 @@ export function CommitteeCta() {
           <div className="max-w-xl">
             <h2 className="font-serif text-3xl font-bold text-heading lg:text-4xl">Get Involved</h2>
             <p className="mt-3 leading-relaxed text-muted-2">
-              Join a committee and contribute to a stronger virtual asset ecosystem in Pakistan.
+              Join a working group and contribute to a stronger virtual asset ecosystem in Pakistan.
             </p>
           </div>
           <Link
             href="/membership"
             className="inline-flex items-center gap-2 rounded-lg bg-green px-6 py-3.5 font-semibold text-white transition-colors hover:bg-green-dark"
           >
-            Apply for Committee Participation
+            Apply for Working Group Participation
             <ArrowRight className="h-4 w-4" />
           </Link>
         </div>

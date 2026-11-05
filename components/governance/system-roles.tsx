@@ -14,7 +14,7 @@ const ROLES: Role[] = [
     num: "01",
     icon: ShieldCheck,
     eyebrow: "Regulatory Oversight",
-    title: "PVARA",
+    title: "",
     sub: "Rules \u00b7 Licensing \u00b7 Supervision",
     card: "bg-blue-tint",
   },
@@ -65,7 +65,7 @@ export function SystemRoles() {
                 <Icon className="size-14 shrink-0 text-green" strokeWidth={1.75} aria-hidden />
                 <div className="min-w-0">
                   <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-green">{eyebrow}</p>
-                  <p className="mt-1 text-lg font-extrabold leading-tight text-heading">{title}</p>
+                  {title && <p className="mt-1 text-lg font-extrabold leading-tight text-heading">{title}</p>}
                   <p className="mt-1 text-sm text-body">{sub}</p>
                 </div>
               </div>

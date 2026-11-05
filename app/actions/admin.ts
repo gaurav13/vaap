@@ -61,7 +61,7 @@ export async function createNews(formData: FormData) {
   })
   revalidatePath("/admin/news")
   revalidatePath("/news")
-  revalidatePath("/committees")
+  revalidatePath("/working-groups")
   revalidatePath("/")
   return { ok: true }
 }
@@ -91,7 +91,7 @@ export async function updateNews(id: number, formData: FormData) {
     .where(eq(news.id, id))
   revalidatePath("/admin/news")
   revalidatePath("/news")
-  revalidatePath("/committees")
+  revalidatePath("/working-groups")
   revalidatePath("/")
   return { ok: true }
 }
@@ -101,7 +101,7 @@ export async function deleteNews(id: number) {
   await db.delete(news).where(eq(news.id, id))
   revalidatePath("/admin/news")
   revalidatePath("/news")
-  revalidatePath("/committees")
+  revalidatePath("/working-groups")
   revalidatePath("/")
 }
 
@@ -217,7 +217,7 @@ export async function setApplicationStatus(id: number, status: "pending" | "appr
           heading: "Application update",
           intro: [
             `Dear ${statusApp.name},`,
-            "Thank you for your interest in the Virtual Assets Association of Pakistan. After careful review, we're unable to approve your membership application at this time.",
+            "Thank you for your interest in the Virtual Asset Industry Alliance of Pakistan. After careful review, we're unable to approve your membership application at this time.",
             "If you believe this was in error or would like guidance on reapplying, simply reply to this email and our team will be glad to help.",
           ],
           footnote: "This decision does not prevent you from applying again in the future.",

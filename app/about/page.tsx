@@ -9,7 +9,7 @@ import { getLeadership } from "@/app/actions/cms"
 export const metadata = {
   title: "About | VAAP",
   description:
-    "The Virtual Assets Association of Pakistan (VAAP) is a collective voice for Pakistan's virtual asset industry, supporting responsible growth, collaboration, education, and innovation.",
+    "The Virtual Asset Industry Alliance of Pakistan (VAAP) is a collective voice for Pakistan's virtual asset industry, supporting responsible growth, collaboration, education, and innovation.",
 }
 
 export default async function AboutPage() {

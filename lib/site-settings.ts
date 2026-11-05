@@ -198,7 +198,7 @@ export const DEFAULT_MENU: MenuItem[] = [
   { label: "Team", href: "/team" },
   { label: "Governance", href: "/governance" },
   VOTING_MENU,
-  { label: "Committees", href: "/committees" },
+  { label: "Working Groups", href: "/working-groups" },
   {
     label: "Membership",
     href: "/membership",
@@ -220,7 +220,7 @@ export const DEFAULT_SOCIAL: SocialLinks = {
 }
 
 export const DEFAULT_GENERAL: General = {
-  siteTitle: "Virtual Assets Association of Pakistan",
+  siteTitle: "Virtual Asset Industry Alliance of Pakistan",
   tagline: "Building a responsible, innovative and connected virtual asset ecosystem for Pakistan.",
   footerText: "Building a responsible, innovative and connected virtual asset ecosystem for Pakistan.",
   copyright: "© 2026 VAAP. All rights reserved.",
@@ -284,7 +284,7 @@ export const DEFAULT_GOV_FRAMEWORK: GovFramework = {
   vaapLogo: "",
   vaapBadge: "Industry Representative",
   vaapEyebrow: "National Industry Representative",
-  vaapName: "Virtual Assets Association of Pakistan",
+  vaapName: "Virtual Asset Industry Alliance of Pakistan",
   vaapRole: "National Industry Representation",
   vaapSupporting: "Representing Pakistan's Virtual Asset Industry",
   vaapVerified: false,

@@ -10,8 +10,17 @@ import {
   ShieldCheck,
   BookOpen,
   BarChart3,
+  Cog,
+  Handshake,
+  Users,
 } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
+
+const PILLARS: { icon: LucideIcon; label: string }[] = [
+  { icon: Handshake, label: "Engagement with Relevant Regulators" },
+  { icon: ShieldCheck, label: "Policy & Framework Development" },
+  { icon: Users, label: "Industry & Investor Representation" },
+]
 
 const FOCUS: { icon: LucideIcon; label: string }[] = [
   { icon: FileText, label: "Policy & Regulatory Engagement" },
@@ -59,71 +68,65 @@ export function Legitimacy() {
           ))}
         </div>
 
-        {/* Licensing card */}
-        <div className="relative mt-12 overflow-hidden rounded-2xl border border-line bg-card">
-          <Image
-            src="/images/pakistan-skyline-watermark.png"
-            alt=""
-            width={600}
-            height={600}
-            aria-hidden="true"
-            className="pointer-events-none absolute right-0 top-0 h-full w-auto object-contain object-right opacity-[0.06]"
-          />
-          <div className="relative grid items-center gap-x-14 gap-y-10 p-8 lg:grid-cols-2 lg:p-12">
-            {/* Left copy */}
-            <div>
-              <h3 className="font-serif text-3xl font-bold leading-[1.08] text-navy text-balance lg:text-4xl">
-                A Licensed &amp; Recognized Trade Organization
-              </h3>
-              <p className="mt-6 max-w-xl leading-relaxed text-body">
-                The Virtual Assets Association of Pakistan (VAAP) is a licensed trade organization recognized by the
-                Directorate General of Trade Organizations (DGTO), Ministry of Commerce, Government of Pakistan.
-              </p>
-              <Link
-                href="/about"
-                className="group mt-8 inline-flex items-center gap-2 rounded-md bg-green px-6 py-3.5 text-sm font-bold text-white transition-colors hover:bg-green-hover"
-              >
-                Learn More About VAAP
-                <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
-              </Link>
-            </div>
+        {/* Industry platform card */}
+        <div className="mt-12 grid items-center gap-x-12 gap-y-10 lg:grid-cols-[1fr_1.15fr]">
+          {/* Left copy */}
+          <div>
+            <h3 className="font-sans text-3xl font-extrabold leading-[1.1] tracking-tight text-navy text-balance lg:text-[2.6rem]">
+              Building Pakistan&apos;s Unified Virtual Asset Industry Platform
+            </h3>
+            <span className="mt-6 block h-1.5 w-20 rounded-full bg-green" aria-hidden="true" />
+            <p className="mt-6 max-w-xl leading-relaxed text-body text-pretty">
+              The Virtual Asset Industry Alliance of Pakistan (VAAP) is an industry-led initiative to strengthen
+              Pakistan&apos;s digital asset ecosystem through investor protection, cybersecurity awareness, industry
+              representation, and collaboration with relevant stakeholders and regulatory authorities.
+            </p>
+            <Link
+              href="/about"
+              className="group mt-8 inline-flex items-center gap-2 rounded-md bg-green px-6 py-3.5 text-sm font-bold text-white transition-colors hover:bg-green-hover"
+            >
+              Learn More About VAAP
+              <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+            </Link>
+          </div>
 
-            {/* License panel */}
-            <div className="grid grid-cols-1 gap-8 rounded-2xl bg-mint-2 p-8 sm:grid-cols-2 sm:gap-0 lg:p-10">
-              {/* Emblem + government */}
-              <div className="flex flex-col items-center justify-center text-center sm:pr-8">
-                <Image
-                  src="/pakistan-emblem.webp"
-                  alt="State Emblem of Pakistan"
-                  width={120}
-                  height={120}
-                  style={{ height: "auto" }}
-                  className="w-24 object-contain"
-                />
-                <p className="mt-4 text-sm font-bold leading-snug text-heading">
-                  Government of Pakistan
-                  <br />
-                  Ministry of Commerce
+          {/* Industry development panel */}
+          <div className="relative overflow-hidden rounded-3xl border border-green-border/60 bg-mint-2">
+            <div className="relative z-10 grid gap-8 p-7 pb-36 sm:grid-cols-[1.25fr_1fr] sm:gap-0 sm:pb-40 lg:p-9 lg:pb-44">
+              <div className="sm:pr-7">
+                <span className="inline-flex items-center gap-2 rounded-full bg-mint px-4 py-2 text-xs font-bold uppercase tracking-wide text-green">
+                  <Cog className="size-4" aria-hidden="true" />
+                  Industry Development
+                </span>
+                <h4 className="mt-5 font-sans text-2xl font-extrabold leading-tight tracking-tight text-navy text-balance lg:text-[1.75rem]">
+                  Industry Development &amp; Regulatory Alignment
+                </h4>
+                <p className="mt-4 text-sm leading-relaxed text-body text-pretty">
+                  VAAP is working toward establishing a structured industry representation framework in Pakistan,
+                  subject to applicable regulatory requirements and approvals.
                 </p>
-                <p className="mt-2 font-serif text-2xl font-bold tracking-wide text-navy">DGTO</p>
               </div>
 
-              {/* License details */}
-              <div className="flex flex-col justify-center border-t border-line pt-8 sm:border-l sm:border-t-0 sm:pl-8 sm:pt-0">
-                <h4 className="text-base font-bold text-heading">Licensed by DGTO</h4>
-                <p className="mt-3 text-sm leading-relaxed text-body">
-                  VAAP is a recognized Trade Organization under the Directorate General of Trade Organizations (DGTO),
-                  Ministry of Commerce, Government of Pakistan.
-                </p>
-                <Link
-                  href="/about"
-                  className="group mt-5 inline-flex items-center gap-2 text-sm font-bold text-green transition-colors hover:text-green-hover"
-                >
-                  View License Details
-                  <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
-                </Link>
-              </div>
+              <ul className="flex flex-col justify-center gap-4 border-t border-line pt-6 sm:border-l sm:border-t-0 sm:pl-7 sm:pt-0">
+                {PILLARS.map(({ icon: Icon, label }) => (
+                  <li key={label} className="flex items-center gap-4">
+                    <span className="flex size-14 shrink-0 items-center justify-center rounded-xl bg-card text-green shadow-sm">
+                      <Icon className="size-6" aria-hidden="true" />
+                    </span>
+                    <span className="text-sm font-bold leading-snug text-navy">{label}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
+
+            <Image
+              src="/images/pakistan-skyline-green.png"
+              alt=""
+              width={1584}
+              height={656}
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-x-0 bottom-0 h-auto w-full mix-blend-multiply"
+            />
           </div>
         </div>
       </div>

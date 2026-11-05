@@ -16,7 +16,7 @@ export function CommitteesGrid({ committees }: { committees: Committee[] }) {
       <section className="bg-background">
         <div className="vaap-container py-12">
           <p className="rounded-xl border border-dashed border-line bg-surface p-8 text-center text-muted-2">
-            Committees will appear here once added in the admin area.
+            Working groups will appear here once added in the admin area.
           </p>
         </div>
       </section>
@@ -30,7 +30,7 @@ export function CommitteesGrid({ committees }: { committees: Committee[] }) {
           {committees.map((c) => (
             <Link
               key={c.id}
-              href={`/committees/${c.id}`}
+              href={`/working-groups/${c.id}`}
               className="group flex flex-col items-center rounded-xl border border-line-light bg-surface p-4 text-center transition-all hover:border-green-border hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green"
             >
               <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-mint">
