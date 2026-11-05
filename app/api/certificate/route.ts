@@ -87,25 +87,27 @@ export async function GET(req: Request) {
     page.drawText(value, { x: cx - w / 2, y: H - yImg, size: s, font: serifBold, color: GREEN })
   }
 
-  // Member name — the headline of the certificate.
-  centered(member.name, 768, 500, 52, 820)
+  // Member name — sits on the gold rule under "This is to certify that".
+  centered(member.name, 737, 490, 46, 900)
 
-  // Left column values, aligned under the printed labels.
-  text(member.category, 272, 672, 26, serif, INK)
+  // Left column values, written on the printed underlines.
+  text(member.category, 295, 668, 20, serif, INK)
   // The template already prints the "VAAP-" prefix, so continue with the rest.
-  text(member.membershipId.replace(/^VAAP-/i, ""), 372, 745, 28, serifBold, INK)
+  text(member.membershipId.replace(/^VAAP-/i, ""), 374, 744, 21, serifBold, INK)
 
-  // Validity period: joined — expiry (one-year / 365-day term), on either side
-  // of the printed dash. Fall back to a derived one-year term if none is stored.
+  // Validity period: joined → expiry (one-year / 365-day term), on either side
+  // of the printed "to". Fall back to a derived one-year term if none is stored.
   const from = fmt(member.joinedAt) ?? "—"
   const to = fmt(effectiveExpiry(member.joinedAt, member.expiresAt)) ?? "Ongoing"
-  text(from, 276, 820, 22, serif, INK)
-  text(to, 402, 820, 22, serif, INK)
+  text(from, 297, 814, 17, serif, INK)
+  text(to, 434, 814, 17, serif, INK)
   // Explicit note that the membership term is one year.
-  text(`Valid for ${MEMBERSHIP_TERM_DAYS} days from date of registration`, 272, 862, 13, serif, INK)
+  text(`Valid for ${MEMBERSHIP_TERM_DAYS} days from date of registration`, 293, 842, 12, serif, INK)
 
-  // Per-member QR over the "VERIFY MEMBERSHIP" placeholder.
-  page.drawImage(qr, { x: 1064, y: H - 799 - 96, width: 96, height: 96 })
+  // Per-member QR over the template's sample QR beside "VERIFY MEMBERSHIP".
+  // A white backing hides the placeholder code so only the real one scans.
+  page.drawRectangle({ x: 1044, y: H - 902, width: 90, height: 88, color: rgb(1, 1, 1) })
+  page.drawImage(qr, { x: 1046, y: H - 900, width: 84, height: 84 })
 
   const pdf = await doc.save()
   const safeId = member.membershipId.replace(/[^A-Za-z0-9._-]/g, "")
