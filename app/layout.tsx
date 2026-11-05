@@ -1,6 +1,6 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
-import { Inter, Playfair_Display } from 'next/font/google'
+import { Miranda_Sans } from 'next/font/google'
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { getSiteStatus } from '@/lib/site-settings'
@@ -22,17 +22,11 @@ import './globals.css'
 // Doing it here would freeze the launch page on client navigations, because
 // the root layout does not re-render when the URL changes.
 
-const inter = Inter({
+const miranda = Miranda_Sans({
   subsets: ['latin'],
-  variable: '--font-inter',
+  variable: '--font-miranda',
   display: 'swap',
-})
-
-const playfair = Playfair_Display({
-  subsets: ['latin'],
-  variable: '--font-playfair',
-  display: 'swap',
-  style: ['italic', 'normal'],
+  style: ['normal', 'italic'],
 })
 
 export const metadata: Metadata = {
@@ -61,7 +55,7 @@ export default async function RootLayout({
     redirect('/')
   }
   return (
-    <html lang="en" className={`${inter.variable} ${playfair.variable} bg-background`}>
+    <html lang="en" className={`${miranda.variable} bg-background`}>
       <body className="font-sans antialiased">
         <SiteGate comingSoon={comingSoon} elevated={elevated}>
           {children}
