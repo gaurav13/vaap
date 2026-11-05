@@ -10,7 +10,7 @@ export function VaapLogo({
   onDark?: boolean
   height?: number
 }) {
-  const width = Math.round(height * 3.22)
+  const width = Math.round(height * 2.77)
   return (
     <span
       className={cn(
