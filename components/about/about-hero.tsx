@@ -8,7 +8,7 @@ export function AboutHero() {
           {/* Mobile: portrait banner so the baked-in text stays readable */}
           <Image
             src="/images/about/about-hero-banner-mobile.png"
-            alt="About Us — A Collective Voice for Pakistan's Virtual Asset Industry. The Virtual Assets Association of Pakistan (VAAP) brings together companies, startups, professionals, community leaders, and industry stakeholders to support responsible growth, collaboration, education, and innovation across Pakistan's virtual asset ecosystem."
+            alt="About Us — A Collective Voice for Pakistan's Virtual Asset Industry. The Virtual Asset Industry Alliance of Pakistan (VAAP) brings together companies, startups, professionals, community leaders, and industry stakeholders to support responsible growth, collaboration, education, and innovation across Pakistan's virtual asset ecosystem."
             width={1200}
             height={1600}
             priority

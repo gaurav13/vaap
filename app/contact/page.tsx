@@ -7,7 +7,7 @@ import { getHeaderUser } from "@/lib/header-user"
 
 export const metadata = {
   title: "Contact | VAAP",
-  description: "Get in touch with the Virtual Assets Association of Pakistan.",
+  description: "Get in touch with the Virtual Asset Industry Alliance of Pakistan.",
 }
 
 export default async function ContactPage() {

@@ -22,7 +22,7 @@ function toLines(value: string): string[] {
 
 export const metadata = {
   title: "Membership | VAAP",
-  description: "Join the Virtual Assets Association of Pakistan and help build a responsible digital asset ecosystem.",
+  description: "Join the Virtual Asset Industry Alliance of Pakistan and help build a responsible digital asset ecosystem.",
 }
 
 export default async function MembershipPage() {

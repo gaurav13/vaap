@@ -19,7 +19,7 @@ const MEMBER_STATUS_COPY: Record<
     body: "Your VAAP membership is now active and in good standing.",
     subject: "Your VAAP membership is now active",
     intro: [
-      "Good news — your membership with the Virtual Assets Association of Pakistan is now active and in good standing.",
+      "Good news — your membership with the Virtual Asset Industry Alliance of Pakistan is now active and in good standing.",
       "You have full access to member resources, events, and voting eligibility where applicable.",
     ],
   },
@@ -28,7 +28,7 @@ const MEMBER_STATUS_COPY: Record<
     body: "Your VAAP membership has been suspended. Please contact us for details.",
     subject: "Your VAAP membership has been suspended",
     intro: [
-      "Your membership with the Virtual Assets Association of Pakistan has been suspended.",
+      "Your membership with the Virtual Asset Industry Alliance of Pakistan has been suspended.",
       "If you have questions or believe this was in error, please reply to this email and our team will assist you.",
     ],
   },
@@ -37,7 +37,7 @@ const MEMBER_STATUS_COPY: Record<
     body: "Your VAAP membership has expired. Renew from your dashboard to restore access.",
     subject: "Your VAAP membership has expired",
     intro: [
-      "Your membership with the Virtual Assets Association of Pakistan has expired.",
+      "Your membership with the Virtual Asset Industry Alliance of Pakistan has expired.",
       "You can renew from your dashboard to restore full member access and benefits.",
     ],
   },

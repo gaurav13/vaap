@@ -205,7 +205,7 @@ export function ComingSoon() {
       >
         <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
           <p className="order-2 text-center text-xs text-muted-2 sm:order-1 sm:text-left">
-            © {new Date().getFullYear()} Virtual Assets Association of Pakistan (VAAP). All rights reserved.
+            © {new Date().getFullYear()} Virtual Asset Industry Alliance of Pakistan (VAAP). All rights reserved.
           </p>
           <div className="order-1 flex flex-col items-center gap-3 sm:order-2 sm:flex-row sm:gap-6">
             <div className="flex items-center gap-5 text-heading sm:gap-4">

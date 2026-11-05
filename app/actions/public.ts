@@ -290,7 +290,7 @@ export async function submitMembershipApplication(formData: FormData) {
       subject: "We received your VAAP membership application",
       heading: "Application received",
       intro: [
-        `Thank you for your interest in ${category} membership with the Virtual Assets Association of Pakistan.`,
+        `Thank you for your interest in ${category} membership with the Virtual Asset Industry Alliance of Pakistan.`,
         "Our team will review your application and get back to you shortly.",
       ],
     },
@@ -571,7 +571,7 @@ export async function submitFullApplication(input: ApplicationInput) {
         subject: "We received your VAAP membership application",
         heading: "Application received",
         intro: [
-          `Thank you for applying for ${category} membership with the Virtual Assets Association of Pakistan.`,
+          `Thank you for applying for ${category} membership with the Virtual Asset Industry Alliance of Pakistan.`,
           reference
             ? `Your application reference is ${reference}. Please keep it for your records.`
             : "Our team will review your application shortly.",

@@ -101,20 +101,20 @@ const PILLARS: Pillar[] = [
     logo: (
       <div className="flex h-full w-full flex-col items-center justify-center text-center">
         <img
-          src="/images/vaap-logo.png"
-          alt="VAAP — Virtual Assets Association of Pakistan"
+          src="/images/vaap-logo-alliance.png"
+          alt="VAAP — Virtual Asset Industry Alliance of Pakistan"
           className="h-[92px] w-auto object-contain"
         />
       </div>
     ),
     mark: (
       <img
-        src="/images/vaap-logo.png"
+        src="/images/vaap-logo-alliance.png"
         alt="VAAP logo"
         className="h-11 w-auto object-contain"
       />
     ),
-    mobileTitle: "Virtual Assets Association of Pakistan",
+    mobileTitle: "Virtual Asset Industry Alliance of Pakistan",
     subtitle: "Industry voice • Coordination • Growth",
     role: "National Industry Representative",
     features: [

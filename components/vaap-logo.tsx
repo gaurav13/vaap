@@ -20,8 +20,8 @@ export function VaapLogo({
       )}
     >
       <Image
-        src="/vaap-logo.png"
-        alt="VAAP — Virtual Assets Association of Pakistan"
+        src="/vaap-logo-alliance.png"
+        alt="VAAP — Virtual Asset Industry Alliance of Pakistan"
         width={width}
         height={height}
         priority

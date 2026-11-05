@@ -9,7 +9,7 @@ import { getHeaderUser } from "@/lib/header-user"
 
 export const metadata = {
   title: "News | VAAP",
-  description: "The latest news and announcements from the Virtual Assets Association of Pakistan.",
+  description: "The latest news and announcements from the Virtual Asset Industry Alliance of Pakistan.",
 }
 
 export default async function NewsPage() {

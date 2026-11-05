@@ -76,7 +76,7 @@ export function Legitimacy() {
                 A Licensed &amp; Recognized Trade Organization
               </h3>
               <p className="mt-6 max-w-xl leading-relaxed text-body">
-                The Virtual Assets Association of Pakistan (VAAP) is a licensed trade organization recognized by the
+                The Virtual Asset Industry Alliance of Pakistan (VAAP) is a licensed trade organization recognized by the
                 Directorate General of Trade Organizations (DGTO), Ministry of Commerce, Government of Pakistan.
               </p>
               <Link

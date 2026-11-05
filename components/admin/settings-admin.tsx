@@ -1183,7 +1183,7 @@ function FrameworkEditor({ initial }: { initial: GovFramework }) {
           {textField("vaapBadge", "Top badge", "e.g. Industry Representative")}
           {textField("vaapEyebrow", "Eyebrow (above logo)", "e.g. National Industry Representative")}
         </div>
-        {textField("vaapName", "Organisation name", "e.g. Virtual Assets Association of Pakistan")}
+        {textField("vaapName", "Organisation name", "e.g. Virtual Asset Industry Alliance of Pakistan")}
         <div className="grid gap-4 sm:grid-cols-2">
           {textField("vaapRole", "Role label (green, bold)", "e.g. National Industry Representation")}
           {textField("vaapSupporting", "Supporting line")}

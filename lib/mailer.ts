@@ -18,7 +18,7 @@ const GMAIL_APP_PASSWORD = (process.env.GMAIL_SMTP_PASSWORD || process.env.GMAIL
 // sender. The project currently sets EMAIL_FROM to an unverified support alias,
 // so always prefer the authenticated account for reliable delivery.
 const EMAIL_FROM = GMAIL_USER || process.env.EMAIL_FROM || "support@vaap.org.pk"
-const EMAIL_FROM_NAME = "Virtual Assets Association of Pakistan"
+const EMAIL_FROM_NAME = "Virtual Asset Industry Alliance of Pakistan"
 
 let transporter: Transporter | null = null
 
@@ -113,14 +113,14 @@ export function brandedEmail({ subject, heading, intro, ctaLabel, ctaUrl, footno
   const html = `
   <div style="font-family:Arial,Helvetica,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#1f2937">
     <div style="border-bottom:2px solid #15803d;padding-bottom:12px;margin-bottom:20px">
-      <span style="font-size:13px;font-weight:700;letter-spacing:.5px;color:#14532d;text-transform:uppercase">Virtual Assets Association of Pakistan</span>
+      <span style="font-size:13px;font-weight:700;letter-spacing:.5px;color:#14532d;text-transform:uppercase">Virtual Asset Industry Alliance of Pakistan</span>
     </div>
     <h1 style="font-size:20px;margin:0 0 16px;color:#14532d">${heading}</h1>
     ${bodyHtml}
     ${button}
     ${foot}
     <p style="font-size:12px;line-height:1.6;color:#9ca3af;margin:24px 0 0;border-top:1px solid #e5e7eb;padding-top:16px">
-      This is an automated message from the Virtual Assets Association of Pakistan.
+      This is an automated message from the Virtual Asset Industry Alliance of Pakistan.
       Questions? Reach us at <a href="mailto:${EMAIL_FROM}" style="color:#15803d">${EMAIL_FROM}</a>.
     </p>
   </div>`
@@ -133,7 +133,7 @@ export function brandedEmail({ subject, heading, intro, ctaLabel, ctaUrl, footno
     ctaLabel && ctaUrl ? `${ctaLabel}: ${ctaUrl}` : "",
     footnote ?? "",
     "",
-    `— Virtual Assets Association of Pakistan · ${EMAIL_FROM}`,
+    `— Virtual Asset Industry Alliance of Pakistan · ${EMAIL_FROM}`,
   ].filter((line, i, arr) => !(line === "" && arr[i - 1] === ""))
 
   return { subject, html, text: textParts.join("\n") }
@@ -146,7 +146,7 @@ export function passwordResetEmail(url: string) {
   <div style="font-family:Arial,Helvetica,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#1f2937">
     <h1 style="font-size:20px;margin:0 0 16px;color:#14532d">Reset your VAAP password</h1>
     <p style="font-size:15px;line-height:1.6;margin:0 0 20px">
-      You requested a password reset for your Virtual Assets Association of Pakistan account.
+      You requested a password reset for your Virtual Asset Industry Alliance of Pakistan account.
       Click the button below to choose a new password.
     </p>
     <p style="margin:0 0 24px">
