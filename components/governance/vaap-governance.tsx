@@ -43,7 +43,7 @@ function CommitteeCard({
   return (
     <div className="rounded-xl border border-line bg-card p-4 transition-shadow hover:shadow-md">
       <Icon className="size-6 text-green" strokeWidth={1.75} aria-hidden />
-      <h3 className="mt-3 font-sans text-sm font-bold leading-snug text-heading text-pretty">{title}</h3>
+      <h3 className="mt-3 text-sm font-bold leading-snug text-heading text-pretty">{title}</h3>
       <p className="mt-1 text-xs leading-snug text-body text-pretty">{sub}</p>
     </div>
   )
