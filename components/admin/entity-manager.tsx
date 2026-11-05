@@ -270,12 +270,7 @@ function FieldRenderer({
           kind={field.type === "image" ? "image" : "file"}
           defaultValue={strVal(value)}
           required={field.required}
-          storage={
-            (spacesImages && field.type === "image") ||
-            (spacesFiles && (field.type === "image" || field.type === "file"))
-              ? "spaces"
-              : "inline"
-          }
+          storage={field.type === "image" || spacesFiles ? "spaces" : "inline"}
           folder={spacesFiles ? "publications" : "pages"}
           onBusyChange={onBusyChange}
         />
