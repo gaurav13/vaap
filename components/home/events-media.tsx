@@ -12,7 +12,7 @@ import {
   Tv,
 } from "lucide-react"
 import type { SocialLinks } from "@/lib/site-settings"
-import { FacebookIcon, InstagramIcon, LinkedinIcon, XIcon, YoutubeIcon } from "@/components/social-icons"
+import { FacebookIcon, InstagramIcon, LinkedinIcon, TiktokIcon, XIcon, YoutubeIcon } from "@/components/social-icons"
 
 type EventItem = {
   id: number
@@ -233,6 +233,7 @@ function MediaColumn({ items, social }: { items: MediaItem[]; social: SocialLink
     { Icon: YoutubeIcon, href: social.youtube, label: "YouTube" },
     { Icon: InstagramIcon, href: social.instagram, label: "Instagram" },
     { Icon: FacebookIcon, href: social.facebook, label: "Facebook" },
+    { Icon: TiktokIcon, href: social.tiktok, label: "TikTok" },
   ].filter((s) => s.href)
 
   return (
