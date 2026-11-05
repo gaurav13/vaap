@@ -22,7 +22,11 @@ export function ForgotPasswordForm() {
     try {
       const { error } = await requestPasswordReset({ email, redirectTo: "/reset-password" })
       if (error) {
-        setError("Could not send a reset link. Please try again.")
+        setError(
+          error.status === 429
+            ? "Too many reset requests. Please wait a minute and try again."
+            : "Could not send a reset link. Please try again.",
+        )
         setLoading(false)
         return
       }
