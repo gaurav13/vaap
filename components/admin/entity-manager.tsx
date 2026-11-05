@@ -5,6 +5,15 @@ import { useRouter } from "next/navigation"
 import { ExternalLink, Pencil, Plus, Trash2, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { saveEntity, deleteEntity } from "@/app/actions/cms"
+
+function actionErrorMessage(err: unknown) {
+  const message = err instanceof Error ? err.message : ""
+  if (/Unauthorized|Forbidden/.test(message)) return "Your admin session has expired. Sign in again and retry."
+  if (/Server Action|Failed to fetch|fetch failed/i.test(message)) {
+    return "The site was updated since this page opened. Reload the page and try again."
+  }
+  return "Save failed. Reload the page and try again."
+}
 import { ENTITIES, type EntityKey, type FieldDef } from "@/lib/cms/entities"
 import { RichTextEditor } from "@/components/admin/rich-text-editor"
 import { FileUpload } from "@/components/admin/file-upload"
@@ -27,22 +36,31 @@ export function EntityManager({ entity, items }: { entity: EntityKey; items: Row
     setError(null)
     const formData = new FormData(e.currentTarget)
     startTransition(async () => {
-      const res = await saveEntity(entity, editing ? editing.id : null, formData)
-      if (res && !res.ok) {
-        setError(res.error ?? "Something went wrong.")
-        return
+      try {
+        const res = await saveEntity(entity, editing ? editing.id : null, formData)
+        if (res && !res.ok) {
+          setError(res.error ?? "Something went wrong.")
+          return
+        }
+        setEditing(null)
+        setCreating(false)
+        router.refresh()
+      } catch (err) {
+        setError(actionErrorMessage(err))
       }
-      setEditing(null)
-      setCreating(false)
-      router.refresh()
     })
   }
 
   function onDelete(id: number) {
     if (entity === "pages" && !window.confirm("Delete this page? This cannot be undone.")) return
+    setError(null)
     startTransition(async () => {
-      await deleteEntity(entity, id)
-      router.refresh()
+      try {
+        await deleteEntity(entity, id)
+        router.refresh()
+      } catch (err) {
+        setError(actionErrorMessage(err))
+      }
     })
   }
 
