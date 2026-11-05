@@ -73,7 +73,7 @@ export default async function AdminElectionDetailPage({ params }: { params: Prom
       </div>
 
       <div className="mt-6 rounded-xl border border-border bg-muted/20 p-5">
-        <h2 className="text-sm font-medium text-heading">Manage election</h2>
+        <h2 className="text-sm font-bold text-heading">Manage election</h2>
         <p className="mt-1 text-xs text-muted-foreground">
           Opening voting freezes the eligible-voter register. Publishing results computes the tally and anchors the
           result hash on the XRP Ledger.
@@ -103,7 +103,7 @@ export default async function AdminElectionDetailPage({ params }: { params: Prom
                 .sort((a, b) => b.votes - a.votes)
               return (
                 <div key={pos.id}>
-                  <h3 className="text-sm font-medium text-heading">{pos.title}</h3>
+                  <h3 className="text-sm font-bold text-heading">{pos.title}</h3>
                   <ul className="mt-2 space-y-1.5">
                     {posResults.map((r) => {
                       const candidate = candidates.find((c) => c.id === r.candidateId)

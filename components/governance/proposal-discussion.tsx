@@ -78,7 +78,7 @@ export function ProposalDiscussion({
       </h2>
 
       <section aria-labelledby="community-rules" className="rounded-xl border border-line bg-muted/40 px-4 py-3">
-        <h3 id="community-rules" className="inline-flex items-center gap-2 text-sm font-semibold text-heading">
+        <h3 id="community-rules" className="inline-flex items-center gap-2 text-sm font-bold text-heading">
           <ShieldAlert className="size-4 text-green" aria-hidden="true" /> Community Rules
         </h3>
         <ul className="mt-2 flex flex-col gap-1 pl-5 text-sm leading-relaxed text-muted-2 marker:text-green list-disc">

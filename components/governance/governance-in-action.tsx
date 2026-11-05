@@ -88,7 +88,7 @@ export function GovernanceDocuments({ documents }: { documents: Doc[] }) {
 
         <div className="mt-10 rounded-2xl border border-line bg-surface p-6 sm:p-8">
           <div className="flex items-center justify-between">
-            <h3 className="text-xs font-semibold uppercase tracking-[0.16em] text-green">Governance Documents</h3>
+            <h3 className="text-xs font-bold uppercase tracking-[0.16em] text-green">Governance Documents</h3>
             <Link
               href="/knowledge"
               className="inline-flex items-center gap-1.5 text-sm font-semibold text-green transition-colors hover:text-green-hover"

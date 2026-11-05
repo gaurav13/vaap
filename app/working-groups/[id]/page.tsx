@@ -93,7 +93,7 @@ export default async function CommitteeProfilePage({ params }: { params: Promise
 
               {committee.description ? (
                 <div className="mt-8">
-                  <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-2">About the working group</h2>
+                  <h2 className="text-sm font-bold uppercase tracking-wide text-muted-2">About the working group</h2>
                   <p className="mt-3 max-w-2xl text-pretty leading-relaxed text-body">{committee.description}</p>
                 </div>
               ) : null}

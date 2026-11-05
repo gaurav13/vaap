@@ -56,7 +56,7 @@ export default async function PublicElectionsPage() {
             <article key={election.id} className="rounded-xl border border-border bg-card p-6">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <h2 className="text-xl font-semibold text-foreground text-balance">{election.title}</h2>
+                  <h2 className="text-xl font-bold text-foreground text-balance">{election.title}</h2>
                   {election.reference && (
                     <p className="mt-1 font-mono text-xs text-muted-foreground">{election.reference}</p>
                   )}
@@ -76,7 +76,7 @@ export default async function PublicElectionsPage() {
                       .sort((a, b) => b.votes - a.votes)
                     return (
                       <div key={position.id}>
-                        <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                        <h3 className="text-sm font-bold uppercase tracking-wide text-muted-foreground">
                           {position.title}
                         </h3>
                         <ul className="mt-2 flex flex-col gap-1.5">
