@@ -10,8 +10,6 @@ import {
   IdCard,
   Network,
   QrCode,
-  Radio,
-  Rocket,
   Search,
   ShieldCheck,
   User,
@@ -25,14 +23,6 @@ const steps = [
   { icon: UserCheck, title: "Admin Review & Approval", detail: "Verification & Membership Category" },
   { icon: IdCard, title: "Get Verified Membership ID", detail: "Unique ID & Digital Certificate" },
   { icon: Network, title: "Access Governance & Services", detail: "Committees, Voting (Eligible Members) & Programs" },
-]
-
-const stats = [
-  { icon: Users, value: "104", label: "Verified Members" },
-  { icon: Building2, value: "64", label: "Corporate Members" },
-  { icon: Rocket, value: "18", label: "Startup Members" },
-  { icon: User, value: "22", label: "Individual / Professionals" },
-  { icon: Radio, value: "120M+", label: "Total Social Reach" },
 ]
 
 const categories = [
@@ -131,26 +121,6 @@ export function MembershipSystem() {
             })}
           </ol>
         </div>
-
-        <ul className="grid grid-cols-2 gap-y-5 rounded-3xl bg-[#071d22] px-6 py-6 sm:grid-cols-3 lg:flex lg:items-center lg:justify-between lg:px-10">
-          {stats.map((stat, index) => {
-            const Icon = stat.icon
-            return (
-              <li
-                key={stat.label}
-                className={`flex items-center gap-4 lg:flex-1 lg:justify-center ${
-                  index > 0 ? "lg:border-l lg:border-white/15" : ""
-                }`}
-              >
-                <Icon className="size-9 shrink-0 text-[#e3c27a]" strokeWidth={1.6} aria-hidden />
-                <div>
-                  <p className="text-2xl font-bold leading-none text-white sm:text-3xl">{stat.value}</p>
-                  <p className="mt-1.5 text-sm leading-tight text-white/80">{stat.label}</p>
-                </div>
-              </li>
-            )
-          })}
-        </ul>
 
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)]">
           <div className="rounded-3xl bg-white shadow-[0_24px_50px_-30px_rgba(7,29,34,0.4)]">
