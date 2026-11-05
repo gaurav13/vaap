@@ -7,7 +7,7 @@ import Link from "next/link"
 const FAQS: { q: string; a: string }[] = [
   {
     q: "Is VAAP a regulator?",
-    a: "No. VAAP is an industry association. We provide support, guidance and complaint facilitation, but we do not have regulatory, investigative or enforcement powers. Where needed, matters are referred to PVARA or other competent authorities.",
+    a: "No. VAAP is an industry Alliance. We provide support, guidance and complaint facilitation, but we do not have regulatory, investigative or enforcement powers. Where needed, matters are referred to PVARA or other competent authorities.",
   },
   {
     q: "What information should I never share?",
