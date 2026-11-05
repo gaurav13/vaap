@@ -96,9 +96,9 @@ export function SiteHeader({
       )}
     >
       <NewsAlertBar alert={newsAlert} />
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-5 lg:px-8">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-3 lg:px-8">
         <Link href="/" className="shrink-0">
-          <VaapLogo onDark={overlay} height={60} />
+          <VaapLogo onDark={overlay} height={80} />
           <span className="sr-only">VAAP Home</span>
         </Link>
 
