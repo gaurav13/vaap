@@ -56,8 +56,15 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
         </Link>
 
         {event.coverImage ? (
-          <div className="relative mt-6 aspect-[16/6] w-full overflow-hidden rounded-2xl border border-line bg-mint">
-            <Image src={event.coverImage || "/placeholder.svg"} alt={event.title} fill className="object-cover" />
+          <div className="relative mt-6 aspect-video w-full overflow-hidden rounded-2xl border border-line bg-mint">
+            <Image
+              src={event.coverImage || "/placeholder.svg"}
+              alt={event.title}
+              fill
+              priority
+              sizes="(min-width: 1024px) 1024px, 100vw"
+              className="object-contain"
+            />
           </div>
         ) : (
           <div className="mt-6 flex aspect-[16/6] w-full items-center justify-center rounded-2xl border border-line bg-mint">

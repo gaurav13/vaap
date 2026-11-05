@@ -7,6 +7,7 @@ import {
   leadership,
   committees,
   partners,
+  mediaHighlights,
   officialStatus,
   pages,
   members,
@@ -25,6 +26,7 @@ const TABLES = {
   leadership,
   committees,
   partners,
+  mediaHighlights,
   officialStatus,
   pages,
   members,
@@ -137,7 +139,17 @@ function adminSlug(key: EntityKey) {
   if (key === "officialStatus") return "official-status"
   if (key === "membershipPlans") return "membership-plans"
   if (key === "membershipFaqs") return "membership-faqs"
+  if (key === "mediaHighlights") return "media-highlights"
   return key
+}
+
+export async function getMediaHighlights(limit = 3) {
+  const rows = await db
+    .select()
+    .from(mediaHighlights)
+    .where(eq(mediaHighlights.published, true))
+    .orderBy(desc(mediaHighlights.featured), mediaHighlights.sortOrder)
+  return rows.slice(0, limit)
 }
 
 // --- Public read helpers ---------------------------------------------------

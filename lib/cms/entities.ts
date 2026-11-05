@@ -25,6 +25,7 @@ export type EntityKey =
   | "leadership"
   | "committees"
   | "partners"
+  | "mediaHighlights"
   | "officialStatus"
   | "pages"
   | "members"
@@ -160,6 +161,24 @@ export const ENTITIES: Record<EntityKey, EntityConfig> = {
     ],
     list: { title: "name", subtitle: "url" },
     viewUrl: () => "/ecosystem",
+  },
+  mediaHighlights: {
+    label: "Media Highlights",
+    singular: "Highlight",
+    description: "TV interviews, press conferences and social updates shown in the home page Media & Social Highlights section.",
+    revalidate: ["/"],
+    fields: [
+      { name: "title", label: "Title", type: "text", required: true, placeholder: "Industry outlook and VAAP's role in Pakistan" },
+      { name: "kind", label: "Type", type: "select", options: ["TV Interview", "Press Conference", "Social Update", "Podcast", "Video"] },
+      { name: "description", label: "Short description", type: "textarea", fullWidth: true },
+      { name: "image", label: "Thumbnail", type: "image", nullable: true, help: "16:9 works best. Uploaded to DigitalOcean Spaces." },
+      { name: "url", label: "Link", type: "text", nullable: true, placeholder: "https://youtube.com/watch?v=…", help: "Where the card opens (YouTube, LinkedIn, X, article…). Opens in a new tab." },
+      { name: "duration", label: "Video duration", type: "text", placeholder: "08:24", help: "Shown on the thumbnail. Leave blank for non-video items." },
+      { name: "featured", label: "Featured (large card at the top)", type: "checkbox" },
+      { name: "published", label: "Published", type: "checkbox" },
+    ],
+    list: { title: "title", subtitle: "description", badge: "kind" },
+    viewUrl: () => "/",
   },
   officialStatus: {
     label: "Official Status",
