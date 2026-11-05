@@ -9,9 +9,9 @@ import { CommitteeUpdates } from "@/components/committees/committee-updates"
 import { CommitteeCta } from "@/components/committees/committee-cta"
 
 export const metadata = {
-  title: "Committees | VAAP",
+  title: "Working Groups | VAAP",
   description:
-    "VAAP committees bring together industry experts, professionals and stakeholders to drive the growth, development and responsible adoption of virtual assets in Pakistan.",
+    "VAAP working groups bring together industry experts, professionals and stakeholders to drive the growth, development and responsible adoption of virtual assets in Pakistan.",
 }
 
 export default async function CommitteesPage() {
@@ -33,7 +33,7 @@ export default async function CommitteesPage() {
 
   return (
     <>
-      <SiteHeaderServer active="Committees" user={user} />
+      <SiteHeaderServer active="Working Groups" user={user} />
       <main>
         <CommitteesHero />
         <CommitteesGrid

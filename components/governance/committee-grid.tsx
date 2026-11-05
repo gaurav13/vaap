@@ -55,18 +55,18 @@ export function CommitteeGrid({ committees }: { committees: Committee[] }) {
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-green">Industry Expertise</p>
             <h2 className="mt-3 text-pretty text-3xl font-bold tracking-tight text-heading sm:text-4xl">
-              Industry-Led Committees
+              Industry-Led Working Groups
             </h2>
             <p className="mt-3 max-w-3xl text-pretty text-base leading-relaxed text-body">
-              Specialized committees allow members and experts to contribute knowledge across key areas of the
+              Working groups allow members and experts to contribute knowledge across key areas of the
               ecosystem.
             </p>
           </div>
           <Link
-            href="/community"
+            href="/working-groups"
             className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-green transition-colors hover:text-green-hover"
           >
-            View All Committees
+            View All Working Groups
             <ArrowRight className="size-4" />
           </Link>
         </div>
@@ -77,7 +77,7 @@ export function CommitteeGrid({ committees }: { committees: Committee[] }) {
             return (
               <li key={key}>
                 <Link
-                  href="/community"
+                  href="/working-groups"
                   className="flex items-center gap-3 rounded-xl border border-line bg-card px-4 py-3.5 transition-colors hover:border-green-border hover:bg-mint-2"
                 >
                   <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-mint text-green">

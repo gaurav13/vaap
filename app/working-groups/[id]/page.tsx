@@ -20,7 +20,7 @@ async function getCommittee(id: number) {
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const committee = await getCommittee(Number(id))
-  if (!committee) return { title: "Committee | VAAP" }
+  if (!committee) return { title: "Working Group | VAAP" }
   return {
     title: `${committee.name} | VAAP`,
     description: committee.description || `${committee.name} at VAAP`,
@@ -39,14 +39,14 @@ export default async function CommitteeProfilePage({ params }: { params: Promise
 
   return (
     <>
-      <SiteHeaderServer active="Governance" user={user} />
+      <SiteHeaderServer active="Working Groups" user={user} />
       <main>
         <div className="vaap-container py-12 lg:py-16">
           <Link
-            href="/committees"
+            href="/working-groups"
             className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-2 transition-colors hover:text-green"
           >
-            <ArrowLeft className="size-4" /> All committees
+            <ArrowLeft className="size-4" /> All working groups
           </Link>
 
           <div className="mt-8 grid grid-cols-1 gap-8 md:grid-cols-[16rem_1fr] lg:gap-12">
@@ -93,7 +93,7 @@ export default async function CommitteeProfilePage({ params }: { params: Promise
 
               {committee.description ? (
                 <div className="mt-8">
-                  <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-2">About the committee</h2>
+                  <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-2">About the working group</h2>
                   <p className="mt-3 max-w-2xl text-pretty leading-relaxed text-body">{committee.description}</p>
                 </div>
               ) : null}

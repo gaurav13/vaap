@@ -61,7 +61,7 @@ export async function createNews(formData: FormData) {
   })
   revalidatePath("/admin/news")
   revalidatePath("/news")
-  revalidatePath("/committees")
+  revalidatePath("/working-groups")
   revalidatePath("/")
   return { ok: true }
 }
@@ -91,7 +91,7 @@ export async function updateNews(id: number, formData: FormData) {
     .where(eq(news.id, id))
   revalidatePath("/admin/news")
   revalidatePath("/news")
-  revalidatePath("/committees")
+  revalidatePath("/working-groups")
   revalidatePath("/")
   return { ok: true }
 }
@@ -101,7 +101,7 @@ export async function deleteNews(id: number) {
   await db.delete(news).where(eq(news.id, id))
   revalidatePath("/admin/news")
   revalidatePath("/news")
-  revalidatePath("/committees")
+  revalidatePath("/working-groups")
   revalidatePath("/")
 }
 

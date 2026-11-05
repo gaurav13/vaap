@@ -8,6 +8,8 @@ const nextConfig = {
   },
   async redirects() {
     return [
+      { source: "/committees", destination: "/working-groups", permanent: true },
+      { source: "/committees/:path*", destination: "/working-groups/:path*", permanent: true },
       { source: "/governance/voting", destination: "/voting", permanent: true },
       { source: "/governance/voting/:path*", destination: "/voting/:path*", permanent: true },
       { source: "/governance/framework", destination: "/governance", permanent: true },

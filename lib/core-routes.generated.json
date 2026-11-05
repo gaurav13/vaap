@@ -1,7 +1,6 @@
 [
   "/",
   "/about",
-  "/committees",
   "/community",
   "/contact",
   "/ecosystem",
@@ -22,5 +21,6 @@
   "/voting/proposals",
   "/voting/results",
   "/voting/upcoming",
-  "/voting/verify"
+  "/voting/verify",
+  "/working-groups"
 ]

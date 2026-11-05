@@ -33,7 +33,7 @@ const CORE_PAGES: MenuItem[] = [
   { label: "Home", href: "/" },
   { label: "About", href: "/about" },
   { label: "Governance", href: "/governance" },
-  { label: "Committees", href: "/committees" },
+  { label: "Working Groups", href: "/working-groups" },
   { label: "Membership", href: "/membership" },
   { label: "Apply for Membership", href: "/membership/apply" },
   { label: "Verify Membership", href: "/membership/verify" },

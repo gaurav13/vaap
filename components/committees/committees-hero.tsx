@@ -6,13 +6,13 @@ export function CommitteesHero() {
           <div className="max-w-2xl">
             <div className="flex items-center gap-3">
               <span className="h-px w-8 bg-green" aria-hidden="true" />
-              <span className="text-xs font-semibold tracking-[0.2em] text-green">OUR COMMITTEES</span>
+              <span className="text-xs font-semibold tracking-[0.2em] text-green">OUR WORKING GROUPS</span>
             </div>
             <h1 className="mt-4 font-serif text-4xl font-bold leading-tight text-heading text-balance lg:text-5xl">
-              Committees
+              Working Groups
             </h1>
             <p className="mt-4 text-pretty leading-relaxed text-muted-2">
-              Our committees bring together industry experts, professionals and stakeholders to work on key
+              Our working groups bring together industry experts, professionals and stakeholders to work on key
               areas for the growth, development and responsible adoption of virtual assets in Pakistan.
             </p>
           </div>

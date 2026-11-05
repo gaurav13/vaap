@@ -198,7 +198,7 @@ export const DEFAULT_MENU: MenuItem[] = [
   { label: "Team", href: "/team" },
   { label: "Governance", href: "/governance" },
   VOTING_MENU,
-  { label: "Committees", href: "/committees" },
+  { label: "Working Groups", href: "/working-groups" },
   {
     label: "Membership",
     href: "/membership",
