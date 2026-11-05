@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { Loader2 } from "lucide-react"
 import { submitMemberEvent } from "@/app/actions/member"
 import { EVENT_CATEGORIES, EVENT_CITIES, EVENT_FORMATS } from "@/lib/event-options"
+import { EventBannerUpload } from "@/components/member/event-banner-upload"
 
 const field =
   "w-full rounded-lg border border-line bg-background px-3 py-2.5 text-sm text-body outline-none transition focus:border-green focus:ring-2 focus:ring-green/20"
@@ -14,6 +15,7 @@ export function SubmitEventForm() {
   const router = useRouter()
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
 
   async function action(formData: FormData) {
     setPending(true)
@@ -102,10 +104,10 @@ export function SubmitEventForm() {
       </div>
 
       <div className="grid gap-1.5">
-        <label htmlFor="ev-cover" className={label}>
-          Cover image URL <span className="font-normal text-muted-2">(optional)</span>
-        </label>
-        <input id="ev-cover" name="coverImage" placeholder="https://…" className={field} />
+        <span className={label}>
+          Event banner <span className="font-normal text-muted-2">(optional)</span>
+        </span>
+        <EventBannerUpload name="coverImage" onBusyChange={setUploading} />
       </div>
 
       <div className="grid gap-1.5">
@@ -129,7 +131,7 @@ export function SubmitEventForm() {
 
       <button
         type="submit"
-        disabled={pending}
+        disabled={pending || uploading}
         className="inline-flex items-center justify-center gap-2 rounded-lg bg-green px-4 py-2.5 text-sm font-bold text-white transition hover:bg-green/90 disabled:opacity-60"
       >
         {pending ? (

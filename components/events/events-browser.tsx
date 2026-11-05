@@ -137,9 +137,15 @@ function EventCard({ event: e }: { event: PublicEvent }) {
           className="object-cover"
         />
         <div className="absolute left-3 top-3 flex flex-col items-center rounded-lg bg-card px-2.5 py-1.5 text-center text-heading shadow">
-          <span className="text-2xl font-extrabold leading-none">{d.getDate()}</span>
-          <span className="text-sm font-semibold leading-tight">{d.toLocaleString("en-US", { month: "short" })}</span>
-          <span className="text-xs font-semibold">{d.getFullYear()}</span>
+          <span className="text-2xl font-extrabold leading-none">
+            {d.toLocaleString("en-US", { day: "numeric", timeZone: "Asia/Karachi" })}
+          </span>
+          <span className="text-sm font-semibold leading-tight">
+            {d.toLocaleString("en-US", { month: "short", timeZone: "Asia/Karachi" })}
+          </span>
+          <span className="text-xs font-semibold">
+            {d.toLocaleString("en-US", { year: "numeric", timeZone: "Asia/Karachi" })}
+          </span>
         </div>
       </div>
 
