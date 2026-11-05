@@ -88,10 +88,26 @@ function ColumnHeader({
   )
 }
 
-function Banner({ src, alt, className = "" }: { src: string | null; alt: string; className?: string }) {
+function ContainedImage({ src, alt, hoverZoom = false }: { src: string; alt: string; hoverZoom?: boolean }) {
+  return (
+    <>
+      <img src={src || "/placeholder.svg"} alt="" aria-hidden="true" loading="lazy" className="absolute inset-0 size-full scale-110 object-cover opacity-70 blur-xl" />
+      <img
+        src={src || "/placeholder.svg"}
+        alt={alt}
+        loading="lazy"
+        className={`relative size-full object-contain ${hoverZoom ? "transition-transform duration-500 group-hover:scale-[1.03]" : ""}`}
+      />
+    </>
+  )
+}
+
+function Banner({ src, alt, className = "", contain = false }: { src: string | null; alt: string; className?: string; contain?: boolean }) {
   return (
     <div className={`relative overflow-hidden bg-navy-dark ${className}`}>
-      {src ? (
+      {src && contain ? (
+        <ContainedImage src={src} alt={alt} />
+      ) : src ? (
         <img src={src || "/placeholder.svg"} alt={alt} loading="lazy" className="absolute inset-0 size-full object-cover" />
       ) : (
         <div className="absolute inset-0 flex items-center justify-center">
@@ -115,17 +131,17 @@ function EventsColumn({ events }: { events: EventItem[] }) {
       ) : (
         <div className="flex flex-1 flex-col gap-4">
           <article className="overflow-hidden rounded-2xl border border-line bg-card shadow-sm">
-            <Banner src={featured.coverImage} alt={`${featured.title} banner`} className="aspect-[16/9]" />
-            <div className="flex flex-col gap-4 border-t border-line p-5 sm:flex-row sm:items-end sm:justify-between">
+            <Banner src={featured.coverImage} alt={`${featured.title} banner`} contain className="aspect-[21/9]" />
+            <div className="flex flex-col gap-3 border-t border-line p-4 sm:flex-row sm:items-end sm:justify-between">
               <div className="min-w-0">
                 {featured.category && (
                   <span className="text-xs font-bold uppercase tracking-wider text-green">{featured.category}</span>
                 )}
-                <h3 className="mt-1 text-lg font-bold leading-snug text-heading text-pretty">{featured.title}</h3>
+                <h3 className="mt-0.5 line-clamp-1 text-base font-bold leading-snug text-heading">{featured.title}</h3>
                 {featured.description && (
-                  <p className="mt-1.5 line-clamp-2 text-sm leading-relaxed text-muted-2">{stripHtml(featured.description)}</p>
+                  <p className="mt-1 line-clamp-1 text-sm leading-relaxed text-muted-2">{stripHtml(featured.description)}</p>
                 )}
-                <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-2">
+                <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-2">
                   <span className="inline-flex items-center gap-1.5">
                     <CalendarDays className="size-3.5 text-green" aria-hidden="true" />
                     {formatDate(featured.startsAt)}
@@ -196,7 +212,9 @@ function Thumb({ item, className = "", compact = false }: { item: MediaItem; cla
   const isVideo = Boolean(item.duration) || item.kind === "TV Interview" || item.kind === "Video"
   return (
     <div className={`relative overflow-hidden bg-navy-dark ${className}`}>
-      {item.image ? (
+      {item.image && !compact ? (
+        <ContainedImage src={item.image} alt="" hoverZoom />
+      ) : item.image ? (
         <img src={item.image || "/placeholder.svg"} alt="" loading="lazy" className="absolute inset-0 size-full object-cover transition-transform duration-500 group-hover:scale-105" />
       ) : (
         <div className="absolute inset-0 flex items-center justify-center">
@@ -257,11 +275,11 @@ function MediaColumn({ items, social }: { items: MediaItem[]; social: SocialLink
             label={featured.title}
             className="group flex flex-col overflow-hidden rounded-2xl border border-line bg-card shadow-sm"
           >
-            <Thumb item={featured} className="aspect-video" />
-            <div className="flex flex-col gap-1.5 border-t border-line p-5">
+            <Thumb item={featured} className="aspect-[21/9]" />
+            <div className="flex flex-col gap-1 border-t border-line p-4">
               <KindLabel kind={featured.kind} />
-              <h3 className="line-clamp-2 text-lg font-bold leading-snug text-heading text-pretty group-hover:text-green">{featured.title}</h3>
-              {featured.description && <p className="line-clamp-2 text-sm leading-relaxed text-muted-2">{featured.description}</p>}
+              <h3 className="line-clamp-2 text-base font-bold leading-snug text-heading text-pretty group-hover:text-green">{featured.title}</h3>
+              {featured.description && <p className="line-clamp-1 text-sm leading-relaxed text-muted-2">{featured.description}</p>}
             </div>
           </MaybeLink>
 
