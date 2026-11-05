@@ -24,10 +24,10 @@ const steps = [
 ]
 
 const categories = [
-  { icon: Building2, title: "Corporate Member", note: "(Pakistan registered, with NTN)", perk: "Voting Rights" },
-  { icon: Globe, title: "International Associate", note: "(Non-voting, global firms & partners)", perk: "Industry Participation" },
-  { icon: User, title: "Individual / Community", note: "(Non-voting, investors, professionals)", perk: "Events, Learning & Updates" },
-  { icon: GraduationCap, title: "Student Member", note: "(Non-voting)", perk: "Knowledge & Community Access" },
+  { icon: Building2, slug: "corporate", title: "Corporate Member", note: "(Pakistan registered, with NTN)", perk: "Voting Rights" },
+  { icon: Globe, slug: "international", title: "International Associate", note: "(Non-voting, global firms & partners)", perk: "Industry Participation" },
+  { icon: User, slug: "individual", title: "Individual / Community", note: "(Non-voting, investors, professionals)", perk: "Events, Learning & Updates" },
+  { icon: GraduationCap, slug: "student", title: "Student Member", note: "(Non-voting)", perk: "Knowledge & Community Access" },
 ]
 
 const cardShell = "rounded-3xl border border-line bg-white shadow-[0_18px_40px_-28px_rgba(27,67,50,0.45)]"
@@ -81,19 +81,25 @@ export function MembershipSystem() {
               {categories.map((category) => {
                 const Icon = category.icon
                 return (
-                  <li
-                    key={category.title}
-                    className="flex items-start gap-4 rounded-2xl border border-line bg-white px-5 py-4 transition-colors hover:border-[#1b4332]/30 hover:bg-[#f6f8f7]"
-                  >
-                    <Icon className="mt-0.5 size-7 shrink-0 text-[#1b4332]" strokeWidth={1.5} aria-hidden />
-                    <div className="min-w-0">
-                      <p className="text-base font-semibold leading-snug text-[#1b4332]">{category.title}</p>
-                      <p className="mt-0.5 text-sm leading-snug text-body">{category.note}</p>
-                      <p className="mt-1.5 flex items-center gap-1.5 text-sm font-medium text-[#1b4332]">
-                        <Check className="size-4 shrink-0" aria-hidden />
-                        {category.perk}
-                      </p>
-                    </div>
+                  <li key={category.title} className="flex">
+                    <a
+                      href={`#plan-${category.slug}`}
+                      className="group flex w-full items-start gap-4 rounded-2xl border border-line bg-white px-5 py-4 transition-colors hover:border-[#1b4332]/30 hover:bg-[#f6f8f7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b4332]/40"
+                    >
+                      <Icon className="mt-0.5 size-7 shrink-0 text-[#1b4332]" strokeWidth={1.5} aria-hidden />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-base font-semibold leading-snug text-[#1b4332]">{category.title}</p>
+                        <p className="mt-0.5 text-sm leading-snug text-body">{category.note}</p>
+                        <p className="mt-1.5 flex items-center gap-1.5 text-sm font-medium text-[#1b4332]">
+                          <Check className="size-4 shrink-0" aria-hidden />
+                          {category.perk}
+                        </p>
+                        <span className="mt-2.5 inline-flex items-center gap-1 text-xs font-semibold text-[#1b4332]/80 group-hover:text-[#1b4332]">
+                          View fees &amp; details
+                          <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" aria-hidden />
+                        </span>
+                      </div>
+                    </a>
                   </li>
                 )
               })}
