@@ -70,10 +70,6 @@ export default async function NewsDetailPage({ params }: { params: Promise<{ id:
 
               <span className="h-1 w-16 rounded-full bg-green" aria-hidden="true" />
 
-              {post.excerpt && (
-                <p className="text-base leading-relaxed text-body text-pretty lg:text-lg">{post.excerpt}</p>
-              )}
-
               {publisher && <PublisherCredit {...publisher} />}
             </div>
 
