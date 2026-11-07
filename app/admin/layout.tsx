@@ -6,12 +6,20 @@ import { AdminTopbar } from "@/components/admin/admin-topbar"
 import { db } from "@/lib/db"
 import { membershipApplications } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
+import { headers } from "next/headers"
+import { isStaffAdminRoute } from "@/lib/permissions"
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession()
   if (!session?.user) redirect("/sign-in")
   const role = session.user.role
   if (role !== "staff" && role !== "admin") redirect("/dashboard")
+
+  // Staff are read-only and limited to members, articles and referrals.
+  if (role === "staff") {
+    const pathname = (await headers()).get("x-pathname") ?? ""
+    if (!isStaffAdminRoute(pathname)) redirect("/admin/members")
+  }
 
   const pending = await db
     .select({ id: membershipApplications.id })

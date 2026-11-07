@@ -65,7 +65,7 @@ const TABS = [
   { key: "rejected", label: "Rejected" },
 ] as const
 
-export function ArticleReview({ initial }: { initial: Article[] }) {
+export function ArticleReview({ initial, readOnly = false }: { initial: Article[]; readOnly?: boolean }) {
   const [articles, setArticles] = useState<Article[]>(initial)
   const [tab, setTab] = useState<(typeof TABS)[number]["key"]>("submitted")
   const [active, setActive] = useState<Article | null>(null)
@@ -318,6 +318,21 @@ export function ArticleReview({ initial }: { initial: Article[] }) {
 
           {error && <p className="mt-5 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
+          {readOnly ? (
+            <div className="mt-7 flex flex-wrap items-center gap-3 border-t border-line pt-6">
+              <span className="text-xs font-semibold text-muted-2">View only</span>
+              {active.status === "published" && (
+                <a
+                  href={`/insights/${active.slug}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 rounded-lg border border-line bg-card px-4 py-2.5 text-sm font-semibold text-green hover:bg-muted"
+                >
+                  <Globe className="size-4" /> View live
+                </a>
+              )}
+            </div>
+          ) : (
           <div className="mt-7 border-t border-line pt-6">
             <label className="block">
               <span className="mb-1.5 block text-sm font-semibold text-heading">Reviewer note (optional)</span>
@@ -398,6 +413,7 @@ export function ArticleReview({ initial }: { initial: Article[] }) {
               </button>
             </div>
           </div>
+          )}
         </div>
       </div>
     )
@@ -412,6 +428,7 @@ export function ArticleReview({ initial }: { initial: Article[] }) {
           </h1>
           <p className="mt-1 text-sm text-muted-2">Review member submissions, request changes, and publish to the public insights page.</p>
         </div>
+        {!readOnly && (
         <button
           onClick={() => {
             setError(null)
@@ -421,6 +438,7 @@ export function ArticleReview({ initial }: { initial: Article[] }) {
         >
           <Plus className="size-4" /> Add article
         </button>
+        )}
       </div>
 
       <div className="mt-6 flex flex-wrap gap-2">
@@ -480,15 +498,17 @@ export function ArticleReview({ initial }: { initial: Article[] }) {
                   </div>
                   <StatusBadge status={a.status} />
                 </button>
-                <button
-                  onClick={() => doDelete(a)}
-                  disabled={pending}
-                  aria-label={`Delete ${a.title}`}
-                  title="Delete article"
-                  className="shrink-0 rounded-lg p-2 text-muted-2 transition-colors hover:bg-red-50 hover:text-red-700 disabled:opacity-50"
-                >
-                  <Trash2 className="size-4" />
-                </button>
+                {!readOnly && (
+                  <button
+                    onClick={() => doDelete(a)}
+                    disabled={pending}
+                    aria-label={`Delete ${a.title}`}
+                    title="Delete article"
+                    className="shrink-0 rounded-lg p-2 text-muted-2 transition-colors hover:bg-red-50 hover:text-red-700 disabled:opacity-50"
+                  >
+                    <Trash2 className="size-4" />
+                  </button>
+                )}
               </li>
             ))}
           </ul>

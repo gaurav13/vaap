@@ -19,8 +19,8 @@ import { uniqueEventSlug } from "@/lib/event-slug-server"
 async function requireStaff() {
   const session = await getSession()
   if (!session?.user) throw new Error("Unauthorized")
-  const role = session.user.role
-  if (role !== "staff" && role !== "admin") throw new Error("Forbidden")
+  // Staff are read-only in the admin area; these actions are super-admin only.
+  if (session.user.role !== "admin") throw new Error("Forbidden")
   return session.user
 }
 

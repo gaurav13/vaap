@@ -70,8 +70,8 @@ async function notifyMemberStatus(id: number, status: "active" | "suspended" | "
 async function requireStaff() {
   const session = await getSession()
   if (!session?.user) throw new Error("Unauthorized")
-  const role = session.user.role
-  if (role !== "staff" && role !== "admin") throw new Error("Forbidden")
+  // Staff have read-only access; only super admins may change member records.
+  if (session.user.role !== "admin") throw new Error("Forbidden")
   return session.user
 }
 

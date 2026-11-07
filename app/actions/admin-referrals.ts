@@ -13,7 +13,7 @@ import {
   user,
 } from "@/lib/db/schema"
 import { getSession } from "@/lib/session"
-import { canManageRewards } from "@/lib/permissions"
+import { can, canManageRewards } from "@/lib/permissions"
 import { getRewardPayout } from "@/lib/site-settings"
 import { evaluatePayoutThreshold } from "@/lib/referral-engine"
 import { and, desc, eq, inArray, sql } from "drizzle-orm"
@@ -29,7 +29,11 @@ async function requireRewardManager() {
 // ---- Referral console overview -------------------------------------------
 
 export async function getReferralConsole() {
-  await requireRewardManager()
+  const session = await getSession()
+  if (!session?.user) throw new Error("Unauthorized")
+  const role = session.user.role
+  if (!canManageRewards(role) && !can(role, "admin.view")) throw new Error("Forbidden")
+  const readOnly = !canManageRewards(role)
 
   const [codeCount] = await db.select({ c: sql<number>`count(*)::int` }).from(referralCodes)
   const [clickCount] = await db.select({ c: sql<number>`count(*)::int` }).from(referralClicks)
@@ -79,8 +83,18 @@ export async function getReferralConsole() {
     rewardAgg,
     leaderboard,
     codes,
-    recentAttributions,
+    recentAttributions: readOnly
+      ? recentAttributions.map((a) => ({ ...a, memberEmail: maskEmail(a.memberEmail), memberUserId: null }))
+      : recentAttributions,
+    readOnly,
   }
+}
+
+function maskEmail(email: string | null | undefined): string {
+  if (!email) return ""
+  const [local, domain] = email.split("@")
+  if (!domain) return "Hidden"
+  return `${local.slice(0, 1)}•••@${domain.slice(0, 1)}•••`
 }
 
 // ---- Rewards & payouts queue ---------------------------------------------

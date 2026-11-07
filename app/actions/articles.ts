@@ -237,7 +237,11 @@ export async function createAdminArticle(input: {
 }
 
 export async function getArticleReviewQueue() {
-  await requirePublisher()
+  const session = await getSession()
+  if (!session?.user) throw new Error("Unauthorized")
+  if (!can(session.user.role, "articles.publish") && !can(session.user.role, "admin.view")) {
+    throw new Error("Forbidden")
+  }
   const rows = await db
     .select()
     .from(articles)

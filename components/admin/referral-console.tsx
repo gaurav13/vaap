@@ -66,7 +66,7 @@ function StatusPill({ status }: { status: string }) {
   )
 }
 
-export function ReferralConsole({ data }: { data: ConsoleData }) {
+export function ReferralConsole({ data, readOnly = false }: { data: ConsoleData; readOnly?: boolean }) {
   const [codes, setCodes] = useState(data.codes)
   const [pending, startTransition] = useTransition()
 
@@ -179,10 +179,11 @@ export function ReferralConsole({ data }: { data: ConsoleData }) {
                       <td className="px-5 py-3">
                         <button
                           type="button"
-                          disabled={pending}
-                          onClick={() => toggle(c.id, !c.active)}
+                          disabled={pending || readOnly}
+                          onClick={() => !readOnly && toggle(c.id, !c.active)}
+                          title={readOnly ? "View only" : undefined}
                           className={cn(
-                            "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold transition-colors",
+                            "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold transition-colors disabled:cursor-default",
                             c.active ? "bg-green/15 text-green hover:bg-green/25" : "bg-muted text-muted-foreground hover:bg-muted/70",
                           )}
                         >

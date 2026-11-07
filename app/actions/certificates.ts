@@ -1,14 +1,14 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { getSession, isStaff } from "@/lib/session"
+import { getSession, isAdmin } from "@/lib/session"
 import { issueCertificate, revokeCertificates } from "@/lib/certificates"
 
 type Result = { ok: true } | { ok: false; error: string }
 
 async function requireStaffUser() {
   const session = await getSession()
-  if (!session?.user || !isStaff(session.user.role)) throw new Error("Not authorized")
+  if (!session?.user || !isAdmin(session.user.role)) throw new Error("Not authorized")
   return session.user
 }
 
