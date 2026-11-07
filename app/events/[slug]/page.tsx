@@ -178,7 +178,12 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
               </div>
             </div>
 
-            <FollowVaap social={social} className="mt-6 shadow-sm" />
+            <FollowVaap
+              social={social}
+              variant="dark"
+              cta={{ label: "Stay Updated on Digital Finance & Web3", href: "/events" }}
+              className="mt-6"
+            />
 
             {event.description && (
               <div className="mt-8">
