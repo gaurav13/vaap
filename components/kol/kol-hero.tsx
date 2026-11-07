@@ -1,6 +1,9 @@
-import { Globe2, Megaphone, Network, Users } from "lucide-react"
+import Link from "next/link"
+import { ArrowRight, Check, CircleCheck, Globe2, Handshake, Megaphone, Network, Users } from "lucide-react"
 import { VerifiedBadge } from "@/components/kol/kol-ui"
 import { formatCount } from "@/lib/kol-shared"
+
+const benefits = ["Industry Visibility", "Media Opportunities", "Policy & Regulatory Engagement", "Global Network"]
 
 export function KolHero({ leaders, reach, sectors }: { leaders: number; reach: number; sectors: number }) {
   const stats = [
@@ -65,6 +68,36 @@ export function KolHero({ leaders, reach, sectors }: { leaders: number; reach: n
               </div>
             ))}
           </dl>
+
+          <div className="mt-5 flex flex-col gap-4 rounded-2xl border border-line-light bg-card p-4 shadow-sm sm:p-5 xl:flex-row xl:items-center xl:gap-5 xl:rounded-full xl:py-3 xl:pl-6 xl:pr-3">
+            <p className="flex shrink-0 items-center gap-2.5 font-serif text-lg font-bold text-heading">
+              <Handshake className="size-6 text-heading" strokeWidth={1.75} aria-hidden="true" />
+              Benefits to Join VAAP:
+            </p>
+            <span className="hidden h-8 w-px shrink-0 bg-line-light xl:block" aria-hidden="true" />
+            <ul className="flex min-w-0 flex-1 flex-wrap items-center gap-x-5 gap-y-3">
+              {benefits.map((benefit) => (
+                <li key={benefit} className="flex items-center gap-2 text-sm text-heading">
+                  <CircleCheck className="size-5 shrink-0 text-heading" strokeWidth={1.75} aria-hidden="true" />
+                  {benefit}
+                </li>
+              ))}
+              <li className="flex items-center gap-2.5 rounded-xl bg-mint px-3 py-2 text-sm font-medium leading-snug text-heading">
+                <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-green text-card">
+                  <Check className="size-4" strokeWidth={3} aria-hidden="true" />
+                </span>
+                Approval to Mention Verified VAAP KOLs
+              </li>
+            </ul>
+            <span className="hidden h-8 w-px shrink-0 bg-line-light xl:block" aria-hidden="true" />
+            <Link
+              href="/membership"
+              className="inline-flex shrink-0 items-center justify-center gap-2 self-start rounded-full bg-heading px-5 py-2.5 text-sm font-semibold text-card transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green xl:self-auto"
+            >
+              Read More
+              <ArrowRight className="size-4" aria-hidden="true" />
+            </Link>
+          </div>
         </div>
       </section>
     </>
