@@ -333,6 +333,8 @@ export const members = pgTable("members", {
   website: text("website"),
   city: text("city"),
   bio: text("bio"),
+  // One-line (max 80 chars) bio shown in the "Written by" box on articles.
+  authorBio: text("authorBio"),
   // "ntn" | "blockchain" | "virtual-asset" | "other" — used to gate voting registration.
   assetType: text("assetType"),
   category: text("category").notNull().default("Verified Community Members"),

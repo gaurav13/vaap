@@ -26,6 +26,7 @@ export default async function ProfilePage() {
           website={membership?.website ?? ""}
           city={membership?.city ?? ""}
           bio={membership?.bio ?? ""}
+          authorBio={membership?.authorBio ?? ""}
           assetType={membership?.assetType ?? ""}
         />
       </div>

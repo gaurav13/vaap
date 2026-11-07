@@ -32,7 +32,12 @@ async function getAuthorProfile(authorId: string | null) {
       .where(eq(staffProfiles.userId, authorId))
       .limit(1),
     db
-      .select({ designation: members.designation, organization: members.organization, bio: members.bio })
+      .select({
+        designation: members.designation,
+        organization: members.organization,
+        bio: members.bio,
+        authorBio: members.authorBio,
+      })
       .from(members)
       .where(eq(members.userId, authorId))
       .limit(1),
@@ -57,7 +62,8 @@ export async function AuthorBox({
     .join(" · ")
   const role = title || (authorRole && authorRole !== "member" ? authorRole : "VAAP Contributor")
   const bio = clip(
-    profile?.staff?.bio ||
+    profile?.member?.authorBio ||
+      profile?.staff?.bio ||
       profile?.member?.bio ||
       "Contributor to VAAP insights on Pakistan's virtual asset and digital economy.",
   )
