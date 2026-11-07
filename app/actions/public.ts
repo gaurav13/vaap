@@ -77,11 +77,20 @@ const CRYPTO_FALLBACK_USD: Record<string, number> = {
   ethereum: 3500,
 }
 
+const DEFAULT_BTC_ADDRESS = "1FJycQmfrfKkR2bfuuGqKH5CK6yjegqYvT"
+const BTC_ADDRESS_PATTERN = /^(bc1[a-z0-9]{25,62}|[13][a-km-zA-HJ-NP-Z1-9]{25,34})$/
+
+// The env var previously held a non-Bitcoin (0x…) value; only honour it when it is a real BTC address.
+function resolveBtcAddress(): string {
+  const fromEnv = (process.env.CRYPTO_WALLET_BTC || "").trim()
+  return BTC_ADDRESS_PATTERN.test(fromEnv) ? fromEnv : DEFAULT_BTC_ADDRESS
+}
+
 export async function getCryptoConfig(): Promise<CryptoConfig> {
   const addresses = {
     USDT_TRC20: (process.env.CRYPTO_WALLET_USDT_TRC20 || "").trim(),
     XRP: (process.env.CRYPTO_WALLET_XRP || "").trim(),
-    BTC: (process.env.CRYPTO_WALLET_BTC || "").trim(),
+    BTC: resolveBtcAddress(),
     ETH: (process.env.CRYPTO_WALLET_ETH || "").trim(),
   }
   const xrpTag = (process.env.CRYPTO_XRP_TAG || "").trim() || null
