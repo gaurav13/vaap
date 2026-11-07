@@ -52,11 +52,11 @@ export function Leadership({ profiles }: { profiles: Profile[] }) {
             </div>
             <div className="min-w-0 pt-1">
               <Link href={`/team/${chairman.id}`} className="group inline-block">
-                <h3 className="text-3xl font-bold text-heading transition-colors group-hover:text-green">
+                <h3 className="text-2xl font-bold text-heading transition-colors group-hover:text-green sm:text-3xl">
                   {chairman.name}
                 </h3>
               </Link>
-              <p className="mt-1.5 text-lg font-semibold text-green">{chairman.position || "Chairman, VAAP"}</p>
+              <p className="mt-1.5 text-base font-semibold text-green sm:text-lg">{chairman.position || "Chairman, VAAP"}</p>
               {chairman.organization ? (
                 <p className="mt-1 text-sm text-muted-2">{chairman.organization}</p>
               ) : null}
@@ -107,8 +107,8 @@ function ProfileGroup({
   const featured = variant === "featured"
   return (
     <>
-      <div className="mt-16 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
+      <div className="mt-12 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 sm:mt-16">
+        <div className="flex items-center gap-3 sm:gap-4">
           <span className="h-px w-8 bg-green" aria-hidden />
           <h2 className="fluid-h3 font-bold text-heading">{title}</h2>
         </div>
@@ -126,8 +126,8 @@ function ProfileGroup({
       <ul
         className={
           featured
-            ? "mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3"
-            : "mt-8 grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-5"
+            ? "mt-6 grid grid-cols-1 gap-3 sm:mt-8 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3"
+            : "mt-6 grid grid-cols-2 gap-3 sm:mt-8 sm:grid-cols-3 sm:gap-5 lg:grid-cols-5"
         }
       >
         {members.map((m) =>
@@ -135,9 +135,9 @@ function ProfileGroup({
             <li key={m.id}>
               <Link
                 href={`/team/${m.id}`}
-                className="group flex h-full items-center gap-4 rounded-2xl border border-line bg-card p-4 shadow-sm transition-all hover:border-green-border hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green"
+                className="group flex h-full items-center gap-3 rounded-xl border border-line bg-card p-3 shadow-sm transition-all hover:border-green-border hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green sm:gap-4 sm:p-4"
               >
-                <div className="relative aspect-[4/5] w-24 shrink-0 overflow-hidden rounded-xl bg-surface">
+                <div className="relative aspect-[4/5] w-20 shrink-0 overflow-hidden rounded-lg bg-surface sm:w-24">
                   <Image
                     src={m.photo || "/placeholder.svg?height=150&width=120&query=vice%20chairman%20portrait"}
                     alt={`${m.name} portrait`}
@@ -162,7 +162,7 @@ function ProfileGroup({
             <li key={m.id}>
               <Link
                 href={`/team/${m.id}`}
-                className="group block h-full rounded-2xl border border-line bg-card p-4 text-center shadow-sm transition-all hover:border-green-border hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green"
+                className="group block h-full min-w-0 rounded-xl border border-line bg-card p-3 text-center shadow-sm sm:p-4 transition-all hover:border-green-border hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green"
               >
                 <div className="relative mx-auto aspect-square w-full overflow-hidden rounded-xl bg-surface">
                   <Image
@@ -173,9 +173,9 @@ function ProfileGroup({
                     className="object-cover"
                   />
                 </div>
-                <h4 className="mt-4 font-bold text-heading group-hover:text-green">{m.name}</h4>
-                {m.position ? <p className="mt-1 text-sm font-semibold text-heading">{m.position}</p> : null}
-                {m.organization ? <p className="mt-0.5 text-sm text-muted-2">{m.organization}</p> : null}
+                <h4 className="mt-3 text-sm font-bold leading-snug text-heading group-hover:text-green sm:mt-4 sm:text-base">{m.name}</h4>
+                {m.position ? <p className="mt-1 text-xs font-semibold text-heading sm:text-sm">{m.position}</p> : null}
+                {m.organization ? <p className="mt-0.5 break-words text-xs text-muted-2 sm:text-sm">{m.organization}</p> : null}
                 <span className="mt-3 inline-block text-xs font-semibold text-green opacity-0 transition-opacity group-hover:opacity-100">
                   View profile
                 </span>
