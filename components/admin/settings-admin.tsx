@@ -6,6 +6,7 @@ import { ArrowDown, ArrowUp, Bell, Check, CornerDownRight, FilePlus2, GripVertic
 import { Button } from "@/components/ui/button"
 import { saveMenu, saveSocial, saveGeneral, saveBanner, saveNewsAlert, saveCtaBanner, saveGovHero, saveGovFramework, saveMembership, saveFooter, saveSiteStatus } from "@/app/actions/settings"
 import { deletePageByHref, createPageForMenu } from "@/app/actions/cms"
+import { SOCIAL_PLATFORMS } from "@/lib/social-platforms"
 import type { MenuItem, SocialLinks, General, Banner, NewsAlert, CtaBanner, GovHero, GovFramework, Membership, Footer, SiteStatus } from "@/lib/site-settings"
 
 type Tab = "status" | "menu" | "alert" | "hero" | "framework" | "membership" | "banner" | "cta" | "links" | "footer" | "general"
@@ -1079,14 +1080,11 @@ function LinksEditor({ initial }: { initial: SocialLinks }) {
     })
   }
 
-  const rows: { name: keyof SocialLinks; label: string; placeholder: string }[] = [
-    { name: "linkedin", label: "LinkedIn", placeholder: "https://linkedin.com/company/…" },
-    { name: "x", label: "X (Twitter)", placeholder: "https://x.com/…" },
-    { name: "youtube", label: "YouTube", placeholder: "https://youtube.com/@…" },
-    { name: "instagram", label: "Instagram", placeholder: "https://instagram.com/…" },
-    { name: "facebook", label: "Facebook", placeholder: "https://facebook.com/…" },
-    { name: "tiktok", label: "TikTok", placeholder: "https://tiktok.com/@…" },
-  ]
+  const rows: { name: keyof SocialLinks; label: string; placeholder: string }[] = SOCIAL_PLATFORMS.map((p) => ({
+    name: p.key,
+    label: p.label,
+    placeholder: p.placeholder,
+  }))
 
   return (
     <form onSubmit={onSubmit} className="rounded-xl border border-line bg-card p-6" onChange={() => setSaved(false)}>

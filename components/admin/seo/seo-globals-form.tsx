@@ -7,7 +7,9 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { SeoImageField } from "@/components/admin/seo/seo-image-field"
 import { saveSeoGlobals } from "@/app/actions/seo"
+import { saveSocialLinks } from "@/app/actions/settings"
 import type { SeoGlobals } from "@/lib/seo/shared"
+import { SOCIAL_PLATFORMS, type SocialLinks } from "@/lib/social-platforms"
 
 type TextKey = Exclude<keyof SeoGlobals, "allowSearchCrawlers" | "allowAiTraining">
 
@@ -36,9 +38,10 @@ const FIELDS: { key: TextKey; label: string; help?: string; long?: boolean }[] =
   { key: "bingVerification", label: "Bing Webmaster verification code" },
 ]
 
-export function SeoGlobalsForm({ initial }: { initial: SeoGlobals }) {
+export function SeoGlobalsForm({ initial, initialSocial }: { initial: SeoGlobals; initialSocial: SocialLinks }) {
   const router = useRouter()
   const [form, setForm] = useState(initial)
+  const [social, setSocial] = useState(initialSocial)
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null)
   const [pending, startTransition] = useTransition()
   const [uploads, setUploads] = useState(0)
@@ -47,6 +50,11 @@ export function SeoGlobalsForm({ initial }: { initial: SeoGlobals }) {
     e.preventDefault()
     setMessage(null)
     startTransition(async () => {
+      const socialRes = await saveSocialLinks(social)
+      if (!socialRes.ok) {
+        setMessage({ ok: false, text: socialRes.error })
+        return
+      }
       const res = await saveSeoGlobals(form)
       setMessage(res.ok ? { ok: true, text: "Global SEO settings saved." } : { ok: false, text: res.error })
       if (res.ok) router.refresh()
@@ -81,6 +89,27 @@ export function SeoGlobalsForm({ initial }: { initial: SeoGlobals }) {
             onChange={(v) => setForm((prev) => ({ ...prev, [f.key]: v }))}
             onBusyChange={(busy) => setUploads((n) => n + (busy ? 1 : -1))}
           />
+        ))}
+      </section>
+
+      <section className="grid gap-4 rounded-xl border border-line bg-card p-5 md:grid-cols-2">
+        <div className="flex flex-col gap-1 md:col-span-2">
+          <h2 className="text-base font-bold text-heading">Social accounts</h2>
+          <p className="text-sm text-muted-2 text-pretty">
+            Official profiles listed as <code className="font-mono text-xs">sameAs</code> in Organization structured data. Shared with the site footer and Settings → Social.
+          </p>
+        </div>
+        {SOCIAL_PLATFORMS.map((p) => (
+          <label key={p.key} className="flex flex-col gap-1.5">
+            <span className="text-sm font-medium text-heading">{p.label}</span>
+            <Input
+              type="url"
+              inputMode="url"
+              placeholder={p.placeholder}
+              value={social[p.key] ?? ""}
+              onChange={(e) => setSocial((prev) => ({ ...prev, [p.key]: e.target.value }))}
+            />
+          </label>
         ))}
       </section>
 

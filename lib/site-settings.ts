@@ -3,14 +3,8 @@ import { settings } from "@/lib/db/schema"
 
 // Typed shapes for the JSON blobs stored in the settings key-value table.
 export type MenuItem = { label: string; href: string; newTab?: boolean; children?: MenuItem[] }
-export type SocialLinks = {
-  linkedin: string
-  x: string
-  youtube: string
-  instagram: string
-  facebook: string
-  tiktok: string
-}
+import { DEFAULT_SOCIAL as SOCIAL_DEFAULTS, type SocialLinks } from "@/lib/social-platforms"
+export type { SocialLinks }
 export type General = {
   siteTitle: string
   tagline: string
@@ -232,14 +226,7 @@ export const DEFAULT_MENU: MenuItem[] = [
   { label: "Contact", href: "/contact" },
 ]
 
-export const DEFAULT_SOCIAL: SocialLinks = {
-  linkedin: "",
-  x: "",
-  youtube: "",
-  instagram: "",
-  facebook: "",
-  tiktok: "",
-}
+export const DEFAULT_SOCIAL: SocialLinks = SOCIAL_DEFAULTS
 
 export const DEFAULT_GENERAL: General = {
   siteTitle: "Virtual Asset Industry Alliance of Pakistan",

@@ -5,6 +5,7 @@ import { settings, auditLogs } from "@/lib/db/schema"
 import { getSession } from "@/lib/session"
 import { sql } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
+import { DEFAULT_SOCIAL, SOCIAL_PLATFORMS } from "@/lib/social-platforms"
 import type { MenuItem, SocialLinks, General, Banner, NewsAlert, GovHero, GovFramework, Membership, Footer, CtaBanner, SiteStatus, SettingKey } from "@/lib/site-settings"
 
 async function requireStaff() {
@@ -59,17 +60,29 @@ export async function saveMenu(items: MenuItem[]) {
   return { ok: true as const }
 }
 
+function cleanSocial(get: (key: string) => unknown): { ok: true; value: SocialLinks } | { ok: false; error: string } {
+  const value = { ...DEFAULT_SOCIAL }
+  for (const p of SOCIAL_PLATFORMS) {
+    const v = String(get(p.key) ?? "").trim()
+    if (v && !/^https?:\/\/[^\s]+$/i.test(v)) return { ok: false, error: `${p.label} must be a full URL starting with https://` }
+    value[p.key] = v
+  }
+  return { ok: true, value }
+}
+
 export async function saveSocial(formData: FormData) {
   const actor = await requireStaff()
-  const value: SocialLinks = {
-    linkedin: String(formData.get("linkedin") ?? "").trim(),
-    x: String(formData.get("x") ?? "").trim(),
-    youtube: String(formData.get("youtube") ?? "").trim(),
-    instagram: String(formData.get("instagram") ?? "").trim(),
-    facebook: String(formData.get("facebook") ?? "").trim(),
-    tiktok: String(formData.get("tiktok") ?? "").trim(),
-  }
-  await put("social", value, actor)
+  const res = cleanSocial((k) => formData.get(k))
+  if (!res.ok) throw new Error(res.error)
+  await put("social", res.value, actor)
+  return { ok: true as const }
+}
+
+export async function saveSocialLinks(input: Partial<Record<string, string>>) {
+  const actor = await requireStaff()
+  const res = cleanSocial((k) => input?.[k])
+  if (!res.ok) return res
+  await put("social", res.value, actor)
   return { ok: true as const }
 }
 
