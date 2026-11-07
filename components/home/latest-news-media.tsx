@@ -14,6 +14,7 @@ export type HomeNewsItem = {
   excerpt: string
   image: string | null
   publisherName: string
+  authorName?: string | null
   publisherLogo: string | null
   externalUrl: string | null
   createdAt: string
@@ -56,6 +57,30 @@ function ReadLink({ item, className }: { item: HomeNewsItem; className?: string 
 }
 
 function PublisherMark({ item, size }: { item: HomeNewsItem; size: "lg" | "sm" }) {
+  if (item.authorName) {
+    const initials = item.authorName
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((p) => p[0]?.toUpperCase() ?? "")
+      .join("")
+    return (
+      <span className="flex min-w-0 items-center gap-2.5">
+        <span
+          aria-hidden="true"
+          className={cn(
+            "flex shrink-0 items-center justify-center rounded-full bg-mint font-semibold text-green",
+            size === "lg" ? "size-11 text-sm" : "size-9 text-xs",
+          )}
+        >
+          {initials}
+        </span>
+        <span className="flex min-w-0 flex-col leading-tight">
+          <span className="text-xs text-muted-2">By</span>
+          <span className="truncate text-sm font-bold text-heading">{item.authorName}</span>
+        </span>
+      </span>
+    )
+  }
   if (item.publisherLogo) {
     return (
       <img
