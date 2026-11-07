@@ -4,6 +4,7 @@ import { notFound } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 import { SiteHeaderServer } from "@/components/site-header-server"
 import { SiteFooter } from "@/components/site-footer"
+import { AuthorBox } from "@/components/insights/author-box"
 import { getPublishedArticleBySlug } from "@/app/actions/articles"
 import { getHeaderUser } from "@/lib/header-user"
 import { sanitizeRichHtml } from "@/lib/html"
@@ -59,9 +60,11 @@ export default async function InsightDetailPage({ params }: { params: Promise<{ 
           </h1>
 
           {article.authorName && (
-            <p className="mt-3 text-sm text-muted-2">
-              By <span className="font-semibold text-heading">{article.authorName}</span>
-            </p>
+            <AuthorBox
+              authorId={article.authorId}
+              authorName={article.authorName}
+              authorRole={article.authorRole}
+            />
           )}
 
           {article.image && (
