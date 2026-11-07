@@ -65,10 +65,10 @@ export function Framework() {
         className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/85 via-white/70 to-white/85"
       />
       <img
-        src="/images/framework-flag.png"
-        alt=""
-        aria-hidden="true"
-        className="pointer-events-none absolute left-0 top-0 h-56 w-auto max-w-[45%] -scale-x-100 select-none object-contain object-right-top opacity-90 sm:h-72 lg:h-80"
+  src="/images/framework-flag-left.png"
+  alt=""
+  aria-hidden="true"
+  className="pointer-events-none absolute left-0 top-0 h-40 w-auto max-w-[26%] select-none object-contain object-left-top opacity-80 mix-blend-multiply sm:h-56 lg:h-64"
       />
 
       <div className="vaap-container relative">
