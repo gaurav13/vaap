@@ -136,6 +136,9 @@ export const membershipApplications = pgTable("membership_applications", {
   paymentMethod: text("paymentMethod"), // "card" | "crypto"
   // Crypto transaction hash / TXID captured when paying with cryptocurrency.
   txid: text("txid"),
+  // Coin the applicant chose (e.g. BTC) and the VAAP wallet address they were shown.
+  cryptoCoin: text("cryptoCoin"),
+  cryptoAddress: text("cryptoAddress"),
   admissionFee: text("admissionFee"),
   annualFee: text("annualFee"),
   totalAmount: text("totalAmount"),

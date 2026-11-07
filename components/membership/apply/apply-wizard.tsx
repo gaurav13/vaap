@@ -157,6 +157,7 @@ type FormState = {
   cardPaid: boolean
   stripeSessionId: string
   txid: string
+  cryptoCoin: CryptoCoinId
   agree: boolean
 }
 
@@ -175,6 +176,7 @@ const INITIAL: FormState = {
   cardPaid: false,
   stripeSessionId: "",
   txid: "",
+  cryptoCoin: "USDT_TRC20",
   agree: false,
 }
 
@@ -289,6 +291,7 @@ export function ApplyWizard({
       cnic: form.cnic,
       paymentMethod: form.paymentMethod,
       txid: form.paymentMethod === "crypto" ? form.txid : form.stripeSessionId,
+      cryptoCoin: form.paymentMethod === "crypto" ? form.cryptoCoin : undefined,
       admissionFee: selectedPlan.admissionFee,
       annualFee: selectedPlan.annualFee,
       totalAmount: totalForPlan(selectedPlan),
@@ -1028,13 +1031,16 @@ function CryptoPayment({
   plan,
   txid,
   onTxid,
+  selected,
+  onSelect: setSelected,
 }: {
   plan: ApplyPlan
   txid: string
   onTxid: (value: string) => void
+  selected: CryptoCoinId
+  onSelect: (coin: CryptoCoinId) => void
 }) {
   const [config, setConfig] = useState<CryptoConfig | null>(null)
-  const [selected, setSelected] = useState<CryptoCoinId>("USDT_TRC20")
   const [loading, setLoading] = useState(true)
   const [qr, setQr] = useState("")
   const [copied, setCopied] = useState("")
@@ -1387,7 +1393,13 @@ function StepPayment({
         {paymentHeader}
         <div className="mx-auto max-w-3xl">
           {methodToggle}
-          <CryptoPayment plan={plan} txid={form.txid} onTxid={(v) => update("txid", v)} />
+          <CryptoPayment
+            plan={plan}
+            txid={form.txid}
+            onTxid={(v) => update("txid", v)}
+            selected={form.cryptoCoin}
+            onSelect={(coin) => update("cryptoCoin", coin)}
+          />
           {secureNote}
         </div>
       </div>

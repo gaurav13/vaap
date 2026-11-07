@@ -8,6 +8,8 @@ import { headers, cookies } from "next/headers"
 import { revalidatePath } from "next/cache"
 import { createAttributionForApplication } from "@/lib/referral-engine"
 import { notify } from "@/lib/notifications"
+import { sendTemplateEmail } from "@/lib/email-templates/service"
+import { CONTACT_EMAIL } from "@/lib/contact"
 
 export type CryptoRates = {
   usdPerPkr: number
@@ -86,13 +88,28 @@ function resolveBtcAddress(): string {
   return BTC_ADDRESS_PATTERN.test(fromEnv) ? fromEnv : DEFAULT_BTC_ADDRESS
 }
 
-export async function getCryptoConfig(): Promise<CryptoConfig> {
-  const addresses = {
+function cryptoWalletAddresses(): Record<CryptoCoinId, string> {
+  return {
     USDT_TRC20: (process.env.CRYPTO_WALLET_USDT_TRC20 || "").trim(),
     XRP: (process.env.CRYPTO_WALLET_XRP || "").trim(),
     BTC: resolveBtcAddress(),
     ETH: (process.env.CRYPTO_WALLET_ETH || "").trim(),
   }
+}
+
+const COIN_LABELS: Record<CryptoCoinId, string> = {
+  USDT_TRC20: "USDT (TRC-20 · Tron)",
+  XRP: "XRP (XRP Ledger)",
+  BTC: "BTC (Bitcoin)",
+  ETH: "ETH (Ethereum · ERC-20)",
+}
+
+function isCryptoCoinId(value: string): value is CryptoCoinId {
+  return value in COIN_LABELS
+}
+
+export async function getCryptoConfig(): Promise<CryptoConfig> {
+  const addresses = cryptoWalletAddresses()
   const xrpTag = (process.env.CRYPTO_XRP_TAG || "").trim() || null
 
   let source: "live" | "fallback" = "fallback"
@@ -334,6 +351,7 @@ export type ApplicationInput = {
   cnic?: string
   paymentMethod?: string
   txid?: string
+  cryptoCoin?: string
   admissionFee?: string
   annualFee?: string
   totalAmount?: string
@@ -481,6 +499,12 @@ export async function submitFullApplication(input: ApplicationInput) {
     return { ok: false as const, error: "Please enter a valid email address." }
   }
 
+  const paymentMethod = clean(input.paymentMethod)
+  const requestedCoin = clean(input.cryptoCoin)
+  // The wallet address is resolved server-side so a tampered client cannot change what is recorded.
+  const cryptoCoin = paymentMethod === "crypto" && isCryptoCoinId(requestedCoin) ? requestedCoin : null
+  const cryptoAddress = cryptoCoin ? cryptoWalletAddresses()[cryptoCoin] || null : null
+
   const values = {
     name,
     email,
@@ -492,8 +516,10 @@ export async function submitFullApplication(input: ApplicationInput) {
     designation: clean(input.designation) || null,
     phone: clean(input.phone) || null,
     cnic: clean(input.cnic) || null,
-    paymentMethod: clean(input.paymentMethod) || null,
+    paymentMethod: paymentMethod || null,
     txid: clean(input.txid) || null,
+    cryptoCoin,
+    cryptoAddress,
     admissionFee: clean(input.admissionFee) || null,
     annualFee: clean(input.annualFee) || null,
     totalAmount: clean(input.totalAmount) || null,
@@ -582,13 +608,48 @@ export async function submitFullApplication(input: ApplicationInput) {
       emailKey: "application.received",
       emailVars: { name, category, reference: reference ?? "" },
     })
+    const paymentLabel =
+      paymentMethod === "crypto" ? "Crypto Payment" : paymentMethod === "card" ? "Credit / Debit Card" : "Not specified"
+    const coinLabel = cryptoCoin ? COIN_LABELS[cryptoCoin] : "N/A (not a crypto payment)"
+    const paymentSummary = cryptoCoin
+      ? ` via ${COIN_LABELS[cryptoCoin]} to ${cryptoAddress ?? "an unconfigured wallet"}`
+      : ` via ${paymentLabel}`
+
     await notify({
       role: "staff",
       type: "application",
-      title: "New membership application",
-      body: `${name} applied for ${category}${reference ? ` (ref ${reference})` : ""}.`,
+      title: "New paid membership application",
+      body: `${name} applied for ${category}${reference ? ` (ref ${reference})` : ""}${paymentSummary}.${values.txid ? ` TXID: ${values.txid}` : ""}`,
       link: "/admin/applications",
     })
+    await notify({
+      role: "admin",
+      type: "application",
+      title: "New paid membership application",
+      body: `${name} applied for ${category}${reference ? ` (ref ${reference})` : ""}${paymentSummary}.${values.txid ? ` TXID: ${values.txid}` : ""}`,
+      link: "/admin/applications",
+    })
+    try {
+      await sendTemplateEmail({
+        to: CONTACT_EMAIL,
+        key: "admin.new-paid-application",
+        vars: {
+          name,
+          category,
+          email,
+          phone: values.phone ?? "Not provided",
+          organization: values.organization ?? "Not provided",
+          reference: reference ?? "Not assigned",
+          paymentMethod: paymentLabel,
+          cryptoCoin: coinLabel,
+          walletAddress: cryptoAddress ?? "N/A",
+          transactionId: values.txid ?? "Not provided",
+          totalAmount: values.totalAmount ?? "Not provided",
+        },
+      })
+    } catch (err) {
+      console.log("[v0] admin application alert failed:", err instanceof Error ? err.message : err)
+    }
 
     return { ok: true as const, reference, account }
   } catch {
