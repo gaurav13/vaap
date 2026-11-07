@@ -20,6 +20,7 @@ import {
 import { getSession } from "@/lib/session"
 import { getMyMembership } from "@/app/actions/cms"
 import { getPublishedNews, getPublishedEvents } from "@/app/actions/public"
+import { getPublishedArticles } from "@/app/actions/articles"
 import { MISSION_TAGLINE } from "@/lib/member/content"
 import { effectiveExpiry } from "@/lib/membership"
 import { MembershipCta } from "@/components/member/membership-cta"
@@ -34,9 +35,10 @@ export default async function DashboardPage() {
   if (!session?.user) redirect("/sign-in")
   const user = session.user
 
-  const [membership, news, events] = await Promise.all([
+  const [membership, news, articles, events] = await Promise.all([
     getMyMembership(user.id),
     getPublishedNews(24),
+    getPublishedArticles(),
     getPublishedEvents(3),
   ])
 
@@ -155,16 +157,30 @@ export default async function DashboardPage() {
       <section className="grid gap-6 lg:grid-cols-3">
         <LatestUpdates
           className="lg:col-span-2"
-          items={news.map((n) => ({
-            id: n.id,
-            title: n.title,
-            excerpt: n.excerpt ?? null,
-            image: n.image ?? null,
-            category: n.category,
-            publisherName: n.publisherName ?? null,
-            externalUrl: n.externalUrl ?? null,
-            createdAt: new Date(n.createdAt).toISOString(),
-          }))}
+          items={[
+            ...news.map((n) => ({
+              id: `news-${n.id}`,
+              href: `/news/${n.id}`,
+              title: n.title,
+              excerpt: n.excerpt ?? null,
+              image: n.image ?? null,
+              category: n.category,
+              publisherName: n.publisherName ?? null,
+              externalUrl: n.externalUrl ?? null,
+              createdAt: new Date(n.createdAt).toISOString(),
+            })),
+            ...articles.slice(0, 24).map((a) => ({
+              id: `article-${a.id}`,
+              href: `/insights/${a.slug}`,
+              title: a.title,
+              excerpt: a.excerpt ?? null,
+              image: a.image ?? null,
+              category: a.category,
+              publisherName: a.authorName?.trim() || "VAAP",
+              externalUrl: null,
+              createdAt: new Date(a.publishedAt ?? 0).toISOString(),
+            })),
+          ].sort((x, y) => y.createdAt.localeCompare(x.createdAt))}
         />
 
         <Panel icon={CalendarDays} title="Upcoming Events" action={{ label: "View All Events", href: "/dashboard/events" }}>

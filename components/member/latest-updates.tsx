@@ -8,6 +8,7 @@ import { NEWS_TABS, newsTabFor, type NewsTab } from "@/lib/news-options"
 
 export type UpdateItem = {
   id: string | number
+  href?: string
   title: string
   excerpt: string | null
   image: string | null
@@ -88,7 +89,7 @@ export function LatestUpdates({ items, className }: { items: UpdateItem[]; class
 
         {featured && (
           <Link
-            href={`/news/${featured.id}`}
+            href={featured.href ?? `/news/${featured.id}`}
             className="group flex flex-col gap-4 rounded-xl border border-line bg-muted/50 p-3 sm:flex-row"
           >
             <span className="relative aspect-[16/10] w-full shrink-0 overflow-hidden rounded-lg bg-navy sm:w-60">
@@ -125,7 +126,7 @@ export function LatestUpdates({ items, className }: { items: UpdateItem[]; class
           <ul className="mt-2 flex flex-col divide-y divide-line">
             {rest.map((n) => (
               <li key={n.id}>
-                <Link href={`/news/${n.id}`} className="group flex items-center gap-4 py-3">
+                <Link href={n.href ?? `/news/${n.id}`} className="group flex items-center gap-4 py-3">
                   <span className="relative h-16 w-24 shrink-0 overflow-hidden rounded-lg bg-mint">
                     {n.image && <Image src={n.image} alt="" fill className="object-cover" sizes="96px" />}
                   </span>
