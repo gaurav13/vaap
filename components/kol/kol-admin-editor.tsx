@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import type { AdminKolRow } from "@/components/kol/kol-admin-manager"
+import { ReachTotal } from "@/components/kol/reach-total"
 
 const selectClass =
   "h-10 w-full rounded-md border border-input bg-card px-3 text-sm text-heading focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -201,17 +202,7 @@ export function KolAdminEditor({ row, onDone }: { row: AdminKolRow; onDone: () =
       </Section>
 
       <Section title="Audience & accounts">
-        <Field id={id("reach")} label="Monthly reach">
-          <Input
-            id={id("reach")}
-            type="number"
-            inputMode="numeric"
-            min={0}
-            value={form.monthlyReach || ""}
-            onChange={(e) => set("monthlyReach", Number(e.target.value) || 0)}
-            className="sm:max-w-60"
-          />
-        </Field>
+        <ReachTotal platforms={form.platforms} />
         <ul className="flex flex-col gap-3">
           {form.platforms.map((p, i) => (
             <li key={i} className="flex flex-col gap-3 rounded-xl border border-line-light p-3">
