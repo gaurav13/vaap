@@ -13,7 +13,7 @@ export default async function NewEventPage() {
   const allowed = await canPublishEvents()
 
   return (
-    <div className="mx-auto w-full max-w-2xl">
+    <div className="w-full max-w-3xl">
       <Link
         href="/dashboard/events"
         className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-green transition hover:opacity-80"

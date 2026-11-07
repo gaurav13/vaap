@@ -19,7 +19,7 @@ export default async function DashboardArticlesPage() {
   const canPublish = can(session.user.role, "articles.publish")
 
   return (
-    <div className="mx-auto w-full max-w-6xl">
+    <div className="w-full">
       <ArticlesWorkspace
         initialArticles={articles.map((a) => ({
           id: a.id,

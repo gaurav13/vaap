@@ -30,7 +30,7 @@ export default async function OpportunitiesPage() {
   if (!session?.user) redirect("/sign-in")
 
   return (
-    <div className="mx-auto w-full max-w-4xl">
+    <div className="w-full">
       <PageHeading
         title="Opportunities"
         description="Programs, partnerships, and ways to get more involved with VAAP."

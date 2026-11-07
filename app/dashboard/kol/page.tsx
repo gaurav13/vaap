@@ -34,7 +34,7 @@ export default async function DashboardKolPage() {
 
   if (!member || member.status !== "active") {
     return (
-      <div className="mx-auto max-w-2xl">
+      <div className="w-full max-w-3xl">
         {heading}
         <div className="flex flex-col items-center gap-4 rounded-2xl border border-line bg-card p-8 text-center">
           <span className="flex size-12 items-center justify-center rounded-full bg-mint">
@@ -80,7 +80,7 @@ export default async function DashboardKolPage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="w-full">
       {heading}
       <KolWorkspace profile={profile} ownershipCode={ownershipCode(member.id)} />
     </div>

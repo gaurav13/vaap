@@ -49,7 +49,7 @@ export default async function DashboardPage() {
   const [featured, ...moreNews] = news
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
+    <div className="flex w-full flex-col gap-6">
       <section className="relative -mx-4 -mt-6 overflow-hidden border-b border-line bg-card sm:-mx-6 lg:-mx-8">
         <Image
           src="/images/member-dashboard-hero.png"

@@ -15,7 +15,7 @@ export default async function KnowledgePage() {
   const publications = await getPublications()
 
   return (
-    <div className="mx-auto w-full max-w-5xl">
+    <div className="w-full">
       <PageHeading
         title="Knowledge"
         description="Research publications, industry reports, and insights from the VAAP network."

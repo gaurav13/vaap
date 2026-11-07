@@ -9,7 +9,7 @@ export default async function SettingsPage() {
   const user = session.user
 
   return (
-    <div className="mx-auto w-full max-w-3xl">
+    <div className="w-full max-w-4xl">
       <PageHeading title="Settings" description="Manage your account security and notification preferences." />
 
       <div className="flex flex-col gap-6">

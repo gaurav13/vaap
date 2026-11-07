@@ -27,7 +27,7 @@ export default async function SupportPage() {
   const user = session.user
 
   return (
-    <div className="mx-auto w-full max-w-5xl">
+    <div className="w-full">
       <PageHeading title="Support" description="Get help from the VAAP team or browse common questions." />
 
       <div className="mb-6">

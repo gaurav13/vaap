@@ -32,7 +32,7 @@ export default async function MemberGovernancePage() {
   const past = proposals.filter((p) => p.status !== "active")
 
   return (
-    <div className="mx-auto w-full max-w-3xl">
+    <div className="w-full max-w-4xl">
       <PageHeading title="Governance & Voting" description="Cast your vote on VAAP resolutions and review past outcomes." />
 
       {!eligible && (

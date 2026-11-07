@@ -33,7 +33,7 @@ export default async function MemberElectionDetailPage({ params }: { params: Pro
   const anchor = showResults ? await getElectionAnchor(election.id) : null
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 py-8">
+    <div className="w-full max-w-3xl">
       <Link
         href="/dashboard/elections"
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition hover:text-heading"

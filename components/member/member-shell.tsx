@@ -192,9 +192,11 @@ export function MemberShell({
         </div>
       )}
 
-      <div className={cn("transition-[padding] duration-200", collapsed ? "lg:pl-20" : "lg:pl-64")}>
+      <div className={cn("min-w-0 transition-[padding] duration-200", collapsed ? "lg:pl-20" : "lg:pl-64")}>
         <Topbar user={user} notifications={notifications} onOpenMenu={() => setDrawerOpen(true)} />
-        <main className="px-4 pb-24 pt-6 sm:px-6 lg:px-8 lg:pb-12">{children}</main>
+        <main className="overflow-x-clip px-4 pb-24 pt-6 sm:px-6 lg:px-8 lg:pb-12 lg:pt-8">
+          <div className="mx-auto w-full max-w-6xl">{children}</div>
+        </main>
       </div>
 
       <MobileTabBar pathname={pathname} />
@@ -262,7 +264,10 @@ function SidebarContent({
         </div>
       )}
 
-      <nav aria-label="Member dashboard" className={cn("flex-1 overflow-y-auto py-4", collapsed ? "px-2" : "px-3")}>
+      <nav aria-label="Member dashboard" className={cn(
+          "min-h-0 flex-1 overflow-y-auto overflow-x-hidden py-4 [scrollbar-color:rgb(255_255_255/0.18)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-primary-foreground/20 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar]:w-1.5",
+          collapsed ? "px-2" : "px-3",
+        )}>
         <ul className="flex flex-col gap-0.5">
           {entries.map((entry) => {
             if (entry.kind === "link") {
@@ -429,7 +434,7 @@ function Topbar({
         </Link>
       </div>
 
-      <div className="flex items-center gap-2 sm:gap-4">
+      <div className="flex shrink-0 items-center gap-2 sm:gap-3">
         <Link
           href="/"
           target="_blank"
@@ -451,11 +456,11 @@ function Topbar({
             <span className="flex size-9 items-center justify-center rounded-full bg-green text-sm font-bold text-white">
               {initials || "V"}
             </span>
-            <span className="hidden leading-tight sm:block">
-              <span className="block text-sm font-bold text-heading">{user.name}</span>
-              <span className="block text-xs text-muted-2">{roleLabel}</span>
+            <span className="hidden min-w-0 max-w-40 leading-tight sm:block">
+              <span className="block truncate text-sm font-bold text-heading">{user.name}</span>
+              <span className="block truncate text-xs text-muted-2">{roleLabel}</span>
             </span>
-            <ChevronDown className="size-4 text-muted-2" />
+            <ChevronDown className="size-4 shrink-0 text-muted-2" />
           </button>
 
           {open && (

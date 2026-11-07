@@ -28,7 +28,7 @@ export default async function MemberElectionsPage() {
   )
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-8">
+    <div className="w-full max-w-4xl">
       <div className="flex items-center gap-3">
         <span className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
           <Vote className="size-5" />

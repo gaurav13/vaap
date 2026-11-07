@@ -16,7 +16,7 @@ export default async function NotificationsPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl">
+    <div className="w-full max-w-4xl">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-heading">Notifications</h1>
         <p className="mt-1 text-sm text-muted-2">

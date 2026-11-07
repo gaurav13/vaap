@@ -15,7 +15,7 @@ export default async function DocumentsPage() {
   }, {})
 
   return (
-    <div className="mx-auto w-full max-w-4xl">
+    <div className="w-full">
       <PageHeading title="Documents" description="Official VAAP documents, policies, and governance materials." />
 
       {documents.length === 0 ? (

@@ -17,7 +17,7 @@ export default async function ApplicationsPage() {
   const apps = await getMyApplications()
 
   return (
-    <div className="mx-auto w-full max-w-4xl">
+    <div className="w-full">
       <PageHeading title="My Applications" description="Track your membership and renewal applications." />
 
       {apps.length === 0 ? (

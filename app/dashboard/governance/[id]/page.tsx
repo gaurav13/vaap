@@ -56,7 +56,7 @@ export default async function MemberProposalPage({ params }: { params: Promise<{
   const canVote = proposal.status === "active" && eligibleVoter && onList && !existing
 
   return (
-    <div className="mx-auto w-full max-w-2xl">
+    <div className="w-full max-w-3xl">
       <Link
         href="/dashboard/governance"
         className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-muted-2 hover:text-heading"

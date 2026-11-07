@@ -15,7 +15,7 @@ export default async function ResourcesPage() {
   const documents = await getDocuments()
 
   return (
-    <div className="mx-auto w-full max-w-5xl">
+    <div className="w-full">
       <PageHeading
         title="Resources"
         description="Reference documents, templates, and materials for VAAP members."

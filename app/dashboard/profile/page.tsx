@@ -11,7 +11,7 @@ export default async function ProfilePage() {
   const membership = await getMyMembership(user.id)
 
   return (
-    <div className="mx-auto w-full max-w-3xl">
+    <div className="w-full max-w-4xl">
       <PageHeading title="My Profile" description="Manage your personal details, organization, and industry information." />
       <div className="rounded-2xl border border-line bg-card p-6">
         <ProfileForm

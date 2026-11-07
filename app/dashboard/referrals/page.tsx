@@ -13,7 +13,7 @@ export default async function ReferralsPage() {
 
   if (!eligible) {
     return (
-      <div className="mx-auto max-w-2xl">
+      <div className="w-full max-w-3xl">
         <div className="rounded-2xl border border-line bg-card p-8 text-center">
           <span className="mx-auto flex size-12 items-center justify-center rounded-full bg-mint">
             <Share2 className="size-6 text-green" />

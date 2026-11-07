@@ -98,7 +98,7 @@ export function ReferralDashboard({ data }: { data: ReferralData }) {
   }
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="w-full">
       <header className="mb-6">
         <h1 className="text-2xl font-bold text-heading">Referrals &amp; Rewards</h1>
         <p className="mt-1 text-sm text-body">
