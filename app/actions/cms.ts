@@ -16,7 +16,7 @@ import {
   auditLogs,
 } from "@/lib/db/schema"
 import { getSession, isStaff } from "@/lib/session"
-import { desc, eq, and, isNull } from "drizzle-orm"
+import { desc, eq, and, isNull, sql } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { ENTITIES, type EntityKey, type FieldDef } from "@/lib/cms/entities"
 
@@ -213,9 +213,22 @@ export async function getMyMembership(userId?: string) {
   const session = await getSession()
   if (!session?.user) return null
   if (userId && userId !== session.user.id) return null
-  const rows = await db.select().from(members).where(eq(members.userId, session.user.id)).limit(1)
-  return rows[0] ?? null
-}
+  const [linked] = await db.select().from(members).where(eq(members.userId, session.user.id)).limit(1)
+  if (linked) return linked
+
+  // Admin approval creates member rows keyed by email only, so fall back to the
+  // account email and claim the row for this user so later lookups are direct.
+  const email = session.user.email?.toLowerCase()
+  if (!email) return null
+  const [byEmail] = await db
+    .select()
+    .from(members)
+    .where(and(sql`lower(${members.email}) = ${email}`, isNull(members.userId)))
+    .limit(1)
+  if (!byEmail) return null
+  await db.update(members).set({ userId: session.user.id }).where(eq(members.id, byEmail.id))
+  return { ...byEmail, userId: session.user.id }
+  }
 
 // Shared lookup used by both the verify form (POST) and the QR deep-link
 // (GET ?id=). Only ever exposes non-sensitive, publicly verifiable fields.
