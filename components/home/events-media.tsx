@@ -190,12 +190,14 @@ function EventsColumn({ events }: { events: EventItem[] }) {
                   <CalendarDays className="size-10 text-white/40" aria-hidden="true" />
                 </div>
               )}
-              <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-navy px-3 py-1 text-xs font-bold uppercase tracking-wider text-white shadow-md">
+            </div>
+            <div className="flex px-5 pt-4 sm:px-6">
+              <Pill>
                 <CalendarDays className="size-3.5" aria-hidden="true" />
                 {featured.category || "Event"}
-              </span>
+              </Pill>
             </div>
-            <div className="relative z-10 -mt-6 flex flex-col gap-4 rounded-tl-[2.5rem] bg-card px-5 pb-5 pt-5 sm:flex-row sm:items-center sm:gap-5 sm:px-6">
+            <div className="flex flex-col gap-4 bg-card px-5 pb-5 pt-3 sm:flex-row sm:items-center sm:gap-5 sm:px-6">
               <div className="flex min-w-0 flex-1 items-center gap-4">
                 <DateBlock date={featured.startsAt} />
                 <span className="hidden h-12 w-px bg-line sm:block" aria-hidden="true" />
