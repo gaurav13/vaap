@@ -15,16 +15,19 @@ function topicIcon(topic: string): LucideIcon {
   return TOPIC_ICONS.find(([re]) => re.test(topic))?.[1] ?? Sparkles
 }
 
-export function ExpertiseIcons({ topics }: { topics: string[] }) {
+export function ExpertiseChips({ topics }: { topics: string[] }) {
   if (topics.length === 0) return null
   return (
-    <ul className="flex flex-wrap items-stretch divide-x divide-line-light" aria-label="Areas of expertise">
+    <ul className="flex flex-wrap gap-2" aria-label="Areas of expertise">
       {topics.slice(0, 5).map((topic) => {
         const Icon = topicIcon(topic)
         return (
-          <li key={topic} className="flex flex-col items-center gap-1.5 px-3 first:pl-0 last:pr-0">
-            <Icon className="size-6 text-green" strokeWidth={1.75} aria-hidden="true" />
-            <span className="text-center text-xs font-semibold text-heading">{topic}</span>
+          <li
+            key={topic}
+            className="inline-flex items-center gap-1.5 rounded-full border border-card/15 bg-card/5 px-3 py-1 text-xs font-medium text-card/85"
+          >
+            <Icon className="size-3.5 text-green-light" strokeWidth={2} aria-hidden="true" />
+            {topic}
           </li>
         )
       })}
@@ -32,34 +35,79 @@ export function ExpertiseIcons({ topics }: { topics: string[] }) {
   )
 }
 
-export function KolVerifiedSeal() {
+const CENTER = 60
+const RADIUS = 47
+const LEAVES = Array.from({ length: 9 }, (_, i) => {
+  const deg = 112 + i * 17
+  const rad = (deg * Math.PI) / 180
+  return {
+    x: CENTER + RADIUS * Math.cos(rad),
+    y: CENTER + RADIUS * Math.sin(rad),
+    rotate: deg + 90 - 28,
+    scale: 1 - i * 0.045,
+  }
+})
+
+function LaurelBranch({ mirrored }: { mirrored?: boolean }) {
   return (
-    <div className="relative flex h-40 w-36 shrink-0 items-center justify-center drop-shadow-lg" role="img" aria-label="KOL verified by VAAP">
-      <svg viewBox="0 0 120 140" className="absolute inset-0 size-full" aria-hidden="true">
-        <path
-          d="M60 4 L112 22 V66 C112 100 90 124 60 136 C30 124 8 100 8 66 V22 Z"
+    <g transform={mirrored ? `translate(${CENTER * 2} 0) scale(-1 1)` : undefined}>
+      <path
+        d={`M ${CENTER - 18} ${CENTER + 44} A ${RADIUS} ${RADIUS} 0 0 1 ${CENTER - 30} ${CENTER - 36}`}
+        className="fill-none stroke-gold"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+      {LEAVES.map((leaf, i) => (
+        <ellipse
+          key={i}
+          cx={leaf.x}
+          cy={leaf.y}
+          rx={7.5 * leaf.scale}
+          ry={3 * leaf.scale}
+          transform={`rotate(${leaf.rotate} ${leaf.x} ${leaf.y})`}
           className="fill-gold"
         />
-        <path
-          d="M60 12 L104 27.5 V66 C104 95 85.5 116 60 127 C34.5 116 16 95 16 66 V27.5 Z"
-          className="fill-green"
-        />
-        <path
-          d="M60 18 L98 31.5 V66 C98 91 82 109.5 60 119.5 C38 109.5 22 91 22 66 V31.5 Z"
-          className="fill-none stroke-gold/50"
-          strokeWidth="1"
-        />
+      ))}
+    </g>
+  )
+}
+
+export function KolVerifiedSeal({ className = "" }: { className?: string }) {
+  return (
+    <div
+      className={`relative flex size-40 shrink-0 items-center justify-center ${className}`}
+      role="img"
+      aria-label="VAAP KOL verified"
+    >
+      <svg viewBox="0 0 120 120" className="absolute inset-0 size-full" aria-hidden="true">
+        <LaurelBranch />
+        <LaurelBranch mirrored />
       </svg>
-      <div className="relative flex flex-col items-center pb-3">
-        <ShieldCheck className="mb-1 size-5 text-gold" aria-hidden="true" />
-        <span className="font-serif text-3xl font-black leading-none text-gold">KOL</span>
+      <div className="relative flex flex-col items-center leading-none">
+        <span className="text-xs font-bold tracking-widest text-card">VAAP</span>
+        <span className="mt-1 text-4xl font-black tracking-tight text-gold">KOL</span>
         <span className="mt-1 text-xs font-bold uppercase tracking-widest text-gold">Verified</span>
-        <span className="mt-1.5 flex gap-0.5 text-gold" aria-hidden="true">
+        <span className="mt-1.5 flex gap-0.5" aria-hidden="true">
           {[0, 1, 2].map((i) => (
-            <Star key={i} className="size-3 fill-gold" />
+            <Star key={i} className="size-2.5 fill-gold text-gold" />
           ))}
         </span>
       </div>
     </div>
+  )
+}
+
+export function HeroCurves() {
+  return (
+    <svg
+      viewBox="0 0 1440 400"
+      preserveAspectRatio="none"
+      className="pointer-events-none absolute inset-0 size-full"
+      aria-hidden="true"
+    >
+      <path d="M0 330 C 300 420, 620 300, 900 360 S 1300 420, 1440 330" className="fill-none stroke-gold/40" strokeWidth="1.5" />
+      <path d="M0 360 C 340 440, 700 330, 1000 390" className="fill-none stroke-green-light/20" strokeWidth="1" />
+      <path d="M1120 0 C 1240 60, 1340 40, 1440 10" className="fill-none stroke-gold/40" strokeWidth="1.5" />
+    </svg>
   )
 }
