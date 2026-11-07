@@ -155,7 +155,7 @@ export function LatestNewsMedia({ items }: { items: HomeNewsItem[] }) {
                 aria-roledescription="slide"
                 className="flex w-full shrink-0 snap-start flex-col overflow-hidden rounded-2xl border border-line bg-card shadow-sm transition-shadow hover:shadow-md sm:w-[calc((100%-1.25rem)/2)] md:w-[calc((100%-2.5rem)/3)] lg:w-[calc((100%-3.75rem)/4)]"
               >
-                <div className="relative aspect-video">
+                <div className="relative aspect-[2/1]">
                   <div
                     aria-hidden="true"
                     className="absolute inset-0 bg-gold"
@@ -167,19 +167,26 @@ export function LatestNewsMedia({ items }: { items: HomeNewsItem[] }) {
                   >
                     <img src={item.image || "/images/news-skyline.png"} alt="" className="size-full object-cover" />
                   </div>
+                  <span className="absolute left-2 top-2 flex h-7 max-w-[60%] items-center rounded-md bg-card px-2 shadow-sm">
+                    <img
+                      src={item.publisherLogo || "/images/vaap-logo.png"}
+                      alt={item.publisherName || "VAAP"}
+                      className="h-5 w-auto max-w-full object-contain"
+                    />
+                  </span>
                 </div>
-                <div className="flex flex-1 flex-col gap-3 px-4 pb-4 pt-1">
+                <div className="flex flex-1 flex-col gap-2 px-3 pb-3 pt-1">
                   <div className="flex items-center">
-                    <span className="rounded-full bg-green px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-primary-foreground">
+                    <span className="rounded-full bg-green px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-primary-foreground">
                       {item.category}
                     </span>
-                    <span aria-hidden="true" className="h-0.5 w-8 bg-green" />
+                    <span aria-hidden="true" className="h-0.5 w-6 bg-green" />
                   </div>
-                  <h3 className="font-serif text-lg font-bold leading-snug text-heading text-balance line-clamp-2">
+                  <h3 className="font-serif text-base font-bold leading-snug text-heading text-balance line-clamp-2">
                     {item.title}
                   </h3>
-                  <p className="text-sm leading-relaxed text-body line-clamp-2">{item.excerpt}</p>
-                  <div className="mt-auto flex flex-col gap-3 border-t border-line pt-3 text-xs">
+                  <p className="text-xs leading-relaxed text-body line-clamp-2">{item.excerpt}</p>
+                  <div className="mt-auto flex flex-col gap-2 border-t border-line pt-2 text-xs">
                     <div className="flex min-w-0 items-center gap-2">
                       <CalendarDays className="size-4 shrink-0 text-green" aria-hidden="true" />
                       <time dateTime={item.createdAt} className="whitespace-nowrap text-muted-2">
@@ -192,7 +199,7 @@ export function LatestNewsMedia({ items }: { items: HomeNewsItem[] }) {
                     </div>
                     <ReadLink
                       item={item}
-                      className="w-full border-transparent bg-green px-4 py-2 text-xs text-primary-foreground hover:bg-green-hover"
+                      className="w-full border-transparent bg-muted-2 px-3 py-1.5 text-xs text-primary-foreground hover:bg-heading hover:text-primary-foreground"
                     />
                   </div>
                 </div>
