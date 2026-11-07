@@ -156,40 +156,53 @@ export function LatestNewsMedia({ items }: { items: HomeNewsItem[] }) {
           No updates in this category yet.
         </p>
       ) : (
-        <div className="mt-8 grid gap-5 lg:grid-cols-2">
-          <article className="relative flex flex-col overflow-hidden rounded-2xl border border-line bg-card shadow-sm md:flex-row">
-            <div className="relative aspect-video overflow-hidden bg-muted md:order-last md:aspect-auto md:w-1/2 md:shrink-0">
-              <img
-                src={featured.image || "/images/news-skyline.png"}
-                alt=""
+        <div className="mt-8 flex flex-col gap-5">
+          <article className="relative flex flex-col overflow-hidden rounded-3xl border border-line bg-card shadow-md md:min-h-96 md:flex-row">
+            <div className="relative aspect-video overflow-hidden bg-muted md:order-last md:aspect-auto md:w-1/2 md:shrink-0 md:bg-transparent">
+              <div
                 aria-hidden="true"
-                className="absolute inset-0 size-full scale-110 object-cover opacity-60 blur-xl"
+                className="absolute inset-0 hidden bg-gold md:block"
+                style={{ clipPath: "polygon(14% 0, 100% 0, 100% 100%, 0 100%)" }}
               />
-              <img
-                src={featured.image || "/images/news-skyline.png"}
-                alt=""
-                className="absolute inset-0 size-full object-contain"
-              />
-            </div>
-            <div className="flex flex-1 flex-col gap-3 p-5">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <PublisherMark item={featured} size="sm" />
-                <ReadLink item={featured} className="px-4 py-1.5" />
+              <div className="absolute inset-0 md:[clip-path:polygon(calc(14%_+_8px)_0,100%_0,100%_100%,8px_100%)]">
+                <img
+                  src={featured.image || "/images/news-skyline.png"}
+                  alt=""
+                  className="size-full object-cover"
+                />
               </div>
-              <h3 className="text-xl font-bold leading-snug text-heading text-pretty line-clamp-3">{featured.title}</h3>
-              <p className="text-sm leading-relaxed text-body line-clamp-2">{featured.excerpt}</p>
-              <div className="mt-auto flex items-center gap-3 text-sm">
-                <CalendarDays className="size-4 text-green" aria-hidden="true" />
-                <time dateTime={featured.createdAt} className="text-muted-2">
-                  {formatDate(featured.createdAt)}
-                </time>
-                <span aria-hidden="true" className="h-4 w-px bg-line" />
-                <span className="font-semibold text-green">{featured.category}</span>
+            </div>
+            <div className="relative z-10 flex flex-1 flex-col gap-5 p-6 md:py-10 md:pl-10 md:pr-6 lg:pl-12">
+              <div className="flex items-center">
+                <span className="rounded-full bg-green px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-primary-foreground">
+                  {featured.category}
+                </span>
+                <span aria-hidden="true" className="h-0.5 w-16 bg-green" />
+              </div>
+              <h3 className="font-serif text-2xl font-bold leading-tight text-heading text-balance md:text-3xl lg:text-4xl line-clamp-4">
+                {featured.title}
+              </h3>
+              <p className="max-w-xl text-base leading-relaxed text-body line-clamp-3">{featured.excerpt}</p>
+              <div className="mt-auto flex flex-wrap items-center gap-x-4 gap-y-3 pt-2 text-sm">
+                <span className="flex items-center gap-2">
+                  <CalendarDays className="size-5 text-green" aria-hidden="true" />
+                  <time dateTime={featured.createdAt} className="text-muted-2">
+                    {formatDate(featured.createdAt)}
+                  </time>
+                </span>
+                <span aria-hidden="true" className="h-5 w-px bg-line" />
+                <span className="font-bold text-heading">
+                  By {featured.authorName || featured.publisherName || "VAAP"}
+                </span>
+                <ReadLink
+                  item={featured}
+                  className="border-transparent bg-green px-6 py-2.5 text-primary-foreground shadow-sm hover:bg-green-hover sm:ml-2"
+                />
               </div>
             </div>
           </article>
 
-          <div className="flex flex-col gap-4">
+          <div className="grid gap-4 md:grid-cols-3">
             {rest.length === 0 ? (
               <p className="flex flex-1 items-center justify-center rounded-2xl border border-dashed border-line bg-card p-8 text-sm text-muted-2">
                 More updates coming soon.
@@ -198,16 +211,21 @@ export function LatestNewsMedia({ items }: { items: HomeNewsItem[] }) {
               rest.map((item) => (
                 <article
                   key={item.key}
-                  className="flex flex-1 flex-col gap-3 rounded-2xl border border-line bg-card px-5 py-4 shadow-sm sm:flex-row sm:items-center"
+                  className="flex flex-col gap-4 rounded-2xl border border-line bg-card p-5 shadow-sm"
                 >
-                  <div className="flex w-28 shrink-0 items-center sm:justify-center">
+                  <div className="flex items-center justify-between gap-3">
                     <PublisherMark item={item} size="sm" />
+                    <span className="text-xs font-semibold uppercase tracking-wider text-green">{item.category}</span>
                   </div>
-                  <span aria-hidden="true" className="hidden h-10 w-0.5 bg-green sm:block" />
-                  <h3 className="flex-1 text-base font-bold leading-snug text-heading text-pretty line-clamp-2">
+                  <h3 className="font-serif text-lg font-bold leading-snug text-heading text-pretty line-clamp-3">
                     {item.title}
                   </h3>
-                  <ReadLink item={item} className="px-4 py-1.5" />
+                  <div className="mt-auto flex items-center justify-between gap-3">
+                    <time dateTime={item.createdAt} className="text-sm text-muted-2">
+                      {formatDate(item.createdAt)}
+                    </time>
+                    <ReadLink item={item} className="px-4 py-1.5" />
+                  </div>
                 </article>
               ))
             )}
