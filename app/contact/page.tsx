@@ -4,6 +4,7 @@ import { SiteFooter } from "@/components/site-footer"
 import { PageHero } from "@/components/page-hero"
 import { ContactForm } from "@/components/contact-form"
 import { getHeaderUser } from "@/lib/header-user"
+import { CONTACT_ADDRESS, CONTACT_EMAIL } from "@/lib/contact"
 
 export const metadata = {
   title: "Contact | VAAP",
@@ -25,8 +26,8 @@ export default async function ContactPage() {
         <section className="mx-auto grid max-w-7xl gap-10 px-5 py-16 lg:grid-cols-[0.8fr_1.2fr] lg:px-8 lg:py-20">
           <div className="grid gap-5">
             {[
-              { icon: Mail, label: "Email", value: "support@vaap.org.pk" },
-              { icon: MapPin, label: "Address", value: "G, 2nd Floor, Eagle Plaza, Block, Blue Area, Islamabad, 46000" },
+              { icon: Mail, label: "Email", value: CONTACT_EMAIL },
+              { icon: MapPin, label: "Address", value: CONTACT_ADDRESS },
             ].map(({ icon: Icon, label, value }) => (
               <div key={label} className="flex items-start gap-4 rounded-xl border border-line bg-card p-5">
                 <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-mint text-green">

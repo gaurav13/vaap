@@ -2,6 +2,8 @@ import { VaapLogo } from './vaap-logo'
 import { FooterNewsletter } from './footer-newsletter'
 import { CtaBanner } from './cta-banner'
 import { getSiteSettings } from '@/lib/site-settings'
+import { CONTACT_ADDRESS, CONTACT_EMAIL } from '@/lib/contact'
+import { Mail, MapPin } from 'lucide-react'
 import { FacebookIcon, InstagramIcon, LinkedinIcon, TiktokIcon, XIcon, YoutubeIcon } from '@/components/social-icons'
 
 function ColumnHeading({ children }: { children: React.ReactNode }) {
@@ -45,6 +47,20 @@ export async function SiteFooter() {
             <VaapLogo onDark height={60} />
             <p className="mt-6 font-serif text-2xl font-bold text-white">{footer.tagline}</p>
             <p className="mt-3 text-sm leading-relaxed text-white/60">{footer.description}</p>
+            <ul className="mt-6 flex flex-col gap-3 text-sm text-white/70">
+              <li className="flex items-center gap-3">
+                <Mail className="size-4 shrink-0 text-gold" aria-hidden="true" />
+                <span className="sr-only">Email:</span>
+                <a href={`mailto:${CONTACT_EMAIL}`} className="transition-colors hover:text-green">
+                  {CONTACT_EMAIL}
+                </a>
+              </li>
+              <li className="flex items-start gap-3">
+                <MapPin className="mt-0.5 size-4 shrink-0 text-gold" aria-hidden="true" />
+                <span className="sr-only">Address:</span>
+                <address className="not-italic leading-relaxed">{CONTACT_ADDRESS}</address>
+              </li>
+            </ul>
             {socials.length > 0 && (
               <div className="mt-6 flex items-center gap-3">
                 {socials.map(({ Icon, href, label }) => (

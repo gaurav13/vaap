@@ -1,5 +1,6 @@
 import "server-only"
 import nodemailer, { type Transporter } from "nodemailer"
+import { CONTACT_EMAIL } from "@/lib/contact"
 
 const GMAIL_USER = process.env.GMAIL_USER
 // Prefer GMAIL_SMTP_PASSWORD (a fresh variable that saves cleanly); fall back to
@@ -17,7 +18,7 @@ const GMAIL_APP_PASSWORD = (process.env.GMAIL_SMTP_PASSWORD || process.env.GMAIL
 // Gmail only permits the authenticated account or a verified alias as the
 // sender. The project currently sets EMAIL_FROM to an unverified support alias,
 // so always prefer the authenticated account for reliable delivery.
-const EMAIL_FROM = GMAIL_USER || process.env.EMAIL_FROM || "support@vaap.org.pk"
+const EMAIL_FROM = GMAIL_USER || process.env.EMAIL_FROM || CONTACT_EMAIL
 const EMAIL_FROM_NAME = "Virtual Asset Industry Alliance of Pakistan"
 
 let transporter: Transporter | null = null

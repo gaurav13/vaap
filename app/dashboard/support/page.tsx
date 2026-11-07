@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation"
-import { Mail, MessageSquare, Phone } from "lucide-react"
+import { Mail, MapPin, MessageSquare } from "lucide-react"
+import { CONTACT_ADDRESS, CONTACT_EMAIL } from "@/lib/contact"
 import { getSession } from "@/lib/session"
 import { PageHeading } from "@/components/member/page-heading"
 import { SupportForm } from "@/components/member/support-form"
@@ -54,15 +55,15 @@ export default async function SupportPage() {
                 <span className="flex size-9 items-center justify-center rounded-lg bg-mint text-green">
                   <Mail className="size-4" />
                 </span>
-                <a href="mailto:support@vaap.pk" className="text-heading hover:text-green">
-                  support@vaap.pk
+                <a href={`mailto:${CONTACT_EMAIL}`} className="text-heading hover:text-green">
+                  {CONTACT_EMAIL}
                 </a>
               </li>
-              <li className="flex items-center gap-3">
-                <span className="flex size-9 items-center justify-center rounded-lg bg-mint text-green">
-                  <Phone className="size-4" />
+              <li className="flex items-start gap-3">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-mint text-green">
+                  <MapPin className="size-4" />
                 </span>
-                <span className="text-heading">+92 51 000 0000</span>
+                <address className="pt-2 not-italic leading-relaxed text-heading">{CONTACT_ADDRESS}</address>
               </li>
             </ul>
           </div>
