@@ -10,6 +10,8 @@ import { RsvpForm } from "@/components/events/rsvp-form"
 import { getEventById, getEventBySlug, getEventRsvps } from "@/app/actions/public"
 import { getHeaderUser } from "@/lib/header-user"
 import { eventPath } from "@/lib/event-slug"
+import { getSiteSettings } from "@/lib/site-settings"
+import { FollowVaap } from "@/components/follow-vaap"
 
 // Old links used numeric ids (/events/3); those resolve by id and then redirect to the slug URL.
 const resolveEvent = cache(async (param: string) => {
@@ -64,7 +66,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
   if (!event) notFound()
   if (event.slug && decodeURIComponent(slug) !== event.slug) permanentRedirect(eventPath(event))
 
-  const rsvps = await getEventRsvps(event.id)
+  const [rsvps, { social }] = await Promise.all([getEventRsvps(event.id), getSiteSettings()])
   const d = new Date(event.startsAt)
   const isOnline = /online|virtual/i.test(`${event.format} ${event.location}`)
   const jsonLd = {
@@ -207,7 +209,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
           </div>
 
           {/* RSVP sidebar */}
-          <aside className="lg:sticky lg:top-28 lg:self-start">
+          <aside className="flex flex-col gap-6 lg:sticky lg:top-28 lg:self-start">
             <div className="rounded-2xl border border-line bg-card p-6">
               <h2 className="font-serif text-lg font-bold text-heading">Register</h2>
               <p className="mt-1 text-sm text-muted-2">Reserve your spot — it only takes a moment.</p>
@@ -215,6 +217,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
                 <RsvpForm eventId={event.id} defaultName={user?.name ?? ""} defaultEmail={user?.email ?? ""} />
               </div>
             </div>
+            <FollowVaap social={social} stacked />
           </aside>
         </div>
       </main>

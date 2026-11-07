@@ -14,7 +14,7 @@ import {
   Tv,
 } from "lucide-react"
 import type { SocialLinks } from "@/lib/site-settings"
-import { FacebookIcon, InstagramIcon, LinkedinIcon, TiktokIcon, XIcon, YoutubeIcon } from "@/components/social-icons"
+import { FollowVaap } from "@/components/follow-vaap"
 
 type EventItem = {
   id: number
@@ -282,14 +282,6 @@ function KindLabel({ kind }: { kind: string }) {
 
 function MediaColumn({ items, social }: { items: MediaItem[]; social: SocialLinks }) {
   const list = items.slice(0, 3)
-  const socials = [
-    { Icon: LinkedinIcon, href: social.linkedin, label: "LinkedIn" },
-    { Icon: XIcon, href: social.x, label: "X" },
-    { Icon: YoutubeIcon, href: social.youtube, label: "YouTube" },
-    { Icon: InstagramIcon, href: social.instagram, label: "Instagram" },
-    { Icon: FacebookIcon, href: social.facebook, label: "Facebook" },
-    { Icon: TiktokIcon, href: social.tiktok, label: "TikTok" },
-  ].filter((s) => s.href)
 
   return (
     <div className="flex flex-col gap-4">
@@ -343,27 +335,7 @@ function MediaColumn({ items, social }: { items: MediaItem[]; social: SocialLink
         )}
       </div>
 
-      {socials.length > 0 && (
-        <div className="flex flex-wrap items-center gap-4 rounded-3xl border border-line bg-card px-6 py-5 shadow-md">
-          <p className="text-lg font-bold text-heading">Follow VAAP</p>
-          <span className="hidden h-8 w-px bg-line sm:block" aria-hidden="true" />
-          <ul className="flex flex-wrap items-center gap-2">
-            {socials.map(({ Icon, href, label }) => (
-              <li key={label}>
-                <a
-                  href={href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={`VAAP on ${label} (opens in a new tab)`}
-                  className="flex size-10 items-center justify-center rounded-xl bg-green text-white shadow-sm transition-colors hover:bg-navy"
-                >
-                  <Icon className="size-[18px]" />
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <FollowVaap social={social} />
     </div>
   )
 }

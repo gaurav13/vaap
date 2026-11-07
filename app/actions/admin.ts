@@ -9,7 +9,7 @@ import { auth } from "@/lib/auth"
 import { computeExpiry } from "@/lib/membership"
 import { processMembershipApproval } from "@/lib/referral-engine"
 import { notify } from "@/lib/notifications"
-import { and, desc, eq } from "drizzle-orm"
+import { and, desc, eq, sql } from "drizzle-orm"
 import { randomUUID } from "crypto"
 import { revalidatePath } from "next/cache"
 import { after } from "next/server"
@@ -295,7 +295,18 @@ export async function setApplicationStatus(id: number, status: "pending" | "appr
       .limit(1)
 
     if (application) {
-      const [existing] = await db.select().from(members).where(eq(members.email, application.email)).limit(1)
+      const [existing] = await db
+        .select()
+        .from(members)
+        .where(sql`lower(${members.email}) = ${application.email.toLowerCase()}`)
+        .limit(1)
+      // Link the member row to the applicant's account so their dashboard finds it.
+      const [account_] = await db
+        .select({ id: user.id })
+        .from(user)
+        .where(sql`lower(${user.email}) = ${application.email.toLowerCase()}`)
+        .limit(1)
+      const linkedUserId = existing?.userId ?? account_?.id ?? null
       const membershipId = application.reference ?? `VAAP-${new Date().getFullYear()}-${String(id).padStart(6, "0")}`
       // Membership term begins at approval and runs one year (365 days).
       const now = new Date()
@@ -310,6 +321,7 @@ export async function setApplicationStatus(id: number, status: "pending" | "appr
           .set({
             status: "active",
             goodStanding: true,
+            userId: linkedUserId,
             category: application.category,
             membershipId: firstActivation ? membershipId : existing.membershipId,
             organization: existing.organization ?? application.organization,
@@ -320,6 +332,7 @@ export async function setApplicationStatus(id: number, status: "pending" | "appr
           .where(eq(members.id, existing.id))
       } else {
         await db.insert(members).values({
+          userId: linkedUserId,
           membershipId,
           name: application.name,
           email: application.email,

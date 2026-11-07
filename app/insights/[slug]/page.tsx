@@ -9,6 +9,8 @@ import { getPublishedArticleBySlug } from "@/app/actions/articles"
 import { getHeaderUser } from "@/lib/header-user"
 import { sanitizeRichHtml } from "@/lib/html"
 import { isHtml } from "@/lib/sanitize"
+import { getSiteSettings } from "@/lib/site-settings"
+import { FollowVaap } from "@/components/follow-vaap"
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
@@ -22,7 +24,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function InsightDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const [article, user] = await Promise.all([getPublishedArticleBySlug(slug), getHeaderUser()])
+  const [article, user, { social }] = await Promise.all([
+    getPublishedArticleBySlug(slug),
+    getHeaderUser(),
+    getSiteSettings(),
+  ])
   if (!article) notFound()
 
   const tags = (article.tags || "")
@@ -95,6 +101,8 @@ export default async function InsightDetailPage({ params }: { params: Promise<{ 
               ))}
             </div>
           )}
+
+          <FollowVaap social={social} className="mt-10" />
         </article>
       </main>
       <SiteFooter />
