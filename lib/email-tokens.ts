@@ -5,7 +5,7 @@ import crypto from "crypto"
 // HMAC-SHA256 over the payload with BETTER_AUTH_SECRET — nothing is stored,
 // and a tampered or expired token simply fails verification.
 
-export type TokenPurpose = "unsubscribe" | "verify" | "resume"
+export type TokenPurpose = "unsubscribe" | "verify" | "resume" | "rsvp"
 
 type Payload = { p: TokenPurpose; e: string; id?: string; t?: string; x: number }
 
@@ -35,6 +35,23 @@ export function createToken(
   }
   const data = Buffer.from(JSON.stringify(payload)).toString("base64url")
   return `${data}.${sign(data)}`
+}
+
+/** Like verifyToken, but reports an authentic-but-expired token instead of rejecting it. */
+export function readSignedToken(token: string | null | undefined, purpose: TokenPurpose) {
+  if (!token || typeof token !== "string" || token.length > 2000) return null
+  const [data, sig] = token.split(".")
+  if (!data || !sig) return null
+  const expected = Buffer.from(sign(data))
+  const given = Buffer.from(sig)
+  if (expected.length !== given.length || !crypto.timingSafeEqual(expected, given)) return null
+  try {
+    const payload = JSON.parse(Buffer.from(data, "base64url").toString("utf8")) as Payload
+    if (payload.p !== purpose || typeof payload.e !== "string") return null
+    return { email: payload.e, id: payload.id, expired: payload.x < Date.now() }
+  } catch {
+    return null
+  }
 }
 
 export function verifyToken(token: string | null | undefined, purpose: TokenPurpose) {
