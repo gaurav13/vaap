@@ -65,7 +65,15 @@ export default async function RootLayout({
   children: React.ReactNode
 }>) {
   const pathname = (await headers()).get('x-pathname') ?? ''
-  const [{ comingSoon }, session] = await Promise.all([getSiteStatus(), getSession()])
+  // A failed session lookup here would take down every page on the site, so
+  // treat it as a signed-out visitor; protected pages still check the session.
+  const [{ comingSoon }, session] = await Promise.all([
+    getSiteStatus(),
+    getSession().catch((error: Error) => {
+      console.error("[layout] session lookup failed:", error.message)
+      return null
+    }),
+  ])
   const elevated = isElevated(session?.user?.role)
   // Full document loads of locked routes bounce to the launch page. Client
   // navigations are handled by SiteGate, which follows usePathname().

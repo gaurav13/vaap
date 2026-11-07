@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth"
 import { headers } from "next/headers"
+import { cache } from "react"
 
 export type UserRole =
   | "member"
@@ -17,7 +18,8 @@ export type SessionUser = {
   image?: string | null
 }
 
-export async function getSession() {
+// Deduplicated per request: the layout, header and page all ask for the session.
+export const getSession = cache(async function getSession() {
   const session = await auth.api.getSession({ headers: await headers() })
   if (!session?.user) return null
   const u = session.user as unknown as SessionUser & { role?: string }
@@ -28,7 +30,7 @@ export async function getSession() {
       role: (u.role as UserRole) ?? "member",
     },
   }
-}
+})
 
 export function isStaff(role: string | undefined | null) {
   return role === "staff" || role === "admin"

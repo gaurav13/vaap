@@ -1,3 +1,4 @@
+import { cache } from "react"
 import { db } from "@/lib/db"
 import { settings } from "@/lib/db/schema"
 
@@ -423,14 +424,17 @@ function parse<T>(raw: string | undefined, fallback: T): T {
   }
 }
 
-async function readAll(): Promise<Record<string, string>> {
+// Layout, header, footer and page each read settings; React cache() collapses
+// those into one query per request.
+const readAll = cache(async (): Promise<Record<string, string>> => {
   try {
     const rows = await db.select().from(settings)
     return Object.fromEntries(rows.map((r) => [r.key, r.value]))
-  } catch {
+  } catch (error) {
+    console.error("[settings] read failed, using defaults:", (error as Error).message)
     return {}
   }
-}
+})
 
 export type SiteSettings = {
   menu: MenuItem[]
