@@ -10,6 +10,7 @@ import { createAttributionForApplication } from "@/lib/referral-engine"
 import { notify } from "@/lib/notifications"
 import { sendTemplateEmail } from "@/lib/email-templates/service"
 import { CONTACT_EMAIL } from "@/lib/contact"
+import { formatAlertDate, sendAdminAlert } from "@/lib/admin-alerts"
 import { redirect } from "next/navigation"
 import {
   consumeToken,
@@ -293,6 +294,18 @@ function refreshEventPaths(ev: { id: number; slug: string | null }) {
   revalidatePath("/events")
 }
 
+function alertRegistration(name: string, email: string, ev: { id: number; title: string }, verified: boolean) {
+  sendAdminAlert("registration", {
+    name,
+    email,
+    eventName: ev.title,
+    registeredAt: formatAlertDate(),
+    emailVerified: verified ? "Yes" : "Not yet — verification link sent",
+    status: verified ? "Confirmed" : "Pending verification",
+    reviewUrl: `/admin/events/${ev.id}/participants`,
+  })
+}
+
 /**
  * Registers an attendee. Registrations stay "pending" until the email is verified
  * through a single-use link; members whose account email is already verified and
@@ -355,11 +368,13 @@ export async function rsvpToEvent(formData: FormData): Promise<RsvpResult> {
       .set({ status: "confirmed", verifiedAt: new Date(), verifyTokenHash: null, verifyExpiresAt: null })
       .where(eq(eventRsvps.id, rsvp.id))
     await sendConfirmedEmail(rsvp, ev)
+    alertRegistration(name, email, ev, true)
     refreshEventPaths(ev)
     return { ok: true, status: "confirmed" }
   }
 
   const sent = await sendVerification(rsvp, ev)
+  alertRegistration(name, email, ev, false)
   refreshEventPaths(ev)
   return { ok: true, status: "pending", email, notice: verificationNotice(sent) }
 }
@@ -763,6 +778,15 @@ export async function submitContactMessage(formData: FormData) {
   }
 
   await db.insert(contactMessages).values({ name, email, subject, message })
+
+  sendAdminAlert("contact", {
+    name: name.slice(0, 120),
+    email: email.slice(0, 200),
+    subject: subject.slice(0, 200) || "(no subject)",
+    message: message.slice(0, 3000),
+    submittedAt: formatAlertDate(),
+    reviewUrl: "/admin/messages",
+  })
 
   return { ok: true }
 }

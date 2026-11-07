@@ -1,5 +1,6 @@
 "use server"
 
+import { formatAlertDate, sendAdminAlert } from "@/lib/admin-alerts"
 import { db } from "@/lib/db"
 import { EVENT_CATEGORIES, EVENT_CITIES, EVENT_FORMATS, pickOption } from "@/lib/event-options"
 import {
@@ -282,6 +283,16 @@ export async function submitMemberEvent(formData: FormData) {
   } catch {
     return { ok: false, error: "Could not submit event." }
   }
+
+  sendAdminAlert("event", {
+    name: member.name,
+    email: current.email,
+    title,
+    eventDate: new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Karachi" }).format(startsAt) + (timeLabel ? ` · ${timeLabel}` : ""),
+    location: [location, city, format].filter(Boolean).join(" · "),
+    submittedAt: formatAlertDate(),
+    reviewUrl: "/admin/events",
+  })
 
   revalidatePath("/dashboard/events")
   revalidatePath("/admin/events")
