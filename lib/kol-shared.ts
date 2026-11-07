@@ -79,6 +79,10 @@ export const AUDIENCE_BANDS = [
 
 export const KOL_VALIDITY_DAYS = 365
 
+export function sumFollowers(platforms: { followers?: number | string | null }[] | null | undefined) {
+  return Math.round((platforms ?? []).reduce((sum, p) => sum + (Number(p.followers) || 0), 0))
+}
+
 export function formatCount(n: number) {
   if (!Number.isFinite(n) || n <= 0) return "0"
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(n >= 10_000_000 ? 0 : 1).replace(/\.0$/, "")}M`

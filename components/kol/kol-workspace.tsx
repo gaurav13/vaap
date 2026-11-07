@@ -13,6 +13,7 @@ import {
 } from "@/app/actions/kol"
 import type { KolEvidence, KolPlatform } from "@/lib/db/schema"
 import { KOL_EDITABLE, KOL_EXPERTISE, KOL_PLATFORMS, formatDate, type KolStatus } from "@/lib/kol-shared"
+import { ReachTotal } from "@/components/kol/reach-total"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -256,16 +257,7 @@ export function KolWorkspace({ profile, ownershipCode }: { profile: WorkspacePro
       {profile.status === "verified" && (
         <Card title="Update your audience statistics" description="Keep your reach current. Updated numbers appear on your public profile.">
           <PlatformRows platforms={stats.platforms} onChange={(platforms) => setStats((s) => ({ ...s, platforms }))} />
-          <Field id="stats-reach" label="Estimated monthly reach">
-            <Input
-              id="stats-reach"
-              type="number"
-              min={0}
-              value={stats.monthlyReach || ""}
-              onChange={(e) => setStats((s) => ({ ...s, monthlyReach: Number(e.target.value) }))}
-              className="max-w-xs"
-            />
-          </Field>
+          <ReachTotal platforms={stats.platforms} />
           <Button
             type="button"
             disabled={pending}
@@ -351,16 +343,7 @@ export function KolWorkspace({ profile, ownershipCode }: { profile: WorkspacePro
           description="Add each channel you want verified. Reviewers check ownership and follower counts."
         >
           <PlatformRows platforms={form.platforms} onChange={(p) => set("platforms", p)} disabled={!editable} />
-          <Field id="k-reach" label="Estimated monthly reach across platforms">
-            <Input
-              id="k-reach"
-              type="number"
-              min={0}
-              value={form.monthlyReach || ""}
-              onChange={(e) => set("monthlyReach", Number(e.target.value))}
-              className="max-w-xs"
-            />
-          </Field>
+          <ReachTotal platforms={form.platforms} />
           <div className="flex flex-col gap-1 rounded-xl bg-mint p-4 text-sm text-heading">
             <p className="font-semibold">Ownership code: <span className="font-mono text-green">{ownershipCode}</span></p>
             <p className="leading-relaxed text-body">

@@ -14,7 +14,7 @@ import {
   refreshSlug,
   transitionKol,
 } from "@/lib/kol"
-import { KOL_EDITABLE, KOL_EXPERTISE, KOL_PLATFORMS, type KolStatus } from "@/lib/kol-shared"
+import { KOL_EDITABLE, KOL_EXPERTISE, KOL_PLATFORMS, sumFollowers, type KolStatus } from "@/lib/kol-shared"
 import { sendEmail } from "@/lib/mailer"
 import { CONTACT_EMAIL } from "@/lib/contact"
 import { formatAlertDate, sendAdminAlert } from "@/lib/admin-alerts"
@@ -98,6 +98,7 @@ function cleanPlatforms(input: unknown, keepOwnership: KolPlatform[] = []): KolP
 
 function cleanProfile(input: KolApplicationInput, priorPlatforms: KolPlatform[]) {
   const expertiseSet = new Set<string>(KOL_EXPERTISE)
+  const platforms = cleanPlatforms(input.platforms, priorPlatforms)
   return {
     fullName: text(input.fullName, 120),
     professionalName: text(input.professionalName, 120),
@@ -108,8 +109,8 @@ function cleanProfile(input: KolApplicationInput, priorPlatforms: KolPlatform[])
     title: text(input.title, 160),
     bio: text(input.bio, 2000),
     expertise: (Array.isArray(input.expertise) ? input.expertise : []).filter((e) => expertiseSet.has(e)).slice(0, 8),
-    platforms: cleanPlatforms(input.platforms, priorPlatforms),
-    monthlyReach: Math.round(num(input.monthlyReach)),
+    platforms,
+    monthlyReach: sumFollowers(platforms),
     mediaAppearances: text(input.mediaAppearances, 2000),
     collaborations: text(input.collaborations, 2000),
     achievements: text(input.achievements, 2000),
@@ -180,7 +181,7 @@ export async function updateKolStats(platforms: KolPlatform[], monthlyReach: num
     if (next.length === 0) return { ok: false, error: "Keep at least one social account." }
     await db
       .update(kolProfiles)
-      .set({ platforms: next, monthlyReach: Math.round(num(monthlyReach)), metricsVerified: false, statsUpdatedAt: new Date(), updatedAt: new Date() })
+      .set({ platforms: next, monthlyReach: sumFollowers(next), metricsVerified: false, statsUpdatedAt: new Date(), updatedAt: new Date() })
       .where(eq(kolProfiles.memberId, member.id))
     await logKol(member.id, "stats_updated", { actor: user.email, note: "Metrics awaiting re-confirmation" })
     revalidatePath("/dashboard/kol")
