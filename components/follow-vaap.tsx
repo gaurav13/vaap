@@ -32,6 +32,57 @@ export function FollowVaap({
 
   const dark = variant === "dark"
 
+  if (stacked) {
+    return (
+      <div
+        className={cn(
+          "flex flex-col gap-5 rounded-2xl p-6",
+          dark ? "bg-[#2b2f33] text-white shadow-lg" : "border border-line bg-card shadow-md",
+          className,
+        )}
+      >
+        <div className="flex flex-col gap-1">
+          <p className={cn("font-serif text-lg font-bold", dark ? "text-white" : "text-heading")}>{title}</p>
+          <p className={cn("text-sm leading-relaxed", dark ? "text-white/70" : "text-muted-2")}>
+            Get event updates, briefings and industry news.
+          </p>
+        </div>
+        <ul className="flex flex-wrap items-center gap-2">
+          {socials.map(({ Icon, href, label }) => (
+            <li key={label}>
+              <a
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`VAAP on ${label} (opens in a new tab)`}
+                className={cn(
+                  "flex size-10 items-center justify-center rounded-full transition-colors",
+                  dark ? "bg-white/10 text-white hover:bg-white hover:text-[#2b2f33]" : "bg-green text-white hover:bg-navy",
+                )}
+              >
+                <Icon className="size-[18px]" />
+              </a>
+            </li>
+          ))}
+        </ul>
+        {cta && (
+          <Link
+            href={cta.href}
+            className={cn(
+              "inline-flex w-full items-center justify-between gap-2 rounded-xl border-t px-4 py-3 text-sm font-semibold transition-colors",
+              dark
+                ? "border-white/10 bg-white/5 text-white hover:bg-white hover:text-[#2b2f33]"
+                : "border-line bg-mint text-green hover:bg-green hover:text-white",
+            )}
+          >
+            <span className="text-pretty">{cta.label}</span>
+            <ArrowRight className="size-4 shrink-0" aria-hidden="true" />
+          </Link>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div
       className={cn(

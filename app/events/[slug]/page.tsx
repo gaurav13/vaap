@@ -178,13 +178,6 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
               </div>
             </div>
 
-            <FollowVaap
-              social={social}
-              variant="dark"
-              cta={{ label: "Stay Updated on Digital Finance & Web3", href: "/events" }}
-              className="mt-6"
-            />
-
             {event.description && (
               <div className="mt-8">
                 <h2 className="font-serif text-xl font-bold text-heading">About this event</h2>
@@ -224,6 +217,12 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
                 <RsvpForm eventId={event.id} defaultName={user?.name ?? ""} defaultEmail={user?.email ?? ""} />
               </div>
             </div>
+            <FollowVaap
+              social={social}
+              variant="dark"
+              stacked
+              cta={{ label: "Stay Updated on Digital Finance & Web3", href: "/events" }}
+            />
           </aside>
         </div>
       </main>
