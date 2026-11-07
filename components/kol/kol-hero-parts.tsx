@@ -75,7 +75,7 @@ function LaurelBranch({ mirrored }: { mirrored?: boolean }) {
 export function KolVerifiedSeal({ className = "" }: { className?: string }) {
   return (
     <div
-      className={`relative flex size-40 shrink-0 items-center justify-center ${className}`}
+      className={`relative flex size-36 shrink-0 items-center justify-center ${className}`}
       role="img"
       aria-label="VAAP KOL verified"
     >
@@ -102,7 +102,7 @@ export function HeroCurves() {
     <svg
       viewBox="0 0 1440 400"
       preserveAspectRatio="none"
-      className="pointer-events-none absolute inset-0 size-full"
+      className="pointer-events-none absolute inset-0 hidden size-full opacity-60 sm:block"
       aria-hidden="true"
     >
       <path d="M0 330 C 300 420, 620 300, 900 360 S 1300 420, 1440 330" className="fill-none stroke-gold/40" strokeWidth="1.5" />
