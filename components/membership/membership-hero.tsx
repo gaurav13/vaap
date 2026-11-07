@@ -32,17 +32,17 @@ export function MembershipHero() {
           </svg>
         </div>
 
-        <div className="relative mx-auto max-w-7xl px-5 pb-12 pt-12 sm:px-6 lg:px-8 lg:pb-20 lg:pt-20">
+        <div className="relative mx-auto max-w-7xl px-5 pb-8 pt-8 sm:px-6 lg:px-8 lg:pb-12 lg:pt-12">
           <div className="lg:max-w-[48%]">
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-green">
               VAAP Membership Platform For
             </p>
 
-            <h1 className="mt-4 text-balance font-serif text-4xl font-bold leading-[1.08] text-[#1b4332] sm:text-5xl xl:text-6xl">
+            <h1 className="mt-3 text-balance font-serif text-3xl font-bold leading-[1.1] text-[#1b4332] sm:text-4xl xl:text-5xl">
               Virtual Assets, Blockchain &amp; Digital Economy
             </h1>
 
-            <ul className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-2 text-base text-heading sm:text-lg">
+            <ul className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-heading sm:text-base">
               {taglines.map((tagline, index) => (
                 <li key={tagline} className="flex items-center gap-3">
                   {index > 0 && <span className="size-1.5 rounded-full bg-gold" aria-hidden />}
@@ -51,17 +51,17 @@ export function MembershipHero() {
               ))}
             </ul>
 
-            <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
               <Link
                 href="/membership/apply"
-                className="inline-flex h-12 items-center justify-center gap-2.5 rounded-lg bg-[#1b4332] px-7 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#143728]"
+                className="inline-flex h-11 items-center justify-center gap-2.5 rounded-lg bg-[#1b4332] px-6 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#143728]"
               >
                 Become a Member
                 <ArrowRight className="size-4" aria-hidden />
               </Link>
               <Link
                 href="/membership/verify"
-                className="inline-flex h-12 items-center justify-center gap-2.5 rounded-lg border-2 border-[#1b4332] bg-white px-7 text-sm font-semibold text-[#1b4332] transition-colors hover:bg-[#1b4332]/5"
+                className="inline-flex h-11 items-center justify-center gap-2.5 rounded-lg border-2 border-[#1b4332] bg-white px-6 text-sm font-semibold text-[#1b4332] transition-colors hover:bg-[#1b4332]/5"
               >
                 <QrCode className="size-4" aria-hidden />
                 Verify Membership
@@ -70,7 +70,7 @@ export function MembershipHero() {
           </div>
 
           {/* Mobile / tablet photo */}
-          <div className="relative mt-10 aspect-[16/9] overflow-hidden rounded-2xl border border-line lg:hidden">
+          <div className="relative mt-8 aspect-[21/9] overflow-hidden rounded-2xl border border-line lg:hidden">
             <Image
               src="/images/hero-islamabad.png"
               alt="Faisal Mosque framed by the Margalla Hills in Islamabad, Pakistan"
@@ -88,9 +88,9 @@ export function MembershipHero() {
             return (
               <li
                 key={feature.title}
-                className={`flex items-center gap-4 py-6 lg:py-7 ${index % 2 === 1 ? "pl-5 border-l border-line" : "pr-5"} ${index > 1 ? "border-t border-line lg:border-t-0" : ""} lg:px-6 ${index === 0 ? "lg:pl-0" : "lg:border-l lg:border-line"}`}
+                className={`flex items-center gap-3 py-4 lg:py-5 ${index % 2 === 1 ? "pl-5 border-l border-line" : "pr-5"} ${index > 1 ? "border-t border-line lg:border-t-0" : ""} lg:px-6 ${index === 0 ? "lg:pl-0" : "lg:border-l lg:border-line"}`}
               >
-                <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-mint text-[#1b4332]">
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-mint text-[#1b4332]">
                   <Icon className="size-5" strokeWidth={1.75} aria-hidden />
                 </span>
                 <span className="flex flex-col leading-snug">
