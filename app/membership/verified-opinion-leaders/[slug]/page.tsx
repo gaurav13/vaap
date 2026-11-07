@@ -3,7 +3,6 @@ import { notFound } from "next/navigation"
 import {
   ArrowLeft,
   Award,
-  Check,
   ChevronDown,
   ExternalLink,
   Handshake,
@@ -14,10 +13,10 @@ import {
   Sparkles,
   UserRound,
 } from "lucide-react"
-import { ExpertiseChips, KolVerifiedSeal } from "@/components/kol/kol-hero-parts"
+import { ExpertiseChips, KolVerifiedSeal, ScallopedCheck } from "@/components/kol/kol-hero-parts"
 import { SiteHeaderServer } from "@/components/site-header-server"
 import { SiteFooter } from "@/components/site-footer"
-import { PlatformIcon, VerifiedBadge } from "@/components/kol/kol-ui"
+import { PlatformIcon } from "@/components/kol/kol-ui"
 import { CollaborationForm } from "@/components/kol/collaboration-form"
 import { KolReferralCard } from "@/components/kol/kol-referral-card"
 import { getActiveKolReferralCode, getPublicKolBySlug, totalFollowers } from "@/lib/kol"
@@ -94,25 +93,28 @@ export default async function KolProfilePage({ params }: Props) {
           <img
             src="/images/kol-profile-hero-bg.png"
             alt=""
-            className="absolute inset-0 -z-10 size-full object-cover object-right-bottom opacity-40 lg:opacity-100"
+            className="absolute inset-0 -z-10 size-full object-cover object-right-bottom opacity-50 lg:opacity-100"
           />
           <div
-            className="absolute inset-0 -z-10 bg-gradient-to-r from-surface via-surface/85 to-transparent lg:via-surface/60"
+            className="absolute inset-0 -z-10 bg-gradient-to-r from-surface/90 via-surface/60 to-transparent lg:via-surface/30"
             aria-hidden="true"
           />
-          <div className="vaap-container relative flex flex-col gap-6 py-6 sm:gap-8 sm:py-10 lg:py-14">
-            <Link
-              href="/membership/verified-opinion-leaders"
-              className="inline-flex items-center gap-2 self-start text-sm font-medium text-body transition-colors hover:text-green"
-            >
-              <ArrowLeft className="size-4" aria-hidden="true" />
-              All Verified KOLs
-            </Link>
+          <div className="vaap-container relative flex flex-col gap-4 py-5 sm:gap-6 sm:py-7 lg:py-9">
+            <div className="flex items-center justify-between gap-4">
+              <Link
+                href="/membership/verified-opinion-leaders"
+                className="inline-flex items-center gap-2 text-sm font-semibold text-heading transition-colors hover:text-green sm:text-base"
+              >
+                <ArrowLeft className="size-4 sm:size-5" aria-hidden="true" />
+                All Verified KOLs
+              </Link>
+              <KolVerifiedSeal id="kol-laurel-mobile" className="-my-3 size-20 sm:hidden" />
+            </div>
 
-            <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:gap-10">
-              <div className="flex min-w-0 flex-1 flex-col gap-6 sm:gap-7">
-                <div className="flex items-start gap-4 sm:items-center sm:gap-6">
-                  <div className="size-20 shrink-0 rounded-2xl bg-card p-1 shadow-xl shadow-heading/10 ring-1 ring-line-light sm:size-32 sm:rounded-3xl sm:p-1.5 lg:size-36">
+            <div className="flex flex-col gap-8 xl:flex-row xl:items-center xl:justify-between xl:gap-10">
+              <div className="flex min-w-0 flex-col gap-5 sm:gap-6">
+                <div className="flex items-center gap-4 sm:gap-7">
+                  <div className="size-24 shrink-0 rounded-2xl bg-card p-1 shadow-xl shadow-heading/10 ring-1 ring-line-light sm:size-36 sm:rounded-3xl sm:p-1.5">
                     <div className="size-full overflow-hidden rounded-xl bg-mint sm:rounded-[1.25rem]">
                       {kol.photo ? (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -125,33 +127,37 @@ export default async function KolProfilePage({ params }: Props) {
                     </div>
                   </div>
 
-                  <div className="flex min-w-0 flex-1 flex-col gap-2 sm:gap-3">
-                    <p className="inline-flex items-center gap-1.5 self-start rounded-full bg-mint px-2.5 py-1 text-xs font-semibold text-green shadow-sm ring-1 ring-green/15 sm:gap-2 sm:px-3.5 sm:py-1.5 sm:text-sm">
-                      <span className="flex size-4 items-center justify-center rounded-full bg-green text-card sm:size-5">
-                        <Check className="size-2.5 sm:size-3" strokeWidth={3.5} aria-hidden="true" />
-                      </span>
+                  <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-initial sm:gap-3">
+                    <p className="inline-flex items-center gap-1.5 self-start rounded-full bg-card/80 py-1 pl-1 pr-3 text-xs font-semibold text-heading shadow-lg shadow-heading/5 ring-1 ring-line-light/60 backdrop-blur sm:gap-2 sm:py-1.5 sm:pl-1.5 sm:pr-5 sm:text-base">
+                      <ScallopedCheck className="size-5 sm:size-8" />
                       Verified Opinion Leader
                     </p>
-                    <h1 className="flex flex-wrap items-center gap-2 font-serif text-2xl font-bold leading-tight tracking-tight text-heading text-balance sm:text-4xl lg:text-[2.5rem] 2xl:text-5xl">
-                      {name}
-                      <VerifiedBadge className="[&_svg]:size-6 sm:[&_svg]:size-9" />
+                    <h1 className="flex items-center gap-2 font-sans text-2xl font-bold leading-tight tracking-tight text-heading sm:gap-3 sm:text-4xl lg:text-5xl xl:text-[2.5rem] 2xl:text-5xl">
+                      <span className="min-w-0 text-balance">{name}</span>
+                      <ScallopedCheck className="size-7 shrink-0 sm:size-10" />
+                      <span className="sr-only">(verified)</span>
                     </h1>
-                    {(kol.title || kol.organization) && (
-                      <p className="border-l-2 border-green/60 pl-3 text-sm leading-relaxed text-heading/80 sm:border-l-[3px] sm:pl-4 sm:text-lg">
-                        {[kol.title, kol.organization].filter(Boolean).join(", ")}
-                      </p>
-                    )}
-                    {location && (
-                      <p className="flex items-center gap-1.5 text-xs text-body sm:text-sm">
-                        <MapPin className="size-3.5 text-green sm:size-4" aria-hidden="true" />
-                        {location}
-                      </p>
+                    {(kol.title || kol.organization || location) && (
+ <div className="relative flex flex-col gap-1.5 border-l-2 border-heading/15 pl-3 sm:gap-2.5 sm:pl-5">
+  <span className="absolute -left-0.5 top-0 h-6 w-0.5 bg-green sm:h-8" aria-hidden="true" />
+  {(kol.title || kol.organization) && (
+  <p className="text-sm font-semibold leading-snug text-heading sm:text-xl">
+                            {[kol.title, kol.organization].filter(Boolean).join(", ")}
+                          </p>
+                        )}
+                        {location && (
+  <p className="flex items-center gap-1.5 text-xs font-medium text-muted-2 sm:gap-2 sm:text-base">
+  <MapPin className="size-3.5 sm:size-[18px]" aria-hidden="true" />
+                            {location}
+                          </p>
+                        )}
+                      </div>
                     )}
                   </div>
 
-                  <div className="hidden shrink-0 items-center gap-5 xl:flex">
-                    <span className="h-24 w-px bg-line-light" aria-hidden="true" />
-                    <KolVerifiedSeal className="size-28 2xl:size-36" />
+                  <div className="hidden shrink-0 items-center gap-6 sm:flex lg:gap-8">
+                    <span className="h-28 w-px bg-heading/15" aria-hidden="true" />
+                    <KolVerifiedSeal className="size-32 lg:size-36 xl:size-32 2xl:size-36" />
                   </div>
                 </div>
 
@@ -159,7 +165,7 @@ export default async function KolProfilePage({ params }: Props) {
               </div>
 
               {referralCode && (
-                <div className="w-full shrink-0 lg:w-[26rem]">
+                <div className="w-full shrink-0 sm:max-w-xl xl:w-[26rem] xl:max-w-none">
                   <KolReferralCard code={referralCode} url={referralUrl(referralCode)} firstName={name} />
                 </div>
               )}

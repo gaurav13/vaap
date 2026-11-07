@@ -21,8 +21,8 @@ export function KolReferralCard({ code, url, firstName }: { code: string; url: s
     <section className="@container relative rounded-3xl border border-line-light bg-card shadow-2xl shadow-heading/10" aria-labelledby="referral-heading">
       <div className="grid gap-5 p-5 sm:p-7 @2xl:grid-cols-2 @2xl:items-center @2xl:gap-8">
         <div className="flex flex-col gap-2">
-          <p className="inline-flex items-center gap-2 text-[0.7rem] font-bold uppercase tracking-[0.22em] text-green">
-            <Link2 className="size-4" strokeWidth={2.5} aria-hidden="true" />
+          <p className="inline-flex items-center gap-2 text-[0.7rem] font-bold uppercase tracking-[0.22em] text-body">
+            <Link2 className="size-4 text-heading" strokeWidth={2.5} aria-hidden="true" />
             Official referral code
           </p>
           <h2 id="referral-heading" className="text-lg font-bold tracking-tight text-heading text-balance sm:text-xl">
@@ -40,7 +40,7 @@ export function KolReferralCard({ code, url, firstName }: { code: string; url: s
               type="button"
               onClick={() => copy(code, "code")}
               aria-label={copied === "code" ? "Code copied" : "Copy referral code"}
-              className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-card text-green shadow-sm ring-1 ring-line-light transition-colors hover:bg-green hover:text-card focus-visible:outline-2 focus-visible:outline-green"
+              className="flex size-10 shrink-0 items-center justify-center rounded-xl text-green transition-colors hover:bg-card hover:shadow-sm focus-visible:outline-2 focus-visible:outline-green"
             >
               {copied === "code" ? <Check className="size-4" aria-hidden="true" /> : <Copy className="size-4" aria-hidden="true" />}
             </button>
@@ -52,7 +52,7 @@ export function KolReferralCard({ code, url, firstName }: { code: string; url: s
           <div className="grid grid-cols-1 gap-2.5 @xs:grid-cols-2">
             <Link
               href={url}
-              className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-gradient-to-b from-green to-green/85 px-4 py-3 text-sm font-semibold text-card shadow-lg shadow-green/25 transition-all hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green"
+              className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-heading px-4 py-3 text-sm font-semibold text-card shadow-lg shadow-heading/20 transition-colors hover:bg-heading/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green"
             >
               Apply with this code
               <ArrowRight className="size-4" aria-hidden="true" />
@@ -60,7 +60,7 @@ export function KolReferralCard({ code, url, firstName }: { code: string; url: s
             <button
               type="button"
               onClick={() => copy(new URL(url, window.location.origin).toString(), "link")}
-              className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-green/30 bg-card px-4 py-3 text-sm font-semibold text-heading transition-colors hover:border-green hover:text-green focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green"
+              className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-heading/20 bg-card px-4 py-3 text-sm font-semibold text-heading transition-colors hover:border-green hover:text-green focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green"
             >
               {copied === "link" ? <Check className="size-4" aria-hidden="true" /> : <Link2 className="size-4" aria-hidden="true" />}
               {copied === "link" ? "Link copied" : "Copy invite link"}

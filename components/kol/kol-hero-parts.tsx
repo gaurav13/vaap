@@ -1,4 +1,4 @@
-import { Bitcoin, Boxes, ChartNoAxesCombined, Coins, Crown, Layers, Megaphone, Scale, ShieldCheck, Sparkles, type LucideIcon } from "lucide-react"
+import { BadgeCheck, Bitcoin, Boxes, ChartNoAxesCombined, Coins, Layers, Megaphone, Scale, ShieldCheck, Sparkles, type LucideIcon } from "lucide-react"
 
 const TOPIC_ICONS: [RegExp, LucideIcon][] = [
   [/fintech|trading|market|analy/i, ChartNoAxesCombined],
@@ -24,7 +24,7 @@ export function ExpertiseChips({ topics }: { topics: string[] }) {
         return (
           <li
             key={topic}
-            className="inline-flex items-center gap-2 rounded-full border border-line-light bg-card px-3 py-1.5 text-xs font-semibold text-heading shadow-sm shadow-heading/5 sm:px-4 sm:py-2 sm:text-sm"
+            className="inline-flex items-center gap-2 rounded-full border border-line-light/70 bg-card px-3 py-1.5 text-xs font-semibold text-heading shadow-md shadow-heading/5 sm:px-4 sm:py-2.5 sm:text-sm"
           >
             <Icon className="size-4 text-green" strokeWidth={2.25} aria-hidden="true" />
             {topic}
@@ -35,62 +35,23 @@ export function ExpertiseChips({ topics }: { topics: string[] }) {
   )
 }
 
-const CENTER = 60
-const RADIUS = 47
-const LEAVES = Array.from({ length: 9 }, (_, i) => {
-  const deg = 112 + i * 17
-  const rad = (deg * Math.PI) / 180
-  return {
-    x: CENTER + RADIUS * Math.cos(rad),
-    y: CENTER + RADIUS * Math.sin(rad),
-    rotate: deg + 90 - 28,
-    scale: 1 - i * 0.045,
-  }
-})
-
-function LaurelBranch({ mirrored }: { mirrored?: boolean }) {
+export function ScallopedCheck({ className = "" }: { className?: string }) {
   return (
-    <g transform={mirrored ? `translate(${CENTER * 2} 0) scale(-1 1)` : undefined}>
-      <path
-        d={`M ${CENTER - 18} ${CENTER + 44} A ${RADIUS} ${RADIUS} 0 0 1 ${CENTER - 30} ${CENTER - 36}`}
-        className="fill-none stroke-gold"
-        strokeWidth="1.4"
-        strokeLinecap="round"
-      />
-      {LEAVES.map((leaf, i) => (
-        <ellipse
-          key={i}
-          cx={leaf.x}
-          cy={leaf.y}
-          rx={7.5 * leaf.scale}
-          ry={3 * leaf.scale}
-          transform={`rotate(${leaf.rotate} ${leaf.x} ${leaf.y})`}
-          className="fill-gold"
-        />
-      ))}
-    </g>
+    <BadgeCheck
+      className={`shrink-0 fill-green text-card drop-shadow-[0_3px_6px_rgb(0_0_0/0.2)] ${className}`}
+      strokeWidth={2.25}
+      aria-hidden="true"
+    />
   )
 }
 
-export function KolVerifiedSeal({ className = "" }: { className?: string }) {
+export function KolVerifiedSeal({ className = "" }: { className?: string; id?: string }) {
   return (
-    <div
-      className={`relative flex size-36 shrink-0 items-center justify-center ${className}`}
-      role="img"
-      aria-label="VAAP KOL verified"
-    >
-      <svg viewBox="0 0 120 120" className="absolute inset-0 size-full" aria-hidden="true">
-        <LaurelBranch />
-        <LaurelBranch mirrored />
-      </svg>
-      <Crown className="absolute top-1 size-5 fill-gold text-gold" aria-hidden="true" />
-      <div className="relative flex flex-col items-center leading-none">
-        <span className="text-4xl font-black tracking-tight text-green">KOL</span>
-        <span className="mt-1 text-xs font-bold uppercase tracking-[0.2em] text-green">Verified</span>
-      </div>
-      <span className="absolute bottom-1 flex size-6 items-center justify-center rounded-full bg-green text-card shadow-md ring-2 ring-card">
-        <ShieldCheck className="size-3.5" aria-hidden="true" />
-      </span>
-    </div>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/images/kol-verified-seal.png"
+      alt="VAAP KOL verified"
+      className={`h-auto w-36 shrink-0 object-contain mix-blend-multiply ${className}`}
+    />
   )
 }
