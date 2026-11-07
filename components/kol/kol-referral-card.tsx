@@ -18,7 +18,7 @@ export function KolReferralCard({ code, url, firstName }: { code: string; url: s
   }
 
   return (
-    <section className="flex flex-col gap-4 rounded-2xl bg-navy-dark p-6" aria-labelledby="referral-heading">
+    <section className="flex flex-col gap-4 rounded-2xl border border-card/15 bg-card/5 p-6" aria-labelledby="referral-heading">
       <div className="flex flex-col gap-1">
         <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-green-light">
           <ShieldCheck className="size-4" aria-hidden="true" />
@@ -47,7 +47,7 @@ export function KolReferralCard({ code, url, firstName }: { code: string; url: s
         {copied === "code" ? "Referral code copied" : copied === "link" ? "Referral link copied" : ""}
       </p>
 
-      <div className="flex flex-col gap-2 sm:flex-row lg:flex-col xl:flex-row">
+      <div className="flex flex-col gap-2 sm:flex-row">
         <Link
           href={url}
           className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-green px-4 py-2.5 text-sm font-semibold text-card transition-colors hover:bg-green/90"

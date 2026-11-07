@@ -58,7 +58,8 @@ export default async function KolProfilePage({ params }: Props) {
               <ArrowLeft className="size-4" aria-hidden="true" />
               All opinion leaders
             </Link>
-            <div className="flex flex-col gap-6 md:flex-row md:items-center">
+            <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex min-w-0 flex-col gap-6 md:flex-row md:items-center">
               <div className="size-32 shrink-0 overflow-hidden rounded-2xl border-4 border-card/10 bg-navy md:size-40">
                 {kol.photo ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -85,6 +86,12 @@ export default async function KolProfilePage({ params }: Props) {
                   </p>
                 )}
               </div>
+            </div>
+            {referralCode && (
+              <div className="w-full shrink-0 lg:w-96">
+                <KolReferralCard code={referralCode} url={referralUrl(referralCode)} firstName={name.split(" ")[0]} />
+              </div>
+            )}
             </div>
           </div>
         </section>
@@ -164,8 +171,6 @@ export default async function KolProfilePage({ params }: Props) {
                 {kol.statsUpdatedAt ? ` · stats updated ${formatDate(kol.statsUpdatedAt)}` : ""}
               </p>
             </section>
-
-            {referralCode && <KolReferralCard code={referralCode} url={referralUrl(referralCode)} firstName={name.split(" ")[0]} />}
 
             <section className="flex flex-col gap-4 rounded-2xl bg-card p-6" aria-labelledby="collab-heading">
               <h2 id="collab-heading" className="font-serif text-xl font-bold text-heading">
