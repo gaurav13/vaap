@@ -10,6 +10,15 @@ import { createAttributionForApplication } from "@/lib/referral-engine"
 import { notify } from "@/lib/notifications"
 import { sendTemplateEmail } from "@/lib/email-templates/service"
 import { CONTACT_EMAIL } from "@/lib/contact"
+import { redirect } from "next/navigation"
+import {
+  consumeToken,
+  isValidEmail,
+  normalizeEmail,
+  sendConfirmedEmail,
+  sendVerification,
+  type SendVerificationResult,
+} from "@/lib/event-registration"
 
 export type CryptoRates = {
   usdPerPkr: number
@@ -253,7 +262,7 @@ export async function getEventRsvps(eventId: number) {
       createdAt: eventRsvps.createdAt,
     })
     .from(eventRsvps)
-    .where(eq(eventRsvps.eventId, eventId))
+    .where(and(eq(eventRsvps.eventId, eventId), eq(eventRsvps.status, "confirmed")))
     .orderBy(eventRsvps.createdAt)
 }
 
@@ -261,49 +270,125 @@ export async function getEventRsvpCount(eventId: number) {
   const rows = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(eventRsvps)
-    .where(eq(eventRsvps.eventId, eventId))
+    .where(and(eq(eventRsvps.eventId, eventId), eq(eventRsvps.status, "confirmed")))
   return rows[0]?.count ?? 0
 }
 
+export type RsvpResult =
+  | { ok: true; status: "confirmed"; already?: boolean }
+  | { ok: true; status: "pending"; email: string; notice?: string }
+  | { ok: false; error: string }
+
+function verificationNotice(res: SendVerificationResult) {
+  if (res.ok) return undefined
+  if (res.reason === "cooldown") return `We just sent a link. You can request another in ${res.retryAfterSec}s.`
+  if (res.reason === "limit") return "Too many verification emails were requested. Please try again later."
+  return "We couldn't send the verification email right now. Please try resending in a moment."
+}
+
+function refreshEventPaths(ev: { id: number; slug: string | null }) {
+  revalidatePath(`/events/${ev.slug || ev.id}`)
+  revalidatePath(`/admin/events/${ev.id}/participants`)
+  revalidatePath("/admin/participants")
+  revalidatePath("/events")
+}
+
 /**
- * Register an attendee for an event (Luma-style). Works for guests and
- * signed-in members alike; a signed-in user's id is attached when present.
- * Duplicate RSVPs (same email for the same event) are treated as success.
+ * Registers an attendee. Registrations stay "pending" until the email is verified
+ * through a single-use link; members whose account email is already verified and
+ * matches the email entered are confirmed straight away.
  */
-export async function rsvpToEvent(formData: FormData) {
+export async function rsvpToEvent(formData: FormData): Promise<RsvpResult> {
   const eventId = Number.parseInt(String(formData.get("eventId") ?? ""), 10)
-  const name = String(formData.get("name") ?? "").trim()
-  const email = String(formData.get("email") ?? "").trim().toLowerCase()
+  const name = String(formData.get("name") ?? "").trim().slice(0, 120)
+  const email = normalizeEmail(formData.get("email"))
+  const organization = String(formData.get("organization") ?? "").trim().slice(0, 160)
 
   if (!Number.isFinite(eventId)) return { ok: false, error: "Invalid event." }
   if (!name) return { ok: false, error: "Please enter your name." }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { ok: false, error: "Please enter a valid email address." }
+  if (!isValidEmail(email)) return { ok: false, error: "Please enter a valid email address." }
 
-  // Only allow RSVPs to a live, approved event.
   const ev = await getEventById(eventId)
   if (!ev) return { ok: false, error: "This event is no longer available." }
 
   let userId: string | null = null
+  let inboxAlreadyVerified = false
   try {
     const session = await auth.api.getSession({ headers: await headers() })
     userId = session?.user?.id ?? null
+    inboxAlreadyVerified = Boolean(session?.user?.emailVerified) && normalizeEmail(session?.user?.email) === email
   } catch {
     userId = null
   }
 
+  const findExisting = async () =>
+    (await db.select().from(eventRsvps).where(and(eq(eventRsvps.eventId, eventId), eq(eventRsvps.email, email))).limit(1))[0]
+
+  let rsvp = await findExisting()
+  if (rsvp?.status === "confirmed") return { ok: true, status: "confirmed", already: true }
+
   try {
+    if (rsvp) {
+      ;[rsvp] = await db
+        .update(eventRsvps)
+        .set({ name, organization, userId: rsvp.userId ?? userId, status: "pending", cancelledAt: null })
+        .where(eq(eventRsvps.id, rsvp.id))
+        .returning()
+    } else {
+      const [inserted] = await db
+        .insert(eventRsvps)
+        .values({ eventId, userId, name, email, organization, status: "pending" })
+        .onConflictDoNothing()
+        .returning()
+      rsvp = inserted ?? (await findExisting())
+    }
+  } catch (err) {
+    console.log("[v0] rsvp save failed:", err instanceof Error ? err.message : err)
+    return { ok: false, error: "Could not register. Please try again." }
+  }
+  if (!rsvp) return { ok: false, error: "Could not register. Please try again." }
+  if (rsvp.status === "confirmed") return { ok: true, status: "confirmed", already: true }
+
+  if (inboxAlreadyVerified) {
     await db
-      .insert(eventRsvps)
-      .values({ eventId, userId, name, email })
-      .onConflictDoNothing()
-  } catch {
-    return { ok: false, error: "Could not register." }
+      .update(eventRsvps)
+      .set({ status: "confirmed", verifiedAt: new Date(), verifyTokenHash: null, verifyExpiresAt: null })
+      .where(eq(eventRsvps.id, rsvp.id))
+    await sendConfirmedEmail(rsvp, ev)
+    refreshEventPaths(ev)
+    return { ok: true, status: "confirmed" }
   }
 
-  revalidatePath(`/events/${ev.slug || eventId}`)
-  revalidatePath(`/admin/events/${eventId}/participants`)
-  revalidatePath("/events")
-  return { ok: true }
+  const sent = await sendVerification(rsvp, ev)
+  refreshEventPaths(ev)
+  return { ok: true, status: "pending", email, notice: verificationNotice(sent) }
+}
+
+/** Sends a new verification link. The response is identical whether or not a registration exists. */
+export async function resendRsvpVerification(formData: FormData): Promise<{ ok: boolean; message: string }> {
+  const eventId = Number.parseInt(String(formData.get("eventId") ?? ""), 10)
+  const email = normalizeEmail(formData.get("email"))
+  const generic = "If there's a pending registration for this email, a new verification link is on its way."
+  if (!Number.isFinite(eventId) || !isValidEmail(email)) return { ok: false, message: "Please enter a valid email address." }
+
+  const [row] = await db
+    .select({ rsvp: eventRsvps, event: events })
+    .from(eventRsvps)
+    .innerJoin(events, eq(events.id, eventRsvps.eventId))
+    .where(and(eq(eventRsvps.eventId, eventId), eq(eventRsvps.email, email), eq(eventRsvps.status, "pending")))
+    .limit(1)
+  if (!row) return { ok: true, message: generic }
+
+  const sent = await sendVerification(row.rsvp, row.event)
+  return sent.ok ? { ok: true, message: generic } : { ok: false, message: verificationNotice(sent) ?? generic }
+}
+
+export async function confirmRsvpAction(formData: FormData) {
+  const token = String(formData.get("token") ?? "")
+  const res = await consumeToken(token)
+  if (!res.ok) redirect(`/rsvp/confirm?token=${encodeURIComponent(token)}`)
+  refreshEventPaths(res.event)
+  redirect(`/rsvp/confirm?confirmed=${res.event.id}`)
 }
 
 export async function submitMembershipApplication(formData: FormData) {

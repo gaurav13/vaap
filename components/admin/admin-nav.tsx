@@ -49,6 +49,7 @@ const GROUPS: { heading: string; links: { href: string; label: string; icon: typ
       { href: "/admin/news", label: "News", icon: Newspaper },
     { href: "/admin/articles", label: "Articles", icon: PenSquare },
       { href: "/admin/events", label: "Events", icon: CalendarDays },
+      { href: "/admin/participants", label: "Event Participants", icon: Users },
       { href: "/admin/media-highlights", label: "Media Highlights", icon: Clapperboard },
       { href: "/admin/publications", label: "Publications", icon: BookOpen },
       { href: "/admin/documents", label: "Documents", icon: FolderOpen },

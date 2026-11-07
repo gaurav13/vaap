@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, serial, integer, jsonb } from "drizzle-orm/pg-core"
+import { pgTable, text, timestamp, boolean, serial, integer, jsonb, uniqueIndex } from "drizzle-orm/pg-core"
 import type { EmailContent } from "@/lib/email-templates/registry"
 
 // --- Better Auth required tables -------------------------------------------
@@ -109,17 +109,34 @@ export const events = pgTable("events", {
 
 // --- Event RSVPs (Luma-style participant list) -----------------------------
 
-export const eventRsvps = pgTable("event_rsvps", {
-  id: serial("id").primaryKey(),
-  eventId: integer("eventId").notNull(),
-  // Set when a signed-in user RSVPs; null for guest RSVPs.
-  userId: text("userId"),
-  name: text("name").notNull(),
-  email: text("email").notNull(),
-  // Set by staff at the door; null until the participant is checked in.
-  checkedInAt: timestamp("checkedInAt"),
-  createdAt: timestamp("createdAt").notNull().defaultNow(),
-})
+export const eventRsvps = pgTable(
+  "event_rsvps",
+  {
+    id: serial("id").primaryKey(),
+    eventId: integer("eventId").notNull(),
+    // Set when a signed-in user RSVPs; null for guest RSVPs.
+    userId: text("userId"),
+    name: text("name").notNull(),
+    // Always stored lowercased so the (eventId, email) unique index blocks duplicates.
+    email: text("email").notNull(),
+    organization: text("organization").notNull().default(""),
+    // "pending" (awaiting email verification) | "confirmed" | "cancelled".
+    // Defaults to "confirmed" so registrations recorded before verification existed stay counted.
+    status: text("status").notNull().default("confirmed"),
+    verifiedAt: timestamp("verifiedAt"),
+    // SHA-256 of the single-use verification token; cleared once used.
+    verifyTokenHash: text("verifyTokenHash"),
+    verifyExpiresAt: timestamp("verifyExpiresAt"),
+    verifyLastSentAt: timestamp("verifyLastSentAt"),
+    verifySendCount: integer("verifySendCount").notNull().default(0),
+    verifyWindowStartedAt: timestamp("verifyWindowStartedAt"),
+    cancelledAt: timestamp("cancelledAt"),
+    // Set by staff at the door; null until the participant is checked in.
+    checkedInAt: timestamp("checkedInAt"),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("event_rsvps_event_email_unique").on(t.eventId, t.email)],
+)
 
 export const membershipApplications = pgTable("membership_applications", {
   id: serial("id").primaryKey(),
