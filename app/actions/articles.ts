@@ -329,6 +329,23 @@ export async function unpublishArticle(id: number) {
   return { ok: true as const }
   }
 
+export async function deleteArticle(id: number) {
+  try {
+    await requirePublisher()
+    const [article] = await db.select({ id: articles.id }).from(articles).where(eq(articles.id, id)).limit(1)
+    if (!article) return { ok: false as const, error: "Article not found." }
+    await db.delete(articleApprovals).where(eq(articleApprovals.articleId, id))
+    await db.delete(articles).where(eq(articles.id, id))
+    revalidatePath("/admin/articles")
+    revalidatePath("/dashboard/articles")
+    revalidatePath("/insights")
+    revalidatePath("/")
+    return { ok: true as const }
+  } catch (err) {
+    return { ok: false as const, error: err instanceof Error ? err.message : "Could not delete article." }
+  }
+}
+
 // ---- Public ---------------------------------------------------------------
 
 export async function getPublishedArticles() {

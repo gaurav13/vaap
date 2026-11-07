@@ -494,3 +494,19 @@ export async function setUserPassword(userId: string, password: string) {
   revalidatePath("/admin/users")
   return { ok: true }
 }
+
+// Permanently removes a login account. Sessions and credentials cascade; the
+// member record (if any) is kept and can be managed from /admin/members.
+export async function deleteUser(userId: string) {
+  try {
+    const admin = await requireAdmin()
+    if (admin.id === userId) return { ok: false, error: "You cannot delete your own account." }
+    const [target] = await db.select({ id: user.id }).from(user).where(eq(user.id, userId)).limit(1)
+    if (!target) return { ok: false, error: "User not found." }
+    await db.delete(user).where(eq(user.id, userId))
+    revalidatePath("/admin/users")
+    return { ok: true }
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Could not delete user." }
+  }
+}
