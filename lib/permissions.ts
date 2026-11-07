@@ -32,6 +32,15 @@ export type Permission =
   | "dashboard.staff"
   // Governance: only super admins run the governance / election system.
   | "governance.manage"
+  // Read-only admin views granted to staff (members, articles, referrals).
+  | "admin.view"
+
+// Admin routes a read-only staff user may open. Everything else redirects.
+export const STAFF_ADMIN_ROUTES = ["/admin/members", "/admin/articles", "/admin/referrals"] as const
+
+export function isStaffAdminRoute(pathname: string): boolean {
+  return STAFF_ADMIN_ROUTES.some((r) => pathname === r || pathname.startsWith(`${r}/`))
+}
 
 const PERMISSIONS: Record<UserRole, Permission[]> = {
   admin: [
@@ -45,8 +54,9 @@ const PERMISSIONS: Record<UserRole, Permission[]> = {
     "payouts.request",
     "dashboard.staff",
     "governance.manage",
+    "admin.view",
   ],
-  staff: ["articles.create", "referrals.own", "rewards.own", "payouts.request", "dashboard.staff"],
+  staff: ["articles.create", "referrals.own", "rewards.own", "payouts.request", "dashboard.staff", "admin.view"],
   committee_head: [
     "articles.create",
     "committee.view",

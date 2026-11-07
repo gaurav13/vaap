@@ -103,7 +103,17 @@ function fmtInput(iso: string | null) {
   return new Date(iso).toISOString().slice(0, 10)
 }
 
-export function MembersAdmin({ items, trashed = [], stats }: { items: Member[]; trashed?: Member[]; stats: Stats }) {
+export function MembersAdmin({
+  items,
+  trashed = [],
+  stats,
+  readOnly = false,
+}: {
+  items: Member[]
+  trashed?: Member[]
+  stats: Stats
+  readOnly?: boolean
+}) {
   const [query, setQuery] = useState("")
   const [showTrash, setShowTrash] = useState(false)
   const [tab, setTab] = useState("All")
@@ -218,6 +228,11 @@ export function MembersAdmin({ items, trashed = [], stats }: { items: Member[]; 
             Manage all VAAP members, verify documents, update status and manage voting eligibility.
           </p>
         </div>
+        {readOnly ? (
+          <span className="inline-flex items-center gap-2 self-start rounded-lg border border-line bg-surface px-3 py-2 text-xs font-semibold text-muted-2">
+            View only &middot; contact details hidden
+          </span>
+        ) : (
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
@@ -253,6 +268,7 @@ export function MembersAdmin({ items, trashed = [], stats }: { items: Member[]; 
             <Trash2 className="size-4" /> Trash ({trashed.length})
           </button>
         </div>
+        )}
       </div>
 
       {/* Stat cards */}
@@ -322,7 +338,7 @@ export function MembersAdmin({ items, trashed = [], stats }: { items: Member[]; 
         </div>
 
         {/* Bulk bar */}
-        {selectedIds.length > 0 && (
+        {!readOnly && selectedIds.length > 0 && (
           <div className="flex flex-wrap items-center gap-3 border-b border-line bg-mint px-4 py-2.5">
             <span className="text-sm font-medium text-navy">{selectedIds.length} selected</span>
             <button
@@ -358,13 +374,15 @@ export function MembersAdmin({ items, trashed = [], stats }: { items: Member[]; 
             <thead>
               <tr className="border-b border-line bg-surface/60 text-xs uppercase tracking-wide text-muted-2">
                 <th className="w-10 px-4 py-3">
-                  <input
-                    type="checkbox"
-                    aria-label="Select all on page"
-                    checked={pageRows.length > 0 && pageRows.every((r) => selected.has(r.id))}
-                    onChange={toggleSelectPage}
-                    className="size-4 rounded border-line accent-green"
-                  />
+                  {!readOnly && (
+                    <input
+                      type="checkbox"
+                      aria-label="Select all on page"
+                      checked={pageRows.length > 0 && pageRows.every((r) => selected.has(r.id))}
+                      onChange={toggleSelectPage}
+                      className="size-4 rounded border-line accent-green"
+                    />
+                  )}
                 </th>
                 <th className="px-4 py-3 font-semibold">Member</th>
                 <th className="px-4 py-3 font-semibold">Organization</th>
@@ -380,13 +398,15 @@ export function MembersAdmin({ items, trashed = [], stats }: { items: Member[]; 
               {pageRows.map((m) => (
                 <tr key={m.id} className="border-b border-line-light last:border-0 hover:bg-surface/50">
                   <td className="px-4 py-3">
-                    <input
-                      type="checkbox"
-                      aria-label={`Select ${m.name}`}
-                      checked={selected.has(m.id)}
-                      onChange={() => toggleSelect(m.id)}
-                      className="size-4 rounded border-line accent-green"
-                    />
+                    {!readOnly && (
+                      <input
+                        type="checkbox"
+                        aria-label={`Select ${m.name}`}
+                        checked={selected.has(m.id)}
+                        onChange={() => toggleSelect(m.id)}
+                        className="size-4 rounded border-line accent-green"
+                      />
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
@@ -423,6 +443,9 @@ export function MembersAdmin({ items, trashed = [], stats }: { items: Member[]; 
                   <td className="px-4 py-3 text-body">{fmtDate(m.joinedAt)}</td>
                   <td className="px-4 py-3 text-body">{fmtDate(m.expiresAt)}</td>
                   <td className="px-4 py-3 text-right">
+                    {readOnly ? (
+                      <span className="text-xs text-muted-2">View only</span>
+                    ) : (
                     <RowMenu
                       member={m}
                       pending={pending}
@@ -443,6 +466,7 @@ export function MembersAdmin({ items, trashed = [], stats }: { items: Member[]; 
                         })
                       }
                     />
+                    )}
                   </td>
                 </tr>
               ))}

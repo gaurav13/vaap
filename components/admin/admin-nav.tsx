@@ -37,6 +37,7 @@ import {
 import { cn } from "@/lib/utils"
 import { VaapLogo } from "@/components/vaap-logo"
 import { authClient } from "@/lib/auth-client"
+import { isStaffAdminRoute } from "@/lib/permissions"
 
 const GROUPS: { heading: string; links: { href: string; label: string; icon: typeof Home; adminOnly?: boolean }[] }[] = [
   {
@@ -91,7 +92,7 @@ const GROUPS: { heading: string; links: { href: string; label: string; icon: typ
   {
     heading: "Referrals & Rewards",
     links: [
-      { href: "/admin/referrals", label: "Referral Console", icon: Share2, adminOnly: true },
+      { href: "/admin/referrals", label: "Referral Console", icon: Share2 },
       { href: "/admin/commissions", label: "Commission & Rewards", icon: Percent, adminOnly: true },
       { href: "/admin/rewards", label: "Rewards & Payouts", icon: Coins, adminOnly: true },
     ],
@@ -128,7 +129,9 @@ export function AdminNav({ role, name }: { role: "staff" | "admin"; name: string
 
       <nav className="flex gap-1 overflow-x-auto px-3 pb-3 lg:flex-col lg:gap-0 lg:overflow-visible lg:px-3 lg:py-2">
         {GROUPS.map((group) => {
-          const links = group.links.filter((l) => !l.adminOnly || role === "admin")
+          const links = group.links.filter((l) =>
+            role === "admin" ? true : isStaffAdminRoute(l.href),
+          )
           if (links.length === 0) return null
           return (
             <div key={group.heading} className="flex gap-1 lg:mt-3 lg:flex-col lg:gap-0.5 lg:first:mt-0">

@@ -11,12 +11,14 @@ export const metadata = {
 export default async function AdminArticlesPage() {
   const session = await getSession()
   if (!session?.user) redirect("/sign-in")
-  if (!can(session.user.role, "articles.publish")) redirect("/admin")
+  const canPublish = can(session.user.role, "articles.publish")
+  if (!canPublish && !can(session.user.role, "admin.view")) redirect("/dashboard")
 
   const queue = await getArticleReviewQueue()
 
   return (
     <ArticleReview
+      readOnly={!canPublish}
       initial={queue.map((a) => ({
         id: a.id,
         title: a.title,

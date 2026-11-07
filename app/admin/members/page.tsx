@@ -36,7 +36,13 @@ export default async function AdminMembersPage() {
       certByMember.set(c.memberId, { status: c.status, issuedAt: c.issuedAt.toISOString() })
     }
   }
-  const rows = memberRows.map((r) => ({ ...r, certificate: certByMember.get(r.id) ?? null }))
+  // Staff get a redacted, read-only view: no contact or identity details leave the server.
+  const redact = <T extends (typeof memberRows)[number]>(r: T): T =>
+    isSuperAdmin
+      ? r
+      : { ...r, email: "Hidden", phone: null, ntn: null, linkedin: null, website: null, userId: null }
+  const rows = memberRows.map((r) => ({ ...redact(r), certificate: certByMember.get(r.id) ?? null }))
+  const trashedRows = isSuperAdmin ? trashed : []
 
   const now = new Date()
   const in30 = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
@@ -72,8 +78,9 @@ export default async function AdminMembersPage() {
 
       <MembersAdmin
         items={serializeRows(rows) as unknown as Parameters<typeof MembersAdmin>[0]["items"]}
-        trashed={serializeRows(trashed) as unknown as Parameters<typeof MembersAdmin>[0]["items"]}
+        trashed={serializeRows(trashedRows) as unknown as Parameters<typeof MembersAdmin>[0]["items"]}
         stats={stats}
+        readOnly={!isSuperAdmin}
       />
 
       {votingRows && (
