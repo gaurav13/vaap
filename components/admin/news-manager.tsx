@@ -214,8 +214,8 @@ export function NewsManager({ items, committees = [] }: { items: NewsItem[]; com
                 Linked posts appear in the &quot;Latest Updates&quot; section on the Committees page.
               </span>
             </Field>
-            <Field label="Excerpt">
-              <textarea name="excerpt" defaultValue={editing?.excerpt} required rows={2} className={inputCls} />
+            <Field label="Summary (optional — shown below the social bar)">
+              <textarea name="excerpt" defaultValue={editing?.excerpt} rows={2} className={inputCls} />
             </Field>
             <Field label="Content">
               <textarea name="content" defaultValue={editing?.content} rows={5} className={inputCls} />

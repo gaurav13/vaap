@@ -72,7 +72,7 @@ export async function createNews(formData: FormData) {
   const published = formData.get("published") === "on"
   const publisher = readPublisher(formData)
 
-  if (!title || !excerpt) return { ok: false, error: "Title and excerpt are required." }
+  if (!title) return { ok: false, error: "Title is required." }
   if (publisher.error) return { ok: false, error: publisher.error }
 
   await db.insert(news).values({
@@ -109,7 +109,7 @@ export async function updateNews(id: number, formData: FormData) {
   const published = formData.get("published") === "on"
   const publisher = readPublisher(formData)
 
-  if (!title || !excerpt) return { ok: false, error: "Title and excerpt are required." }
+  if (!title) return { ok: false, error: "Title is required." }
   if (publisher.error) return { ok: false, error: publisher.error }
 
   await db
