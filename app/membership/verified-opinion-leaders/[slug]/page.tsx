@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { ArrowLeft, ExternalLink, MapPin, UserRound } from "lucide-react"
+import { ArrowLeft, Check, ExternalLink, MapPin, UserRound } from "lucide-react"
+import { ExpertiseIcons, KolVerifiedSeal } from "@/components/kol/kol-hero-parts"
 import { SiteHeaderServer } from "@/components/site-header-server"
 import { SiteFooter } from "@/components/site-footer"
 import { PlatformIcon, VerifiedBadge } from "@/components/kol/kol-ui"
@@ -52,46 +53,64 @@ export default async function KolProfilePage({ params }: Props) {
       <SeoJsonLd subject={kolSubject(kol)} />
       <SiteHeaderServer />
       <main className="bg-surface">
-        <section className="bg-navy-dark">
-          <div className="vaap-container flex flex-col gap-8 py-10 md:py-14">
-            <Link href="/membership/verified-opinion-leaders" className="inline-flex items-center gap-2 self-start text-sm text-card/75 hover:text-card">
-              <ArrowLeft className="size-4" aria-hidden="true" />
-              All opinion leaders
+        <section className="border-b border-line-light bg-card">
+          <div className="vaap-container flex flex-col gap-8 py-8 md:py-12">
+            <Link
+              href="/membership/verified-opinion-leaders"
+              className="inline-flex items-center gap-2 self-start text-sm font-semibold text-heading transition-colors hover:text-green"
+            >
+              <ArrowLeft className="size-5" aria-hidden="true" />
+              All Verified KOLs
             </Link>
-            <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex min-w-0 flex-col gap-6 md:flex-row md:items-center">
-              <div className="size-32 shrink-0 overflow-hidden rounded-2xl border-4 border-card/10 bg-navy md:size-40">
-                {kol.photo ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={kol.photo} alt={`Portrait of ${name}`} className="size-full object-cover" />
-                ) : (
-                  <span className="flex size-full items-center justify-center text-card/50">
-                    <UserRound className="size-14" aria-hidden="true" />
+
+            <div className="flex flex-col gap-8 xl:flex-row xl:items-center">
+              <div className="flex min-w-0 flex-1 flex-col gap-6 md:flex-row md:items-center">
+                <div className="size-36 shrink-0 overflow-hidden rounded-3xl bg-surface shadow-md ring-1 ring-line-light md:size-44">
+                  {kol.photo ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={kol.photo} alt={`Portrait of ${name}`} className="size-full object-cover" />
+                  ) : (
+                    <span className="flex size-full items-center justify-center text-muted-2">
+                      <UserRound className="size-14" aria-hidden="true" />
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex min-w-0 flex-1 flex-col gap-3 md:border-l md:border-line-light md:pl-6">
+                  <span className="inline-flex items-center gap-2 self-start rounded-full bg-green py-1.5 pl-1.5 pr-4 text-sm font-semibold text-card shadow-sm">
+                    <span className="flex size-6 items-center justify-center rounded-full bg-card text-green">
+                      <Check className="size-4" strokeWidth={3} aria-hidden="true" />
+                    </span>
+                    Verified Opinion Leader
                   </span>
-                )}
+                  <h1 className="flex flex-wrap items-center gap-2 font-serif text-3xl font-bold text-heading text-balance md:text-4xl 2xl:text-5xl">
+                    {name}
+                    <VerifiedBadge className="[&_svg]:size-7" />
+                  </h1>
+                  {(kol.title || kol.organization) && (
+                    <p className="text-lg font-medium text-body">{[kol.title, kol.organization].filter(Boolean).join(", ")}</p>
+                  )}
+                  {location && (
+                    <p className="flex items-center gap-1.5 text-sm text-muted-2">
+                      <MapPin className="size-4" aria-hidden="true" />
+                      {location}
+                    </p>
+                  )}
+                  <div className="pt-2">
+                    <ExpertiseIcons topics={kol.expertise} />
+                  </div>
+                </div>
+
+                <div className="hidden shrink-0 md:block">
+                  <KolVerifiedSeal />
+                </div>
               </div>
-              <div className="flex flex-col gap-3">
-                <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-green/20 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-green-light">
-                  Verified Opinion Leader
-                </span>
-                <h1 className="flex flex-wrap items-center gap-2 font-serif text-3xl font-bold text-card text-balance md:text-5xl">
-                  {name}
-                  <VerifiedBadge className="[&_svg]:size-7" />
-                </h1>
-                <p className="text-lg text-card/85">{[kol.title, kol.organization].filter(Boolean).join(", ")}</p>
-                {location && (
-                  <p className="flex items-center gap-1.5 text-sm text-card/70">
-                    <MapPin className="size-4" aria-hidden="true" />
-                    {location}
-                  </p>
-                )}
-              </div>
-            </div>
-            {referralCode && (
-              <div className="w-full shrink-0 lg:w-96">
-                <KolReferralCard code={referralCode} url={referralUrl(referralCode)} firstName={name.split(" ")[0]} />
-              </div>
-            )}
+
+              {referralCode && (
+                <div className="w-full shrink-0 border-t border-line-light pt-8 xl:w-80 xl:border-l xl:border-t-0 xl:pl-8 xl:pt-0">
+                  <KolReferralCard code={referralCode} url={referralUrl(referralCode)} firstName={name} />
+                </div>
+              )}
             </div>
           </div>
         </section>
