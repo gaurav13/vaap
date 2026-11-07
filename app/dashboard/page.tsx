@@ -14,7 +14,6 @@ import {
   ShieldCheck,
   UserCog,
   UserPlus,
-  UserRound,
   Users,
   Zap,
 } from "lucide-react"
@@ -24,6 +23,7 @@ import { getPublishedNews, getPublishedEvents } from "@/app/actions/public"
 import { MISSION_TAGLINE } from "@/lib/member/content"
 import { effectiveExpiry } from "@/lib/membership"
 import { MembershipCta } from "@/components/member/membership-cta"
+import { LatestUpdates } from "@/components/member/latest-updates"
 
 function fmtDate(d: Date | string) {
   return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
@@ -36,7 +36,7 @@ export default async function DashboardPage() {
 
   const [membership, news, events] = await Promise.all([
     getMyMembership(user.id),
-    getPublishedNews(3),
+    getPublishedNews(24),
     getPublishedEvents(3),
   ])
 
@@ -46,7 +46,6 @@ export default async function DashboardPage() {
   const validExpiry = isActive ? effectiveExpiry(membership?.joinedAt, membership?.expiresAt) : null
   const validTill = validExpiry ? fmtDate(validExpiry) : null
   const votingEligible = membership?.votingEligible ?? false
-  const [featured, ...moreNews] = news
 
   return (
     <div className="flex w-full flex-col gap-6">
@@ -154,70 +153,19 @@ export default async function DashboardPage() {
       </section>
 
       <section className="grid gap-6 lg:grid-cols-3">
-        <Panel
-          icon={PenLine}
-          title="Latest Articles"
-          action={{ label: "View All Articles", href: "/news" }}
+        <LatestUpdates
           className="lg:col-span-2"
-        >
-          {!featured && <p className="text-sm text-muted-2">No articles yet.</p>}
-          {featured && (
-            <Link
-              href={`/news/${featured.id}`}
-              className="group flex flex-col gap-4 rounded-xl border border-line bg-muted/50 p-3 sm:flex-row"
-            >
-              <span className="relative aspect-[16/10] w-full shrink-0 overflow-hidden rounded-lg bg-navy sm:w-60">
-                {featured.image && (
-                  <Image src={featured.image} alt="" fill className="object-cover" sizes="240px" />
-                )}
-                <span className="absolute left-2 top-2 rounded bg-gold px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-primary-foreground">
-                  Featured
-                </span>
-              </span>
-              <span className="flex min-w-0 flex-col justify-center gap-2 py-1">
-                <span className="text-pretty text-base font-bold leading-snug text-heading group-hover:text-green">
-                  {featured.title}
-                </span>
-                <span className="line-clamp-2 text-sm leading-relaxed text-body">{featured.excerpt}</span>
-                <span className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-2">
-                  <span className="inline-flex items-center gap-1.5">
-                    <UserRound className="size-3.5" aria-hidden />
-                    {featured.publisherName || featured.category}
-                  </span>
-                  <span className="inline-flex items-center gap-1.5">
-                    <CalendarDays className="size-3.5" aria-hidden />
-                    {fmtDate(featured.createdAt)}
-                  </span>
-                </span>
-              </span>
-            </Link>
-          )}
-          {moreNews.length > 0 && (
-            <ul className="mt-2 flex flex-col divide-y divide-line">
-              {moreNews.map((n) => (
-                <li key={n.id}>
-                  <Link href={`/news/${n.id}`} className="group flex items-center gap-4 py-3">
-                    <span className="relative h-16 w-24 shrink-0 overflow-hidden rounded-lg bg-mint">
-                      {n.image && <Image src={n.image} alt="" fill className="object-cover" sizes="96px" />}
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="line-clamp-2 text-sm font-bold text-heading group-hover:text-green">
-                        {n.title}
-                      </span>
-                      <span className="mt-1 block text-xs text-muted-2">
-                        {n.category} · {fmtDate(n.createdAt)}
-                      </span>
-                    </span>
-                    <ArrowRight
-                      className="size-4 shrink-0 text-heading transition-transform group-hover:translate-x-0.5"
-                      aria-hidden
-                    />
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Panel>
+          items={news.map((n) => ({
+            id: n.id,
+            title: n.title,
+            excerpt: n.excerpt ?? null,
+            image: n.image ?? null,
+            category: n.category,
+            publisherName: n.publisherName ?? null,
+            externalUrl: n.externalUrl ?? null,
+            createdAt: new Date(n.createdAt).toISOString(),
+          }))}
+        />
 
         <Panel icon={CalendarDays} title="Upcoming Events" action={{ label: "View All Events", href: "/dashboard/events" }}>
           {events.length === 0 && <p className="text-sm text-muted-2">No upcoming events.</p>}
