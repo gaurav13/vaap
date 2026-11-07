@@ -167,13 +167,15 @@ export function LatestNewsMedia({ items }: { items: HomeNewsItem[] }) {
                   >
                     <img src={item.image || "/images/news-skyline.png"} alt="" className="size-full object-cover" />
                   </div>
-                  <span className="absolute left-2 top-2 flex h-7 max-w-[60%] items-center rounded-md bg-card px-2 shadow-sm">
-                    <img
-                      src={item.publisherLogo || "/images/vaap-logo.png"}
-                      alt={item.publisherName || "VAAP"}
-                      className="h-5 w-auto max-w-full object-contain"
-                    />
-                  </span>
+                  {item.publisherLogo && !/^vaap$/i.test(item.publisherName?.trim() ?? "") && (
+                    <span className="absolute left-2.5 top-2.5 flex h-10 max-w-[65%] items-center rounded-lg bg-card px-2.5 py-1.5 shadow-md ring-1 ring-line">
+                      <img
+                        src={item.publisherLogo}
+                        alt={item.publisherName || "Media outlet"}
+                        className="h-full w-auto max-w-full object-contain"
+                      />
+                    </span>
+                  )}
                 </div>
                 <div className="flex flex-1 flex-col gap-2 px-3 pb-3 pt-1">
                   <div className="flex items-center">
