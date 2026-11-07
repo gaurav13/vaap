@@ -75,6 +75,8 @@ export const news = pgTable("news", {
   publisherName: text("publisherName").notNull().default(""),
   publisherLogo: text("publisherLogo"),
   externalUrl: text("externalUrl"),
+  sourceType: text("sourceType").notNull().default("original"),
+  originalPublishedAt: timestamp("originalPublishedAt"),
   // Optional link to a committee — when set, the post also surfaces in the
   // "Committee News / Latest Updates" section of the Committees page.
   committeeId: integer("committeeId"),

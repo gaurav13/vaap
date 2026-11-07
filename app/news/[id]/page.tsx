@@ -10,6 +10,7 @@ import { SiteFooter } from "@/components/site-footer"
 import { getHeaderUser } from "@/lib/header-user"
 import { getSiteSettings } from "@/lib/site-settings"
 import { FollowVaap } from "@/components/follow-vaap"
+import { PublisherCredit, PublisherInfo } from "@/components/news/publisher-info"
 
 export default async function NewsDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -26,6 +27,15 @@ export default async function NewsDetailPage({ params }: { params: Promise<{ id:
 
   const [user, { social }] = await Promise.all([getHeaderUser(), getSiteSettings()])
   const createdAt = new Date(post.createdAt)
+  const publisher =
+    post.sourceType === "external" && post.publisherName && post.externalUrl
+      ? {
+          name: post.publisherName,
+          logo: post.publisherLogo,
+          url: post.externalUrl,
+          publishedAt: post.originalPublishedAt,
+        }
+      : null
 
   return (
     <>
@@ -63,6 +73,8 @@ export default async function NewsDetailPage({ params }: { params: Promise<{ id:
               {post.excerpt && (
                 <p className="text-base leading-relaxed text-body text-pretty lg:text-lg">{post.excerpt}</p>
               )}
+
+              {publisher && <PublisherCredit {...publisher} />}
             </div>
 
             {post.image && (
@@ -96,10 +108,16 @@ export default async function NewsDetailPage({ params }: { params: Promise<{ id:
           </div>
         </header>
 
-        <article className="mx-auto max-w-3xl px-5 pb-14 pt-12 lg:px-8 lg:pb-20">
+        <article className="mx-auto flex max-w-3xl flex-col gap-8 px-5 pb-14 pt-12 lg:px-8 lg:pb-20">
           {post.content && (
-            <div className="whitespace-pre-line text-pretty text-base leading-relaxed text-body">{post.content}</div>
+            <div className="flex flex-col gap-3">
+              {publisher && (
+                <h2 className="text-xs font-bold uppercase tracking-[0.16em] text-muted-2">Summary</h2>
+              )}
+              <div className="whitespace-pre-line text-pretty text-base leading-relaxed text-body">{post.content}</div>
+            </div>
           )}
+          {publisher && <PublisherInfo {...publisher} />}
         </article>
       </main>
       <SiteFooter />

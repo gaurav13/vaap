@@ -46,10 +46,18 @@ function readPublisher(formData: FormData) {
   const publisherLogo = String(formData.get("publisherLogo") ?? "").trim() || null
   const rawUrl = String(formData.get("externalUrl") ?? "").trim()
   const externalUrl = normalizeUrl(rawUrl)
+  const sourceType = formData.get("sourceType") === "external" ? "external" : "original"
+  const rawDate = String(formData.get("originalPublishedAt") ?? "").trim()
+  const parsedDate = rawDate ? new Date(`${rawDate}T00:00:00Z`) : null
+  const originalPublishedAt = parsedDate && !Number.isNaN(parsedDate.getTime()) ? parsedDate : null
+  const base = { publisherName, publisherLogo, externalUrl, sourceType, originalPublishedAt }
   if (rawUrl && !externalUrl) {
-    return { publisherName, publisherLogo, externalUrl: null, error: "Article link must be a valid http(s) URL." }
+    return { ...base, externalUrl: null, error: "Article link must be a valid http(s) URL." }
   }
-  return { publisherName, publisherLogo, externalUrl, error: null as string | null }
+  if (sourceType === "external" && (!publisherName || !externalUrl)) {
+    return { ...base, error: "External publisher articles need a publisher name and original article URL." }
+  }
+  return { ...base, error: null as string | null }
 }
 
 export async function createNews(formData: FormData) {
@@ -76,6 +84,8 @@ export async function createNews(formData: FormData) {
     publisherName: publisher.publisherName,
     publisherLogo: publisher.publisherLogo,
     externalUrl: publisher.externalUrl,
+    sourceType: publisher.sourceType,
+    originalPublishedAt: publisher.originalPublishedAt,
     committeeId: committeeId && !Number.isNaN(committeeId) ? committeeId : null,
     published,
     authorId: author.id,
@@ -113,6 +123,8 @@ export async function updateNews(id: number, formData: FormData) {
       publisherName: publisher.publisherName,
       publisherLogo: publisher.publisherLogo,
       externalUrl: publisher.externalUrl,
+      sourceType: publisher.sourceType,
+      originalPublishedAt: publisher.originalPublishedAt,
       committeeId: committeeId && !Number.isNaN(committeeId) ? committeeId : null,
       published,
     })

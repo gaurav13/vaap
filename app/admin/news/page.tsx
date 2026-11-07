@@ -24,6 +24,8 @@ export default async function AdminNewsPage() {
           publisherName: r.publisherName,
           publisherLogo: r.publisherLogo,
           externalUrl: r.externalUrl,
+          sourceType: r.sourceType === "external" ? "external" : "original",
+          originalPublishedAt: r.originalPublishedAt ? r.originalPublishedAt.toISOString().slice(0, 10) : null,
           committeeId: r.committeeId,
           published: r.published,
           createdAt: r.createdAt.toISOString(),
