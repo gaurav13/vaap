@@ -105,6 +105,11 @@ export default async function NewsDetailPage({ params }: { params: Promise<{ id:
         </header>
 
         <article className="mx-auto flex max-w-3xl flex-col gap-8 px-5 pb-14 pt-12 lg:px-8 lg:pb-20">
+          {post.excerpt?.trim() && (
+            <p className="border-l-4 border-green pl-5 text-pretty text-lg font-medium leading-relaxed text-heading">
+              {post.excerpt.trim()}
+            </p>
+          )}
           {post.content && (
             <div className="flex flex-col gap-3">
               {publisher && (
