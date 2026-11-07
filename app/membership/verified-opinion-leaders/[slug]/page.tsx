@@ -1,6 +1,19 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { ArrowLeft, Check, ExternalLink, MapPin, UserRound } from "lucide-react"
+import {
+  ArrowLeft,
+  Award,
+  Check,
+  ChevronDown,
+  ExternalLink,
+  Handshake,
+  Mail,
+  MapPin,
+  Newspaper,
+  ShieldCheck,
+  Sparkles,
+  UserRound,
+} from "lucide-react"
 import { ExpertiseChips, KolVerifiedSeal } from "@/components/kol/kol-hero-parts"
 import { SiteHeaderServer } from "@/components/site-header-server"
 import { SiteFooter } from "@/components/site-footer"
@@ -26,18 +39,34 @@ export async function generateMetadata({ params }: Props) {
   return seoMetadata(kolSubject(kol))
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  icon: Icon,
+  title,
+  children,
+}: {
+  icon: React.ComponentType<{ className?: string }>
+  title: string
+  children: React.ReactNode
+}) {
   return (
-    <section className="flex flex-col gap-3">
-      <h2 className="font-serif text-xl font-bold text-heading">{title}</h2>
+    <section className="flex flex-col gap-4 border-b border-line-light px-5 py-6 last:border-b-0 sm:px-8 sm:py-8">
+      <h2 className="flex items-center gap-3 font-serif text-lg font-bold text-heading sm:text-xl">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-mint text-green">
+          <Icon className="size-[18px]" aria-hidden="true" />
+        </span>
+        {title}
+      </h2>
       {children}
     </section>
   )
 }
 
 function Paragraphs({ text }: { text: string }) {
-  return <RichContent value={text} />
-
+  return (
+    <div className="min-w-0 text-[0.95rem] leading-relaxed text-body [&_a]:break-words [&_a]:font-medium [&_a]:text-green [&_a]:underline-offset-2 [&_a:hover]:underline">
+      <RichContent value={text} />
+    </div>
+  )
 }
 
 export default async function KolProfilePage({ params }: Props) {
@@ -47,6 +76,13 @@ export default async function KolProfilePage({ params }: Props) {
   const name = kol.professionalName || kol.fullName
   const location = [kol.city, kol.country].filter(Boolean).join(", ")
   const referralCode = await getActiveKolReferralCode(kol.memberId)
+  const total = totalFollowers(kol)
+  const stats = [
+    { label: "Total followers", value: formatCount(total) },
+    { label: "Monthly reach", value: kol.monthlyReach > 0 ? formatCount(kol.monthlyReach) : "—" },
+    { label: "Platforms", value: String(kol.platforms.length) },
+    { label: "Verified since", value: formatDate(kol.verifiedAt) },
+  ]
 
   return (
     <>
@@ -131,90 +167,144 @@ export default async function KolProfilePage({ params }: Props) {
           </div>
         </section>
 
-        <div className="vaap-container grid grid-cols-1 gap-8 py-10 lg:grid-cols-3">
-          <div className="flex min-w-0 flex-col gap-8 rounded-2xl bg-card p-6 md:p-8 lg:col-span-2">
-            {kol.bio && (
-              <Section title="About">
-                <Paragraphs text={kol.bio} />
-              </Section>
-            )}
-            {kol.expertise.length > 0 && (
-              <Section title="Areas of expertise">
-                <ul className="flex flex-wrap gap-2">
-                  {kol.expertise.map((e) => (
-                    <li key={e} className="rounded-full bg-mint px-3 py-1 text-sm font-medium text-green">
-                      {e}
-                    </li>
-                  ))}
-                </ul>
-              </Section>
-            )}
-            {kol.achievements && (
-              <Section title="Achievements & awards">
-                <Paragraphs text={kol.achievements} />
-              </Section>
-            )}
-            {kol.mediaAppearances && (
-              <Section title="Media appearances">
-                <Paragraphs text={kol.mediaAppearances} />
-              </Section>
-            )}
-            {kol.collaborations && (
-              <Section title="Previous collaborations">
-                <Paragraphs text={kol.collaborations} />
-              </Section>
-            )}
-          </div>
-
-          <aside className="flex flex-col gap-6">
-            <section className="flex flex-col gap-4 rounded-2xl bg-card p-6" aria-labelledby="reach-heading">
-              <div className="flex items-baseline justify-between gap-3">
-                <h2 id="reach-heading" className="font-serif text-xl font-bold text-heading">
-                  Social reach
-                </h2>
-                <span className="text-sm font-semibold text-green">{formatCount(totalFollowers(kol))} total</span>
+        <div className="vaap-container flex flex-col gap-6 py-8 sm:gap-8 sm:py-12">
+          <dl className="grid grid-cols-2 overflow-hidden rounded-2xl border border-line-light bg-card shadow-sm md:grid-cols-4">
+            {stats.map((s, i) => (
+              <div
+                key={s.label}
+                className={`flex flex-col gap-1 px-4 py-4 sm:px-6 sm:py-5 ${i % 2 === 1 ? "border-l border-line-light" : ""} ${i >= 2 ? "border-t border-line-light md:border-t-0" : ""} ${i === 2 ? "md:border-l" : ""}`}
+              >
+                <dt className="text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-muted-2">{s.label}</dt>
+                <dd className="font-serif text-xl font-bold text-heading sm:text-2xl">{s.value}</dd>
               </div>
-              <ul className="flex flex-col divide-y divide-line-light">
-                {kol.platforms.map((p, i) => (
-                  <li key={`${p.platform}-${i}`} className="flex items-center gap-3 py-3">
-                    <PlatformIcon platform={p.platform} className="size-8" />
-                    <div className="flex min-w-0 flex-1 flex-col">
-                      <a
-                        href={p.url}
-                        target="_blank"
-                        rel="noopener noreferrer nofollow"
-                        className="inline-flex items-center gap-1 text-sm font-semibold text-heading hover:text-green"
-                      >
-                        {platformLabel(p.platform)}
-                        <ExternalLink className="size-3.5" aria-hidden="true" />
-                        <span className="sr-only">(opens in a new tab)</span>
-                      </a>
-                      {p.engagement > 0 && <span className="text-xs text-muted-2">{p.engagement}% engagement</span>}
-                    </div>
-                    <span className="text-base font-bold text-heading">{formatCount(Number(p.followers))}</span>
-                  </li>
-                ))}
-              </ul>
-              {kol.monthlyReach > 0 && (
-                <p className="rounded-lg bg-surface px-3 py-2 text-sm text-body">
-                  Estimated monthly reach: <strong className="text-heading">{formatCount(kol.monthlyReach)}</strong>
-                </p>
-              )}
-              <p className="text-xs leading-relaxed text-muted-2">
-                Verified by VAAP on {formatDate(kol.verifiedAt)}
-                {kol.expiresAt ? ` · valid until ${formatDate(kol.expiresAt)}` : ""}
-                {kol.statsUpdatedAt ? ` · stats updated ${formatDate(kol.statsUpdatedAt)}` : ""}
-              </p>
-            </section>
+            ))}
+          </dl>
 
-            <section className="flex flex-col gap-4 rounded-2xl bg-card p-6" aria-labelledby="collab-heading">
-              <h2 id="collab-heading" className="font-serif text-xl font-bold text-heading">
-                Work with {name.split(" ")[0]}
-              </h2>
-              {kol.collabInterests && <p className="text-sm leading-relaxed text-body">{kol.collabInterests}</p>}
-              <CollaborationForm slug={kol.slug} name={name} />
-            </section>
-          </aside>
+          <div className="grid grid-cols-1 gap-6 sm:gap-8 lg:grid-cols-3">
+            <article className="flex min-w-0 flex-col rounded-2xl border border-line-light bg-card shadow-sm lg:col-span-2">
+              {kol.bio && (
+                <Section icon={UserRound} title="About">
+                  <Paragraphs text={kol.bio} />
+                </Section>
+              )}
+              {kol.expertise.length > 0 && (
+                <Section icon={Sparkles} title="Areas of expertise">
+                  <ul className="flex flex-wrap gap-2">
+                    {kol.expertise.map((e) => (
+                      <li
+                        key={e}
+                        className="rounded-full border border-green/15 bg-mint px-3.5 py-1.5 text-sm font-medium text-green"
+                      >
+                        {e}
+                      </li>
+                    ))}
+                  </ul>
+                </Section>
+              )}
+              {kol.achievements && (
+                <Section icon={Award} title="Achievements & awards">
+                  <Paragraphs text={kol.achievements} />
+                </Section>
+              )}
+              {kol.mediaAppearances && (
+                <Section icon={Newspaper} title="Media appearances">
+                  <Paragraphs text={kol.mediaAppearances} />
+                </Section>
+              )}
+              {kol.collaborations && (
+                <Section icon={Handshake} title="Previous collaborations">
+                  <Paragraphs text={kol.collaborations} />
+                </Section>
+              )}
+            </article>
+
+            <aside className="flex min-w-0 flex-col gap-6 lg:sticky lg:top-24 lg:self-start">
+              <section
+                className="flex flex-col overflow-hidden rounded-2xl border border-line-light bg-card shadow-sm"
+                aria-labelledby="reach-heading"
+              >
+                <div className="flex items-end justify-between gap-3 bg-navy px-5 py-5 sm:px-6">
+                  <div className="flex flex-col gap-1">
+                    <p className="text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-green-light">
+                      Audience
+                    </p>
+                    <h2 id="reach-heading" className="font-serif text-xl font-bold text-card">
+                      Social reach
+                    </h2>
+                  </div>
+                  <p className="flex flex-col items-end">
+                    <span className="font-serif text-2xl font-bold text-card">{formatCount(total)}</span>
+                    <span className="text-xs text-card/70">total followers</span>
+                  </p>
+                </div>
+                <ul className="flex flex-col gap-4 px-5 py-5 sm:px-6">
+                  {kol.platforms.map((p, i) => {
+                    const followers = Number(p.followers)
+                    const share = total > 0 ? Math.max(2, Math.round((followers / total) * 100)) : 0
+                    return (
+                      <li key={`${p.platform}-${i}`} className="flex flex-col gap-2">
+                        <div className="flex items-center gap-3">
+                          <PlatformIcon platform={p.platform} className="size-8" />
+                          <a
+                            href={p.url}
+                            target="_blank"
+                            rel="noopener noreferrer nofollow"
+                            className="inline-flex min-w-0 flex-1 items-center gap-1 text-sm font-semibold text-heading hover:text-green"
+                          >
+                            <span className="truncate">{platformLabel(p.platform)}</span>
+                            <ExternalLink className="size-3.5 shrink-0 text-muted-2" aria-hidden="true" />
+                            <span className="sr-only">(opens in a new tab)</span>
+                          </a>
+                          <span className="text-sm font-bold tabular-nums text-heading">{formatCount(followers)}</span>
+                        </div>
+                        <div className="h-1.5 overflow-hidden rounded-full bg-surface" aria-hidden="true">
+                          <div className="h-full rounded-full bg-green" style={{ width: `${share}%` }} />
+                        </div>
+                        {p.engagement > 0 && <span className="text-xs text-muted-2">{p.engagement}% engagement</span>}
+                      </li>
+                    )
+                  })}
+                </ul>
+                <div className="flex items-start gap-2 border-t border-line-light bg-surface/60 px-5 py-4 sm:px-6">
+                  <ShieldCheck className="mt-0.5 size-4 shrink-0 text-green" aria-hidden="true" />
+                  <p className="text-xs leading-relaxed text-body">
+                    Verified by VAAP on {formatDate(kol.verifiedAt)}
+                    {kol.expiresAt ? ` · valid until ${formatDate(kol.expiresAt)}` : ""}
+                    {kol.statsUpdatedAt ? ` · stats updated ${formatDate(kol.statsUpdatedAt)}` : ""}
+                  </p>
+                </div>
+              </section>
+
+              <section
+                className="flex flex-col gap-4 rounded-2xl border border-line-light bg-card p-5 shadow-sm sm:p-6"
+                aria-labelledby="collab-heading"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-mint text-green">
+                    <Mail className="size-5" aria-hidden="true" />
+                  </span>
+                  <div className="flex flex-col">
+                    <h2 id="collab-heading" className="font-serif text-xl font-bold text-heading">
+                      Work with {name.split(" ")[0]}
+                    </h2>
+                    <p className="text-xs text-muted-2">Brand partnerships, events and campaigns</p>
+                  </div>
+                </div>
+                {kol.collabInterests && (
+                  <details className="group rounded-xl bg-surface px-4 py-3 text-sm text-body">
+                    <summary className="cursor-pointer list-none font-semibold text-heading marker:hidden">
+                      <span className="flex items-center justify-between gap-2">
+                        Collaboration interests
+                        <ChevronDown className="size-4 text-green transition-transform group-open:rotate-180" aria-hidden="true" />
+                      </span>
+                    </summary>
+                    <p className="mt-2 whitespace-pre-line leading-relaxed">{kol.collabInterests}</p>
+                  </details>
+                )}
+                <CollaborationForm slug={kol.slug} name={name} />
+              </section>
+            </aside>
+          </div>
         </div>
       </main>
       <SiteFooter />
