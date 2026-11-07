@@ -167,36 +167,34 @@ export function LatestNewsMedia({ items }: { items: HomeNewsItem[] }) {
                   >
                     <img src={item.image || "/images/news-skyline.png"} alt="" className="size-full object-cover" />
                   </div>
-                  {item.publisherLogo && !/^vaap$/i.test(item.publisherName?.trim() ?? "") && (
-                    <span className="absolute left-2.5 top-2.5 flex h-10 max-w-[65%] items-center rounded-lg bg-card px-2.5 py-1.5 shadow-md ring-1 ring-line">
-                      <img
-                        src={item.publisherLogo}
-                        alt={item.publisherName || "Media outlet"}
-                        className="h-full w-auto max-w-full object-contain"
-                      />
-                    </span>
-                  )}
+                  <span className="absolute left-2.5 top-2.5 rounded-full bg-green px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-primary-foreground shadow-md">
+                    {item.category}
+                  </span>
                 </div>
                 <div className="flex flex-1 flex-col gap-2 px-3 pb-3 pt-1">
-                  <div className="flex items-center">
-                    <span className="rounded-full bg-green px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-primary-foreground">
-                      {item.category}
-                    </span>
-                    <span aria-hidden="true" className="h-0.5 w-6 bg-green" />
-                  </div>
                   <h3 className="font-serif text-base font-bold leading-snug text-heading text-balance line-clamp-2">
                     {item.title}
                   </h3>
                   <p className="text-xs leading-relaxed text-body line-clamp-2">{item.excerpt}</p>
-                  <div className="mt-auto flex flex-col gap-2 border-t border-line pt-2 text-xs">
-                    <div className="flex min-w-0 items-center gap-2">
-                      <CalendarDays className="size-4 shrink-0 text-green" aria-hidden="true" />
-                      <time dateTime={item.createdAt} className="whitespace-nowrap text-muted-2">
-                        {formatDate(item.createdAt)}
-                      </time>
-                      <span aria-hidden="true" className="h-4 w-px bg-line" />
-                      <span className="truncate font-bold text-heading">
-                        By {item.authorName || item.publisherName || "VAAP"}
+                  <div className="mt-auto flex flex-col gap-2.5 border-t border-line pt-2.5 text-xs">
+                    <div className="flex min-w-0 items-center gap-3">
+                      {item.publisherLogo && !/^vaap$/i.test(item.publisherName?.trim() ?? "") ? (
+                        <img
+                          src={item.publisherLogo}
+                          alt={item.publisherName || "Media outlet"}
+                          className="h-7 w-auto max-w-[45%] shrink-0 object-contain object-left"
+                        />
+                      ) : (
+                        <span className="truncate font-bold text-heading">
+                          By {item.authorName || item.publisherName || "VAAP"}
+                        </span>
+                      )}
+                      <span aria-hidden="true" className="h-5 w-px shrink-0 bg-line" />
+                      <span className="flex min-w-0 items-center gap-1.5">
+                        <CalendarDays className="size-4 shrink-0 text-green" aria-hidden="true" />
+                        <time dateTime={item.createdAt} className="whitespace-nowrap text-muted-2">
+                          {formatDate(item.createdAt)}
+                        </time>
                       </span>
                     </div>
                     <ReadLink
