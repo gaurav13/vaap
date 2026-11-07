@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   Sparkles,
   UserRound,
+  Users,
 } from "lucide-react"
 import { ExpertiseChips, KolVerifiedSeal, ScallopedCheck } from "@/components/kol/kol-hero-parts"
 import { SiteHeaderServer } from "@/components/site-header-server"
@@ -229,55 +230,65 @@ export default async function KolProfilePage({ params }: Props) {
                 className="flex flex-col overflow-hidden rounded-2xl border border-line-light bg-card shadow-sm"
                 aria-labelledby="reach-heading"
               >
-                <div className="flex items-end justify-between gap-3 bg-navy px-5 py-5 sm:px-6">
+                <div className="relative isolate flex items-center justify-between gap-4 overflow-hidden bg-navy px-5 py-6 sm:px-7">
+                  <span
+                    className="absolute -bottom-24 -right-16 -z-10 size-40 rounded-full border-t-[6px] border-green-light/50"
+                    aria-hidden="true"
+                  />
                   <div className="flex flex-col gap-1">
-                    <p className="text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-green-light">
-                      Audience
-                    </p>
-                    <h2 id="reach-heading" className="font-serif text-xl font-bold text-card">
-                      Social reach
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-green-light">Audience</p>
+                    <h2 id="reach-heading" className="font-sans text-2xl font-bold leading-tight text-card">
+                      Social Reach
                     </h2>
                   </div>
-                  <p className="flex flex-col items-end">
-                    <span className="font-serif text-2xl font-bold text-card">{formatCount(total)}</span>
-                    <span className="text-xs text-card/70">total followers</span>
-                  </p>
+                  <span className="h-12 w-px shrink-0 bg-card/20" aria-hidden="true" />
+                  <div className="flex items-center gap-3">
+                    <Users className="size-7 shrink-0 text-green-light" aria-hidden="true" />
+                    <p className="flex flex-col items-end">
+                      <span className="font-sans text-3xl font-bold leading-none tracking-tight text-card">
+                        {formatCount(total)}
+                      </span>
+                      <span className="mt-1 text-xs font-medium text-card/75">Total Followers</span>
+                    </p>
+                  </div>
                 </div>
-                <ul className="flex flex-col gap-4 px-5 py-5 sm:px-6">
+                <ul className="flex flex-col px-5 pt-2 sm:px-7">
                   {kol.platforms.map((p, i) => {
                     const followers = Number(p.followers)
-                    const share = total > 0 ? Math.max(2, Math.round((followers / total) * 100)) : 0
                     return (
-                      <li key={`${p.platform}-${i}`} className="flex flex-col gap-2">
-                        <div className="flex items-center gap-3">
-                          <PlatformIcon platform={p.platform} className="size-8" />
+                      <li
+                        key={`${p.platform}-${i}`}
+                        className="flex items-center gap-4 border-b border-line-light py-3.5 last:border-b-0"
+                      >
+                        <PlatformIcon platform={p.platform} className="size-10 rounded-xl" />
+                        <div className="flex min-w-0 flex-1 flex-col">
                           <a
                             href={p.url}
                             target="_blank"
                             rel="noopener noreferrer nofollow"
-                            className="inline-flex min-w-0 flex-1 items-center gap-1 text-sm font-semibold text-heading hover:text-green"
+                            className="inline-flex min-w-0 items-center gap-1.5 font-semibold text-heading transition-colors hover:text-green"
                           >
                             <span className="truncate">{platformLabel(p.platform)}</span>
-                            <ExternalLink className="size-3.5 shrink-0 text-muted-2" aria-hidden="true" />
+                            <ExternalLink className="size-4 shrink-0 text-muted-2" aria-hidden="true" />
                             <span className="sr-only">(opens in a new tab)</span>
                           </a>
-                          <span className="text-sm font-bold tabular-nums text-heading">{formatCount(followers)}</span>
+                          {p.engagement > 0 && (
+                            <span className="text-xs text-muted-2">{p.engagement}% engagement</span>
+                          )}
                         </div>
-                        <div className="h-1.5 overflow-hidden rounded-full bg-surface" aria-hidden="true">
-                          <div className="h-full rounded-full bg-green" style={{ width: `${share}%` }} />
-                        </div>
-                        {p.engagement > 0 && <span className="text-xs text-muted-2">{p.engagement}% engagement</span>}
+                        <span className="text-lg font-bold tabular-nums text-heading">{formatCount(followers)}</span>
                       </li>
                     )
                   })}
                 </ul>
-                <div className="flex items-start gap-2 border-t border-line-light bg-surface/60 px-5 py-4 sm:px-6">
-                  <ShieldCheck className="mt-0.5 size-4 shrink-0 text-green" aria-hidden="true" />
-                  <p className="text-xs leading-relaxed text-body">
-                    Verified by VAAP on {formatDate(kol.verifiedAt)}
-                    {kol.expiresAt ? ` · valid until ${formatDate(kol.expiresAt)}` : ""}
-                    {kol.statsUpdatedAt ? ` · stats updated ${formatDate(kol.statsUpdatedAt)}` : ""}
-                  </p>
+                <div className="px-4 pb-5 pt-3 sm:px-5">
+                  <div className="flex items-center gap-3 rounded-xl bg-mint/70 px-4 py-3">
+                    <ShieldCheck className="size-5 shrink-0 text-green" aria-hidden="true" />
+                    <p className="text-xs leading-relaxed text-body sm:text-sm">
+                      Verified by VAAP on {formatDate(kol.verifiedAt)}
+                      {kol.expiresAt ? ` · Valid until ${formatDate(kol.expiresAt)}` : ""}
+                    </p>
+                  </div>
                 </div>
               </section>
 
