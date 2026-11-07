@@ -15,6 +15,7 @@ import {
 } from "lucide-react"
 import type { SocialLinks } from "@/lib/site-settings"
 import { FollowVaap } from "@/components/follow-vaap"
+import { EventsSlider } from "@/components/home/events-slider"
 
 type EventItem = {
   id: number
@@ -173,6 +174,21 @@ function EventsColumn({ events }: { events: EventItem[] }) {
         </p>
       ) : (
         <>
+        <div className="sm:hidden">
+          <EventsSlider
+            events={events.map((e) => ({
+              id: e.id,
+              href: `/events/${e.slug || e.id}`,
+              title: e.title,
+              category: e.category,
+              location: e.location,
+              timeLabel: e.timeLabel,
+              dateLabel: formatDate(e.startsAt),
+              coverImage: e.coverImage,
+            }))}
+          />
+        </div>
+        <div className="hidden flex-col gap-4 sm:flex">
           <Link
             href={`/events/${featured.slug || featured.id}`}
             className="group relative flex flex-col overflow-hidden rounded-3xl border border-line bg-card shadow-lg transition-shadow hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green"
@@ -254,6 +270,7 @@ function EventsColumn({ events }: { events: EventItem[] }) {
           <Link href="/events" className="inline-flex items-center gap-1.5 self-end text-sm font-semibold text-navy transition-colors hover:text-green">
             View All Events <ArrowRight className="size-4" aria-hidden="true" />
           </Link>
+        </div>
         </>
       )}
     </div>
