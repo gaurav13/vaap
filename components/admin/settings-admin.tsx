@@ -29,7 +29,7 @@ const inputCls =
 
 // Built-in routes that always exist, so admins can point a menu item at any of
 // them even though they are not CMS pages.
-const CORE_PAGES: MenuItem[] = [
+const DEFAULT_CORE_PAGES: MenuItem[] = [
   { label: "Home", href: "/" },
   { label: "About", href: "/about" },
   { label: "Governance", href: "/governance" },
@@ -44,6 +44,16 @@ const CORE_PAGES: MenuItem[] = [
   { label: "Events", href: "/events" },
   { label: "Contact", href: "/contact" },
 ]
+
+// Hand-picked labels win; every other public route discovered for the sitemap
+// (e.g. /insights) is appended so admins can link any app page.
+function mergeCorePages(discovered: MenuItem[]): MenuItem[] {
+  const seen = new Set(DEFAULT_CORE_PAGES.map((p) => p.href))
+  const extra = discovered
+    .filter((p) => !seen.has(p.href))
+    .sort((a, b) => a.href.localeCompare(b.href))
+  return [...DEFAULT_CORE_PAGES, ...extra]
+}
 
 function isExternalHref(href: string) {
   return /^(https?:)?\/\//.test(href) || /^(mailto:|tel:)/.test(href)
@@ -82,6 +92,7 @@ export function SettingsAdmin({
   siteStatus,
   canManageStatus = false,
   pageOptions,
+  corePages = [],
 }: {
   menu: MenuItem[]
   social: SocialLinks
@@ -96,6 +107,7 @@ export function SettingsAdmin({
   siteStatus: SiteStatus
   canManageStatus?: boolean
   pageOptions: MenuItem[]
+  corePages?: MenuItem[]
 }) {
   const [tab, setTab] = useState<Tab>("status")
 
@@ -123,7 +135,7 @@ export function SettingsAdmin({
 
       <div className="mt-6">
         {tab === "status" && <WebsiteStatusEditor initial={siteStatus} canManage={canManageStatus} />}
-        {tab === "menu" && <MenuEditor initial={menu} pageOptions={pageOptions} />}
+        {tab === "menu" && <MenuEditor initial={menu} pageOptions={pageOptions} corePages={corePages} />}
         {tab === "alert" && <NewsAlertEditor initial={newsAlert} />}
         {tab === "hero" && <HeroEditor initial={govHero} />}
         {tab === "framework" && <FrameworkEditor initial={govFramework} />}
@@ -240,7 +252,16 @@ function WebsiteStatusEditor({ initial, canManage }: { initial: SiteStatus; canM
   )
 }
 
-function MenuEditor({ initial, pageOptions }: { initial: MenuItem[]; pageOptions: MenuItem[] }) {
+function MenuEditor({
+  initial,
+  pageOptions,
+  corePages: discoveredCorePages = [],
+}: {
+  initial: MenuItem[]
+  pageOptions: MenuItem[]
+  corePages?: MenuItem[]
+}) {
+  const CORE_PAGES = mergeCorePages(discoveredCorePages)
   const router = useRouter()
   const [items, setItems] = useState<MenuItem[]>(initial.length ? initial : [{ label: "", href: "" }])
   const [pending, startTransition] = useTransition()
