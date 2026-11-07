@@ -49,8 +49,12 @@ export default async function NewsDetailPage({ params }: { params: Promise<{ id:
             <ArrowLeft className="size-4" /> Back to News
           </Link>
 
-          <div className="mt-8 flex flex-col gap-10 lg:mt-10 lg:gap-12">
-            <div className="flex max-w-4xl flex-col gap-6">
+          <div
+            className={`mt-8 grid grid-cols-1 items-center gap-10 lg:mt-10 lg:gap-14 ${
+              post.image ? "lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]" : ""
+            }`}
+          >
+            <div className="flex flex-col gap-6">
               <div className="flex flex-wrap items-center gap-4 text-sm">
                 <span className="rounded-full bg-green px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-white">
                   {post.category}
@@ -64,7 +68,7 @@ export default async function NewsDetailPage({ params }: { params: Promise<{ id:
                 </span>
               </div>
 
-              <h1 className="text-3xl font-bold leading-[1.15] tracking-tight text-heading text-balance md:text-4xl lg:text-5xl">
+              <h1 className="text-3xl font-bold leading-[1.15] tracking-tight text-heading text-balance md:text-4xl lg:text-[2.6rem]">
                 {post.title}
               </h1>
 
@@ -74,15 +78,15 @@ export default async function NewsDetailPage({ params }: { params: Promise<{ id:
             </div>
 
             {post.image && (
-              <figure className="w-full max-w-3xl overflow-hidden rounded-2xl bg-card p-1.5 shadow-[0_20px_40px_-28px_rgba(16,40,32,0.3)] ring-1 ring-line">
+              <figure className="w-full overflow-hidden rounded-2xl bg-card p-2 shadow-[0_24px_48px_-30px_rgba(16,40,32,0.35)] ring-1 ring-line">
                 <Image
                   src={post.image || "/placeholder.svg"}
                   alt={post.title}
                   width={1600}
                   height={900}
                   priority
-                  sizes="(min-width: 768px) 768px, 100vw"
-                  className="block h-auto max-h-[440px] w-full rounded-xl object-contain"
+                  sizes="(min-width: 1024px) 600px, 100vw"
+                  className="block h-auto max-h-[380px] w-full rounded-xl object-contain"
                 />
               </figure>
             )}
