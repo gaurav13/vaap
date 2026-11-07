@@ -41,13 +41,13 @@ export function KolHero({ leaders, reach, sectors }: { leaders: number; reach: n
       </section>
 
       <section aria-label="Network at a glance" className="bg-surface">
-        <div className="vaap-container pt-8 sm:pt-12">
+        <div className="vaap-container py-8 sm:py-12">
           <dl className="grid grid-cols-2 rounded-2xl border border-line-light bg-card py-2 shadow-sm lg:grid-cols-4 lg:py-7">
             {stats.map(({ Icon, value, label }, i) => (
               <div
                 key={label}
                 className={[
-                  "flex min-w-0 flex-col gap-3 px-4 py-5 sm:flex-row sm:items-center sm:gap-4 sm:px-6 lg:py-0",
+                  "flex min-w-0 flex-col gap-3 px-4 py-5 sm:flex-row sm:items-center sm:gap-4 sm:px-6 lg:justify-center lg:px-4 lg:py-0",
                   i % 2 === 0 ? "border-r border-line-light lg:border-r-0" : "",
                   i >= 2 ? "border-t border-line-light lg:border-t-0" : "",
                   i > 0 ? "lg:border-l lg:border-line-light" : "",
