@@ -73,8 +73,8 @@ export function KolHero({ leaders, reach, sectors }: { leaders: number; reach: n
                 i === 2 ? "md:border-l" : "",
               ].join(" ")}
             >
-              <span className="hidden size-10 shrink-0 items-center justify-center rounded-xl bg-navy text-gold sm:flex lg:size-12">
-                <Icon className="size-5 lg:size-6" strokeWidth={1.75} aria-hidden="true" />
+              <span className="hidden size-8 shrink-0 items-center justify-center rounded-lg bg-navy text-gold sm:flex lg:size-9">
+                <Icon className="size-4 lg:size-[18px]" strokeWidth={1.75} aria-hidden="true" />
               </span>
               <div className="flex min-w-0 flex-col">
                 <dt className="order-2 truncate text-xs leading-snug text-body sm:text-sm">{label}</dt>
