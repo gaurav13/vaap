@@ -15,6 +15,7 @@ import {
 } from "lucide-react"
 import type { SocialLinks } from "@/lib/site-settings"
 import { FollowVaap } from "@/components/follow-vaap"
+import { EventsSlider } from "@/components/home/events-slider"
 
 type EventItem = {
   id: number
@@ -173,6 +174,21 @@ function EventsColumn({ events }: { events: EventItem[] }) {
         </p>
       ) : (
         <>
+        <div className="sm:hidden">
+          <EventsSlider
+            events={events.map((e) => ({
+              id: e.id,
+              href: `/events/${e.slug || e.id}`,
+              title: e.title,
+              category: e.category,
+              location: e.location,
+              timeLabel: e.timeLabel,
+              dateLabel: formatDate(e.startsAt),
+              coverImage: e.coverImage,
+            }))}
+          />
+        </div>
+        <div className="hidden flex-col gap-4 sm:flex">
           <Link
             href={`/events/${featured.slug || featured.id}`}
             className="group relative flex flex-col overflow-hidden rounded-3xl border border-line bg-card shadow-lg transition-shadow hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green"
@@ -254,6 +270,7 @@ function EventsColumn({ events }: { events: EventItem[] }) {
           <Link href="/events" className="inline-flex items-center gap-1.5 self-end text-sm font-semibold text-navy transition-colors hover:text-green">
             View All Events <ArrowRight className="size-4" aria-hidden="true" />
           </Link>
+        </div>
         </>
       )}
     </div>
@@ -280,24 +297,38 @@ function KindLabel({ kind }: { kind: string }) {
   )
 }
 
+function KindEyebrow({ kind }: { kind: string }) {
+  const Icon = KIND_ICONS[kind] ?? PlayCircle
+  return (
+    <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-green">
+      <Icon className="size-3" aria-hidden="true" />
+      {kind}
+    </span>
+  )
+}
+
 function MediaColumn({ items, social }: { items: MediaItem[]; social: SocialLinks }) {
   const list = items.slice(0, 3)
 
   return (
     <div className="flex flex-col gap-4">
       <div className="overflow-hidden rounded-3xl border border-line bg-card shadow-lg">
-        <div className="flex items-center gap-3 border-b border-line px-5 py-4">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-full ring-2 ring-navy">
+        <div className="flex items-center gap-3 border-b border-line px-4 py-3.5 sm:px-5 sm:py-4">
+          <span className="hidden size-10 shrink-0 items-center justify-center rounded-full ring-2 ring-navy sm:flex">
             <Play className="ml-0.5 size-4 fill-navy text-navy" aria-hidden="true" />
           </span>
-          <h2 id="media-highlights-heading" className="text-lg font-bold text-heading md:text-xl text-balance">
+          <h2 id="media-highlights-heading" className="min-w-0 text-base font-bold leading-tight text-heading sm:text-lg md:text-xl text-balance">
             Media &amp; Social Highlights
           </h2>
           <Link
             href="/news"
-            className="ml-auto inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-green transition-colors hover:text-navy"
+            className="ml-auto inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-green transition-colors hover:text-navy sm:gap-1.5 sm:text-sm"
           >
-            View All Media <ArrowRight className="size-4" aria-hidden="true" />
+            <span className="sm:hidden">
+              View all<span className="sr-only"> media</span>
+            </span>
+            <span className="hidden sm:inline">View All Media</span>
+            <ArrowRight className="size-3.5 sm:size-4" aria-hidden="true" />
           </Link>
         </div>
 
@@ -306,26 +337,29 @@ function MediaColumn({ items, social }: { items: MediaItem[]; social: SocialLink
         ) : (
           <ul className="flex flex-col divide-y divide-line px-4">
             {list.map((m) => (
-              <li key={m.id} className="py-4">
-                <MaybeLink url={m.url} label={m.title} className="group flex items-start gap-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green">
-                  <Media src={m.image} alt="" fallback={PlayCircle} className="aspect-video w-2/5 shrink-0 rounded-xl shadow-sm">
+              <li key={m.id} className="py-3.5 sm:py-4">
+                <MaybeLink url={m.url} label={m.title} className="group flex items-start gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green sm:gap-4">
+                  <Media src={m.image} alt="" fallback={PlayCircle} className="aspect-video w-28 shrink-0 rounded-lg shadow-sm sm:w-2/5 sm:rounded-xl">
                     {isVideo(m) && m.image && <PlayBadge small />}
                     {m.duration && (
-                      <span className="absolute bottom-2 right-2 rounded bg-navy-dark/85 px-1.5 py-0.5 text-[11px] font-semibold text-white">
+                      <span className="absolute bottom-1.5 right-1.5 rounded bg-navy-dark/85 px-1.5 py-0.5 text-[10px] font-semibold text-white sm:bottom-2 sm:right-2 sm:text-[11px]">
                         {m.duration}
                       </span>
                     )}
                   </Media>
-                  <div className="flex min-w-0 flex-1 flex-col gap-2">
-                    <span>
+                  <div className="flex min-w-0 flex-1 flex-col gap-1 sm:gap-2">
+                    <span className="sm:hidden">
+                      <KindEyebrow kind={m.kind} />
+                    </span>
+                    <span className="hidden sm:block">
                       <KindLabel kind={m.kind} />
                     </span>
-                    <h3 className="line-clamp-3 text-sm font-bold leading-snug text-heading text-pretty group-hover:text-green sm:text-base">
+                    <h3 className="line-clamp-3 text-[13px] font-semibold leading-snug text-heading text-pretty group-hover:text-green sm:text-base sm:font-bold">
                       {m.title}
                     </h3>
-                    <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-green">
+                    <span className="hidden items-center gap-1.5 text-sm font-semibold text-green sm:inline-flex">
                       {linkLabel(m.url)}
-                      <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+                      <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5 sm:size-4" aria-hidden="true" />
                     </span>
                   </div>
                 </MaybeLink>
