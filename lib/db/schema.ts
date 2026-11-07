@@ -86,6 +86,8 @@ export const news = pgTable("news", {
 export const events = pgTable("events", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
+  // SEO-friendly URL segment, e.g. /events/web3-summit-karachi-2026.
+  slug: text("slug").unique(),
   description: text("description").notNull().default(""),
   location: text("location").notNull().default(""),
   timeLabel: text("timeLabel").notNull().default(""),
@@ -114,6 +116,8 @@ export const eventRsvps = pgTable("event_rsvps", {
   userId: text("userId"),
   name: text("name").notNull(),
   email: text("email").notNull(),
+  // Set by staff at the door; null until the participant is checked in.
+  checkedInAt: timestamp("checkedInAt"),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 })
 

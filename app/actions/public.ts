@@ -236,6 +236,15 @@ export async function getEventById(id: number) {
   return rows[0] ?? null
 }
 
+export async function getEventBySlug(slug: string) {
+  const rows = await db
+    .select()
+    .from(events)
+    .where(and(eq(events.slug, slug), eq(events.published, true), eq(events.status, "approved")))
+    .limit(1)
+  return rows[0] ?? null
+}
+
 export async function getEventRsvps(eventId: number) {
   return db
     .select({
@@ -291,7 +300,8 @@ export async function rsvpToEvent(formData: FormData) {
     return { ok: false, error: "Could not register." }
   }
 
-  revalidatePath(`/events/${eventId}`)
+  revalidatePath(`/events/${ev.slug || eventId}`)
+  revalidatePath(`/admin/events/${eventId}/participants`)
   revalidatePath("/events")
   return { ok: true }
 }

@@ -12,6 +12,7 @@ import {
   rewardTransactions,
 } from "@/lib/db/schema"
 import { getSession } from "@/lib/session"
+import { uniqueEventSlug } from "@/lib/event-slug-server"
 import { notify } from "@/lib/notifications"
 import { eq, desc, or, sql, inArray } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
@@ -263,6 +264,7 @@ export async function submitMemberEvent(formData: FormData) {
   try {
     await db.insert(events).values({
       title,
+      slug: await uniqueEventSlug(title),
       description,
       location,
       timeLabel,

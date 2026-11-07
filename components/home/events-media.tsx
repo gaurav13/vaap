@@ -18,6 +18,7 @@ import { FacebookIcon, InstagramIcon, LinkedinIcon, TiktokIcon, XIcon, YoutubeIc
 
 type EventItem = {
   id: number
+  slug?: string | null
   title: string
   description: string
   location: string
@@ -173,7 +174,7 @@ function EventsColumn({ events }: { events: EventItem[] }) {
       ) : (
         <>
           <Link
-            href={`/events/${featured.id}`}
+            href={`/events/${featured.slug || featured.id}`}
             className="group relative flex flex-col overflow-hidden rounded-3xl border border-line bg-card shadow-lg transition-shadow hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green"
           >
             <div className="relative overflow-hidden bg-mint">
@@ -224,7 +225,7 @@ function EventsColumn({ events }: { events: EventItem[] }) {
           {more.map((e) => (
             <Link
               key={e.id}
-              href={`/events/${e.id}`}
+              href={`/events/${e.slug || e.id}`}
               className="group flex flex-col gap-4 rounded-3xl border border-line bg-card p-3 shadow-md transition-all hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green sm:flex-row sm:items-center"
             >
               <Media src={e.coverImage} alt="" className="aspect-video w-full shrink-0 rounded-xl sm:w-2/5" />

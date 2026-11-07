@@ -14,6 +14,7 @@ import { randomUUID } from "crypto"
 import { revalidatePath } from "next/cache"
 import { after } from "next/server"
 import { announceEventIfEnabled } from "@/lib/email-automations/engine"
+import { uniqueEventSlug } from "@/lib/event-slug-server"
 
 async function requireStaff() {
   const session = await getSession()
@@ -164,13 +165,14 @@ export async function createEvent(formData: FormData) {
   // Admin-created events are approved by default.
   const [created] = await db.insert(events).values({
     title,
+    slug: await uniqueEventSlug(title),
     description,
     location,
     timeLabel,
     category,
     city,
     format,
-    hostName: hostName || null,
+    hostName,
     coverImage: coverImage || null,
     startsAt: startsAtRaw ? new Date(startsAtRaw) : new Date(),
     published,
@@ -201,13 +203,14 @@ export async function updateEvent(id: number, formData: FormData) {
     .update(events)
     .set({
       title,
+      slug: await uniqueEventSlug(title, id),
       description,
       location,
       timeLabel,
       category,
       city,
       format,
-      hostName: hostName || null,
+      hostName,
       coverImage: coverImage || null,
       ...(startsAtRaw ? { startsAt: new Date(startsAtRaw) } : {}),
       published,

@@ -272,7 +272,7 @@ export async function runEventAnnouncement(def: AutomationDefinition, eventId: n
     eventDate: ev.timeLabel?.trim() || formatDate(ev.startsAt),
     eventLocation: [ev.location, ev.city].filter(Boolean).join(" · ") || "Online",
     eventDescription: oneLine(ev.description, 400),
-    eventUrl: `${appBaseUrl()}/events/${ev.id}`,
+    eventUrl: `${appBaseUrl()}/events/${ev.slug || ev.id}`,
   }
   const result = await sendToAll(def, await getSegment("confirmed"), (r) => `event:${ev.id}:${r.email}`, content, () => vars)
   return { ...result, note: ev.title }
@@ -348,7 +348,7 @@ export async function buildNewsletterContent(weekKey: string): Promise<EmailCont
       .orderBy(desc(articles.publishedAt))
       .limit(5),
     db
-      .select({ id: events.id, title: events.title, startsAt: events.startsAt, timeLabel: events.timeLabel, city: events.city })
+      .select({ id: events.id, slug: events.slug, title: events.title, startsAt: events.startsAt, timeLabel: events.timeLabel, city: events.city })
       .from(events)
       .where(and(eq(events.published, true), eq(events.status, "approved"), gte(events.startsAt, new Date())))
       .orderBy(events.startsAt)
@@ -369,7 +369,7 @@ export async function buildNewsletterContent(weekKey: string): Promise<EmailCont
   }
   if (upcoming.length) {
     sections.push(
-      ["**Upcoming events**", ...upcoming.map((e) => `- [${e.title}](${base}/events/${e.id}) · ${e.timeLabel?.trim() || formatDate(e.startsAt)}${e.city ? ` · ${e.city}` : ""}`)].join("\n"),
+      ["**Upcoming events**", ...upcoming.map((e) => `- [${e.title}](${base}/events/${e.slug || e.id}) · ${e.timeLabel?.trim() || formatDate(e.startsAt)}${e.city ? ` · ${e.city}` : ""}`)].join("\n"),
     )
   }
   if (recentNews.length) {

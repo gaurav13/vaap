@@ -60,7 +60,7 @@ export default async function EventsPage() {
                     </p>
                   </div>
                   {status === "approved" && (
-                    <Link href={`/events/${e.id}`} className="shrink-0 text-xs font-semibold text-green hover:opacity-80">
+                    <Link href={`/events/${e.slug || e.id}`} className="shrink-0 text-xs font-semibold text-green hover:opacity-80">
                       View
                     </Link>
                   )}

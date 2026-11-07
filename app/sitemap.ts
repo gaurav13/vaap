@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next"
-import { eq } from "drizzle-orm"
+import { and, eq } from "drizzle-orm"
 import { db } from "@/lib/db"
-import { pages, news } from "@/lib/db/schema"
+import { pages, news, events } from "@/lib/db/schema"
 import { getMenuItems } from "@/lib/site-settings"
 import { getCoreRouteState } from "@/lib/core-routes"
 
@@ -64,6 +64,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const publishedNews = await db.select().from(news).where(eq(news.published, true))
     for (const post of publishedNews) {
       add(`/news/${post.id}`, post.createdAt ?? now)
+    }
+  } catch {
+    // Ignore DB errors so the sitemap still returns the rest of the routes.
+  }
+
+  // Published, approved events at their slug URLs.
+  try {
+    const publicEvents = await db
+      .select({ id: events.id, slug: events.slug, createdAt: events.createdAt })
+      .from(events)
+      .where(and(eq(events.published, true), eq(events.status, "approved")))
+    for (const ev of publicEvents) {
+      add(`/events/${ev.slug || ev.id}`, ev.createdAt ?? now)
     }
   } catch {
     // Ignore DB errors so the sitemap still returns the rest of the routes.
