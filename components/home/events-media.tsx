@@ -351,7 +351,7 @@ export function EventsMedia({
 }) {
   return (
     <section aria-labelledby="events-programs-heading" className="mx-auto w-full max-w-7xl px-5 pb-12 lg:px-8 lg:pb-16">
-      <div className="grid gap-10 lg:grid-cols-2 lg:gap-8">
+      <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:gap-8">
         <EventsColumn events={events} />
         <MediaColumn items={media} social={social} />
       </div>
