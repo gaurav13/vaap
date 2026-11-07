@@ -243,7 +243,7 @@ export default async function KolProfilePage({ params }: Props) {
                 className="flex flex-col overflow-hidden rounded-2xl border border-line-light bg-card shadow-sm"
                 aria-labelledby="reach-heading"
               >
-                <div className="relative isolate flex items-center justify-between gap-4 overflow-hidden bg-navy px-5 py-6 sm:px-7">
+                <div className="relative isolate flex items-center justify-between gap-4 overflow-hidden bg-black px-5 py-6 sm:px-7">
                   <span
                     className="absolute -bottom-24 -right-16 -z-10 size-40 rounded-full border-t-[6px] border-green-light/50"
                     aria-hidden="true"
