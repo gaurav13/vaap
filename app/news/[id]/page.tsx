@@ -74,17 +74,23 @@ export default async function NewsDetailPage({ params }: { params: Promise<{ id:
             </div>
 
             {post.image && (
-              <div className="overflow-hidden rounded-3xl border-4 border-green bg-green shadow-lg">
-                <Image
-                  src={post.image || "/placeholder.svg"}
-                  alt={post.title}
-                  width={1600}
-                  height={900}
-                  priority
-                  sizes="(min-width: 1024px) 560px, 100vw"
-                  className="block h-auto w-full rounded-[1.25rem]"
+              <figure className="relative pb-3 pr-3">
+                <div
+                  aria-hidden="true"
+                  className="absolute inset-0 left-3 top-3 rounded-2xl bg-green-light ring-1 ring-green-border"
                 />
-              </div>
+                <div className="relative rounded-2xl bg-card p-1.5 shadow-[0_24px_48px_-24px_rgba(16,40,32,0.35)] ring-1 ring-line">
+                  <Image
+                    src={post.image || "/placeholder.svg"}
+                    alt={post.title}
+                    width={1600}
+                    height={900}
+                    priority
+                    sizes="(min-width: 1024px) 560px, 100vw"
+                    className="block h-auto w-full rounded-xl"
+                  />
+                </div>
+              </figure>
             )}
           </div>
 
