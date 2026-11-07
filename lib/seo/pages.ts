@@ -21,11 +21,14 @@ export type StaticPageDef = {
   fullTitle?: boolean
   noindex?: boolean
   parent?: string
+  /** The page's own hero/banner artwork, used as the default share image. */
+  image?: string
 }
 
 export const STATIC_PAGES: StaticPageDef[] = [
   {
     path: "/",
+    image: "/images/hero-islamabad.png",
     label: "Homepage",
     title: "VAAP — Virtual Asset Industry Alliance of Pakistan",
     description:
@@ -35,6 +38,7 @@ export const STATIC_PAGES: StaticPageDef[] = [
   },
   {
     path: "/about",
+    image: "/images/about/about-hero-art.png",
     label: "About Us",
     title: "About",
     description:
@@ -51,6 +55,7 @@ export const STATIC_PAGES: StaticPageDef[] = [
   },
   {
     path: "/membership",
+    image: "/images/hero-islamabad.png",
     label: "Membership",
     title: "Membership",
     description: "Join the Virtual Asset Industry Alliance of Pakistan and help build a responsible digital asset ecosystem.",
@@ -75,6 +80,7 @@ export const STATIC_PAGES: StaticPageDef[] = [
   },
   {
     path: "/membership/verified-opinion-leaders",
+    image: "/images/kol-hero-light.png",
     label: "Verified Opinion Leaders",
     title: "Verified Opinion Leaders",
     description:
@@ -98,6 +104,7 @@ export const STATIC_PAGES: StaticPageDef[] = [
   },
   {
     path: "/events",
+    image: "/images/vaap-pakistan-landmarks.png",
     label: "Events",
     title: "Events Hub",
     description:
@@ -150,6 +157,7 @@ export const STATIC_PAGES: StaticPageDef[] = [
   },
   {
     path: "/voting",
+    image: "/images/support-faisal-mosque.png",
     label: "Voting",
     title: "Voting",
     description:
@@ -158,6 +166,7 @@ export const STATIC_PAGES: StaticPageDef[] = [
   },
   {
     path: "/support",
+    image: "/images/support-faisal-mosque.png",
     label: "Support",
     title: "Support",
     description:

@@ -87,6 +87,8 @@ export function staticSubject(def: StaticPageDef, opts: { people?: LeaderRow[] }
     description: def.description,
     fullTitle: def.fullTitle,
     noindex: def.noindex,
+    image: def.image,
+    imageAlt: def.image ? def.label : undefined,
     breadcrumbs,
     schema: (ctx) => {
       switch (def.schema) {

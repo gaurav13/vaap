@@ -5,6 +5,7 @@ import { useState, useTransition } from "react"
 import { AlertCircle, AlertTriangle, Info, Loader2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { SeoImageField } from "@/components/admin/seo/seo-image-field"
 import { resetSeoEntry, saveSeoEntry, type SeoEntryInput } from "@/app/actions/seo"
 import {
   DESCRIPTION_MAX,
@@ -22,6 +23,8 @@ type Props = {
   path: string
   siteUrl: string
   siteName: string
+  pageImage: string
+  fallbackImage: string
   defaults: ResolvedSeo
   override: SeoOverride | null
   issues: AuditIssue[]
@@ -60,9 +63,10 @@ function toInput(o: SeoOverride | null): SeoEntryInput {
   }
 }
 
-export function SeoEditor({ seoKey, kind, path, siteUrl, siteName, defaults, override, issues, jsonLd }: Props) {
+export function SeoEditor({ seoKey, kind, path, siteUrl, siteName, pageImage, fallbackImage, defaults, override, issues, jsonLd }: Props) {
   const router = useRouter()
   const [form, setForm] = useState<SeoEntryInput>(() => toInput(override))
+  const [uploading, setUploading] = useState(false)
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null)
   const [pending, startTransition] = useTransition()
 
@@ -142,9 +146,22 @@ export function SeoEditor({ seoKey, kind, path, siteUrl, siteName, defaults, ove
           <Field label="Share description">
             <Textarea rows={2} value={form.ogDescription} placeholder={defaults.ogDescription} onChange={(e) => set("ogDescription", e.target.value)} />
           </Field>
-          <Field label="Share image URL" help="An https:// URL or a site path such as /images/banner.png.">
-            <Input value={form.ogImage} placeholder={defaults.ogImage} onChange={(e) => set("ogImage", e.target.value)} />
-          </Field>
+          <ShareImageSources
+            current={form.ogImage}
+            pageImage={pageImage}
+            fallbackImage={fallbackImage}
+            abs={abs}
+            onPick={(v) => set("ogImage", v)}
+          />
+          <SeoImageField
+            label="Share image"
+            help="Upload a 1200 × 630 image, or paste an https:// URL or a site path such as /images/banner.png. Leave empty to use the page banner automatically."
+            value={form.ogImage}
+            placeholder={defaults.ogImage}
+            onChange={(v) => set("ogImage", v)}
+            onBusyChange={setUploading}
+            showPreview={false}
+          />
           <details className="rounded-lg border border-line p-4">
             <summary className="cursor-pointer text-sm font-medium text-heading">X (Twitter) overrides</summary>
             <div className="mt-4 flex flex-col gap-4">
@@ -154,9 +171,13 @@ export function SeoEditor({ seoKey, kind, path, siteUrl, siteName, defaults, ove
               <Field label="X description">
                 <Textarea rows={2} value={form.twitterDescription} placeholder={preview.ogDescription} onChange={(e) => set("twitterDescription", e.target.value)} />
               </Field>
-              <Field label="X image URL">
-                <Input value={form.twitterImage} placeholder={preview.ogImage} onChange={(e) => set("twitterImage", e.target.value)} />
-              </Field>
+              <SeoImageField
+                label="X image"
+                value={form.twitterImage}
+                placeholder={preview.ogImage}
+                onChange={(v) => set("twitterImage", v)}
+                onBusyChange={setUploading}
+              />
             </div>
           </details>
         </Section>
@@ -203,7 +224,7 @@ export function SeoEditor({ seoKey, kind, path, siteUrl, siteName, defaults, ove
             <button
               type="button"
               onClick={save}
-              disabled={pending}
+              disabled={pending || uploading}
               className="inline-flex h-9 items-center gap-2 rounded-lg bg-green px-4 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
             >
               {pending && <Loader2 className="size-4 animate-spin" aria-hidden />}
@@ -288,6 +309,71 @@ export function SeoEditor({ seoKey, kind, path, siteUrl, siteName, defaults, ove
         </details>
       </aside>
     </div>
+  )
+}
+
+function ShareImageSources({
+  current,
+  pageImage,
+  fallbackImage,
+  abs,
+  onPick,
+}: {
+  current: string
+  pageImage: string
+  fallbackImage: string
+  abs: (u: string) => string
+  onPick: (value: string) => void
+}) {
+  const options = [
+    { id: "auto", label: "Automatic", sub: pageImage ? "Page banner" : "Site fallback", src: pageImage || fallbackImage, value: "" },
+    ...(pageImage ? [{ id: "banner", label: "Page banner", sub: "From this page", src: pageImage, value: pageImage }] : []),
+    ...(fallbackImage ? [{ id: "fallback", label: "Site fallback", sub: "Global SEO", src: fallbackImage, value: fallbackImage }] : []),
+  ]
+  const isCustom = Boolean(current) && current !== pageImage && current !== fallbackImage
+
+  return (
+    <fieldset className="flex flex-col gap-2">
+      <legend className="mb-1.5 text-sm font-medium text-heading">Choose share image</legend>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {options.map((o) => {
+          const selected = o.value === current
+          return (
+            <button
+              key={o.id}
+              type="button"
+              onClick={() => onPick(o.value)}
+              aria-pressed={selected}
+              className={`flex flex-col overflow-hidden rounded-lg border text-left transition-colors ${
+                selected ? "border-green ring-2 ring-green/30" : "border-line hover:border-green"
+              }`}
+            >
+              {o.src ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={abs(o.src)} alt="" className="aspect-[1200/630] w-full bg-surface object-cover" />
+              ) : (
+                <span className="flex aspect-[1200/630] items-center justify-center bg-surface text-xs text-muted-2">No image</span>
+              )}
+              <span className="flex flex-col p-2">
+                <span className="text-xs font-semibold text-heading">{o.label}</span>
+                <span className="text-xs text-muted-2">{o.sub}</span>
+              </span>
+            </button>
+          )
+        })}
+        {isCustom && (
+          <div className="flex flex-col overflow-hidden rounded-lg border border-green ring-2 ring-green/30">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={abs(current)} alt="" className="aspect-[1200/630] w-full bg-surface object-cover" />
+            <span className="flex flex-col p-2">
+              <span className="text-xs font-semibold text-heading">Custom</span>
+              <span className="text-xs text-muted-2">Uploaded / URL</span>
+            </span>
+          </div>
+        )}
+      </div>
+      {!pageImage && <p className="text-xs text-muted-2">This page has no banner image of its own, so the site fallback is used automatically.</p>}
+    </fieldset>
   )
 }
 

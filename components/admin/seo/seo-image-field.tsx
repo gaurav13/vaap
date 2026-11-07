@@ -12,9 +12,11 @@ type Props = {
   onChange: (value: string) => void
   onBusyChange?: (busy: boolean) => void
   previewClassName?: string
+  placeholder?: string
+  showPreview?: boolean
 }
 
-export function SeoImageField({ label, help, value, onChange, onBusyChange, previewClassName }: Props) {
+export function SeoImageField({ label, help, value, onChange, onBusyChange, previewClassName, placeholder, showPreview = true }: Props) {
   const id = useId()
   const fileRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
@@ -43,7 +45,7 @@ export function SeoImageField({ label, help, value, onChange, onBusyChange, prev
         {label}
       </label>
       <div className="flex flex-col gap-2 sm:flex-row">
-        <Input id={id} value={value} placeholder="https://… or /images/…" onChange={(e) => onChange(e.target.value)} />
+        <Input id={id} value={value} placeholder={placeholder || "https://… or /images/…"} onChange={(e) => onChange(e.target.value)} />
         <button
           type="button"
           onClick={() => fileRef.current?.click()}
@@ -69,7 +71,7 @@ export function SeoImageField({ label, help, value, onChange, onBusyChange, prev
           {error}
         </p>
       )}
-      {value && (
+      {showPreview && value && (
         <div className="mt-1 flex items-start gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img

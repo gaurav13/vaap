@@ -40,6 +40,8 @@ export default async function EditSeoPage({ searchParams }: { searchParams: Prom
         path={subject.path}
         siteUrl={globals.siteUrl}
         siteName={globals.siteName}
+        pageImage={subject.image ?? ""}
+        fallbackImage={globals.defaultOgImage ?? ""}
         defaults={defaults}
         override={override}
         issues={issues}
