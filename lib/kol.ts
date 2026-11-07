@@ -150,7 +150,7 @@ export async function getPublicKols() {
     .from(kolProfiles)
     .innerJoin(members, eq(members.id, kolProfiles.memberId))
     .where(and(eq(kolProfiles.status, "verified"), eq(members.status, "active"), isNull(members.deletedAt)))
-    .orderBy(desc(kolProfiles.verifiedAt))
+    .orderBy(desc(kolProfiles.monthlyReach), desc(kolProfiles.verifiedAt), desc(kolProfiles.createdAt))
   const now = Date.now()
   return rows.map((r) => r.kol).filter((k) => !k.expiresAt || k.expiresAt.getTime() > now)
 }
