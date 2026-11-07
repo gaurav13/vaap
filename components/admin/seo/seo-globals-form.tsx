@@ -5,10 +5,21 @@ import { useState, useTransition } from "react"
 import { Loader2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { SeoImageField } from "@/components/admin/seo/seo-image-field"
 import { saveSeoGlobals } from "@/app/actions/seo"
 import type { SeoGlobals } from "@/lib/seo/shared"
 
 type TextKey = Exclude<keyof SeoGlobals, "allowSearchCrawlers" | "allowAiTraining">
+
+const IMAGE_FIELDS: { key: "defaultOgImage" | "logo"; label: string; help: string; previewClassName: string }[] = [
+  {
+    key: "defaultOgImage",
+    label: "Fallback share image",
+    help: "1200 × 630. Used when a page has no image.",
+    previewClassName: "aspect-[1200/630] w-64 object-cover",
+  },
+  { key: "logo", label: "Logo", help: "Square PNG or SVG, at least 112 × 112. Used in structured data.", previewClassName: "size-20 p-2" },
+]
 
 const FIELDS: { key: TextKey; label: string; help?: string; long?: boolean }[] = [
   { key: "siteName", label: "Site name" },
@@ -16,8 +27,6 @@ const FIELDS: { key: TextKey; label: string; help?: string; long?: boolean }[] =
   { key: "siteUrl", label: "Production site URL", help: "Used for canonical URLs, sitemaps and share links." },
   { key: "titleSuffix", label: "Title suffix", help: 'Appended to page titles, e.g. " | VAAP".' },
   { key: "defaultDescription", label: "Default meta description", long: true },
-  { key: "defaultOgImage", label: "Fallback share image", help: "1200 × 630. Used when a page has no image." },
-  { key: "logo", label: "Logo URL" },
   { key: "locale", label: "Locale", help: "e.g. en_PK" },
   { key: "twitterHandle", label: "X handle", help: "e.g. @vaap_pk" },
   { key: "contactEmail", label: "Contact email" },
@@ -32,6 +41,7 @@ export function SeoGlobalsForm({ initial }: { initial: SeoGlobals }) {
   const [form, setForm] = useState(initial)
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null)
   const [pending, startTransition] = useTransition()
+  const [uploads, setUploads] = useState(0)
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -56,6 +66,21 @@ export function SeoGlobalsForm({ initial }: { initial: SeoGlobals }) {
             )}
             {f.help && <span className="text-xs text-muted-2">{f.help}</span>}
           </label>
+        ))}
+      </section>
+
+      <section className="grid gap-5 rounded-xl border border-line bg-card p-5 md:grid-cols-2">
+        <h2 className="text-base font-bold text-heading md:col-span-2">Images</h2>
+        {IMAGE_FIELDS.map((f) => (
+          <SeoImageField
+            key={f.key}
+            label={f.label}
+            help={f.help}
+            previewClassName={f.previewClassName}
+            value={form[f.key]}
+            onChange={(v) => setForm((prev) => ({ ...prev, [f.key]: v }))}
+            onBusyChange={(busy) => setUploads((n) => n + (busy ? 1 : -1))}
+          />
         ))}
       </section>
 
@@ -90,7 +115,7 @@ export function SeoGlobalsForm({ initial }: { initial: SeoGlobals }) {
       <div className="flex items-center gap-3">
         <button
           type="submit"
-          disabled={pending}
+          disabled={pending || uploads > 0}
           className="inline-flex h-9 items-center gap-2 rounded-lg bg-green px-4 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
         >
           {pending && <Loader2 className="size-4 animate-spin" aria-hidden />}
