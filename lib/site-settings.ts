@@ -186,11 +186,31 @@ export function ensureVotingMenu(input: MenuItem[]): MenuItem[] {
   const hasVoting = items.some(
     (i) => i.label?.trim().toLowerCase() === "voting" || i.href.startsWith("/voting"),
   )
-  if (hasVoting) return items
+  if (hasVoting) return ensureKolLink(items)
   const idx = items.findIndex((i) => i.label?.trim().toLowerCase() === "governance")
   const next = [...items]
   next.splice(idx >= 0 ? idx + 1 : next.length, 0, VOTING_MENU)
-  return next
+  return ensureKolLink(next)
+}
+
+export const KOL_MENU_LINK = { label: "Verified Opinion Leaders", href: "/membership/verified-opinion-leaders" }
+
+// Adds the KOL directory under the Membership / Members menu once, without
+// touching menus that already link to it anywhere.
+function ensureKolLink(saved: MenuItem[]): MenuItem[] {
+  const legacyHref = "/membership/kols"
+  const items = saved.map((i) => ({
+    ...i,
+    href: i.href === legacyHref ? KOL_MENU_LINK.href : i.href,
+    children: i.children?.map((c) => (c.href === legacyHref ? { ...c, href: KOL_MENU_LINK.href } : c)),
+  }))
+  const linked = items.some(
+    (i) => i.href === KOL_MENU_LINK.href || i.children?.some((c) => c.href === KOL_MENU_LINK.href),
+  )
+  if (linked) return items
+  const idx = items.findIndex((i) => ["membership", "members"].includes(i.label?.trim().toLowerCase() ?? ""))
+  if (idx < 0) return items
+  return items.map((i, n) => (n === idx ? { ...i, children: [...(i.children ?? []), KOL_MENU_LINK] } : i))
 }
 
 export const DEFAULT_MENU: MenuItem[] = [

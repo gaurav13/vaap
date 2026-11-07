@@ -22,7 +22,7 @@ export default async function EventsPage() {
   ])
 
   return (
-    <div className="mx-auto w-full max-w-4xl">
+    <div className="w-full">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <PageHeading title="Events" description="Upcoming VAAP workshops, summits, and community sessions." />
         {allowed && (
@@ -60,7 +60,7 @@ export default async function EventsPage() {
                     </p>
                   </div>
                   {status === "approved" && (
-                    <Link href={`/events/${e.id}`} className="shrink-0 text-xs font-semibold text-green hover:opacity-80">
+                    <Link href={`/events/${e.slug || e.id}`} className="shrink-0 text-xs font-semibold text-green hover:opacity-80">
                       View
                     </Link>
                   )}

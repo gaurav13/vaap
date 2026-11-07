@@ -26,14 +26,18 @@ type ProfileValues = {
   website: string
   city: string
   bio: string
+  authorBio: string
   assetType: string
 }
+
+const AUTHOR_BIO_LIMIT = 80
 
 export function ProfileForm(props: ProfileValues) {
   const router = useRouter()
   const [saving, setSaving] = useState(false)
   const [status, setStatus] = useState<{ ok: boolean; msg: string } | null>(null)
   const [image, setImage] = useState(props.image)
+  const [authorBio, setAuthorBio] = useState(props.authorBio)
   const fileRef = useRef<HTMLInputElement>(null)
 
   async function onPickPhoto(e: React.ChangeEvent<HTMLInputElement>) {
@@ -146,6 +150,35 @@ export function ProfileForm(props: ProfileValues) {
             ))}
           </select>
         </Field>
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <div className="flex items-baseline justify-between gap-3">
+          <label htmlFor="authorBio" className="text-sm font-semibold text-heading">
+            Author bio
+          </label>
+          <span
+            aria-live="polite"
+            className={`text-xs tabular-nums ${
+              authorBio.length >= AUTHOR_BIO_LIMIT ? "font-semibold text-green" : "text-muted-2"
+            }`}
+          >
+            {authorBio.length}/{AUTHOR_BIO_LIMIT}
+          </span>
+        </div>
+        <input
+          id="authorBio"
+          name="authorBio"
+          value={authorBio}
+          onChange={(e) => setAuthorBio(e.target.value.slice(0, AUTHOR_BIO_LIMIT))}
+          maxLength={AUTHOR_BIO_LIMIT}
+          aria-describedby="authorBio-hint"
+          placeholder="e.g. Fintech leader building Pakistan's digital asset ecosystem."
+          className="w-full rounded-lg border border-line bg-background px-3 py-2.5 text-sm text-heading outline-none focus:border-green focus:ring-2 focus:ring-green/20"
+        />
+        <span id="authorBio-hint" className="text-xs text-muted-2">
+          One line shown under your name in the &ldquo;Written by&rdquo; box on your articles.
+        </span>
       </div>
 
       <Field label="Short bio">

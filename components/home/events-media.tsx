@@ -18,6 +18,7 @@ import { FacebookIcon, InstagramIcon, LinkedinIcon, TiktokIcon, XIcon, YoutubeIc
 
 type EventItem = {
   id: number
+  slug?: string | null
   title: string
   description: string
   location: string
@@ -173,7 +174,7 @@ function EventsColumn({ events }: { events: EventItem[] }) {
       ) : (
         <>
           <Link
-            href={`/events/${featured.id}`}
+            href={`/events/${featured.slug || featured.id}`}
             className="group relative flex flex-col overflow-hidden rounded-3xl border border-line bg-card shadow-lg transition-shadow hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green"
           >
             <div className="relative overflow-hidden bg-mint">
@@ -189,12 +190,14 @@ function EventsColumn({ events }: { events: EventItem[] }) {
                   <CalendarDays className="size-10 text-white/40" aria-hidden="true" />
                 </div>
               )}
-              <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-navy px-3 py-1 text-xs font-bold uppercase tracking-wider text-white shadow-md">
+            </div>
+            <div className="flex px-5 pt-4 sm:px-6">
+              <Pill>
                 <CalendarDays className="size-3.5" aria-hidden="true" />
                 {featured.category || "Event"}
-              </span>
+              </Pill>
             </div>
-            <div className="relative z-10 -mt-6 flex flex-col gap-4 rounded-tl-[2.5rem] bg-card px-5 pb-5 pt-5 sm:flex-row sm:items-center sm:gap-5 sm:px-6">
+            <div className="flex flex-col gap-4 bg-card px-5 pb-5 pt-3 sm:flex-row sm:items-center sm:gap-5 sm:px-6">
               <div className="flex min-w-0 flex-1 items-center gap-4">
                 <DateBlock date={featured.startsAt} />
                 <span className="hidden h-12 w-px bg-line sm:block" aria-hidden="true" />
@@ -224,7 +227,7 @@ function EventsColumn({ events }: { events: EventItem[] }) {
           {more.map((e) => (
             <Link
               key={e.id}
-              href={`/events/${e.id}`}
+              href={`/events/${e.slug || e.id}`}
               className="group flex flex-col gap-4 rounded-3xl border border-line bg-card p-3 shadow-md transition-all hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green sm:flex-row sm:items-center"
             >
               <Media src={e.coverImage} alt="" className="aspect-video w-full shrink-0 rounded-xl sm:w-2/5" />

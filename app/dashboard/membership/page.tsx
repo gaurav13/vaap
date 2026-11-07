@@ -24,7 +24,7 @@ export default async function MembershipPage() {
   const activeMembership = isActive ? membership : null
 
   return (
-    <div className="mx-auto w-full max-w-5xl">
+    <div className="w-full">
       <PageHeading title="Membership" description="Your VAAP membership details, digital card, and renewal." />
 
       <div className="grid gap-6 lg:grid-cols-2">

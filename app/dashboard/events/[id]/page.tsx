@@ -18,7 +18,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
   const d = new Date(event.startsAt)
 
   return (
-    <div className="mx-auto w-full max-w-3xl">
+    <div className="w-full max-w-3xl">
       <Link
         href="/dashboard/events"
         className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-muted-2 transition-colors hover:text-green"

@@ -33,7 +33,7 @@ export default async function VotingPage() {
   ]
 
   return (
-    <div className="mx-auto w-full max-w-3xl">
+    <div className="w-full max-w-4xl">
       <PageHeading title="Voting Status" description="Your eligibility to vote in VAAP elections and resolutions." />
 
       <div

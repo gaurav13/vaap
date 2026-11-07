@@ -8,6 +8,7 @@ import { EVENT_CATEGORIES, EVENT_CITIES, eventCover } from "@/lib/event-options"
 
 export type PublicEvent = {
   id: number
+  slug?: string | null
   title: string
   description: string
   location: string
@@ -170,7 +171,7 @@ function EventCard({ event: e }: { event: PublicEvent }) {
         )}
         {e.description && <p className="line-clamp-3 text-sm leading-relaxed text-body">{e.description}</p>}
         <Link
-          href={`/events/${e.id}`}
+          href={`/events/${e.slug || e.id}`}
           className="mt-auto inline-flex items-center gap-2 self-start rounded-full border border-green px-5 py-2 text-sm font-bold text-green transition hover:bg-green hover:text-primary-foreground"
         >
           View Details <ArrowRight className="size-4" aria-hidden="true" />

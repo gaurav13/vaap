@@ -1,6 +1,6 @@
 import { db } from "@/lib/db"
-import { events } from "@/lib/db/schema"
-import { desc } from "drizzle-orm"
+import { events, eventRsvps } from "@/lib/db/schema"
+import { count, desc } from "drizzle-orm"
 import { EventsManager } from "@/components/admin/events-manager"
 
 export default async function AdminEventsPage() {
@@ -20,9 +20,16 @@ export default async function AdminEventsPage() {
       category: events.category,
       city: events.city,
       format: events.format,
+      slug: events.slug,
     })
     .from(events)
     .orderBy(desc(events.startsAt))
+
+  const counts = await db
+    .select({ eventId: eventRsvps.eventId, n: count() })
+    .from(eventRsvps)
+    .groupBy(eventRsvps.eventId)
+  const countByEvent = new Map(counts.map((c) => [c.eventId, Number(c.n)]))
 
   const pendingCount = rows.filter((r) => (r.status ?? "approved") === "pending").length
 
@@ -51,6 +58,8 @@ export default async function AdminEventsPage() {
           category: r.category ?? "",
           city: r.city ?? "",
           format: r.format ?? "",
+          slug: r.slug,
+          rsvpCount: countByEvent.get(r.id) ?? 0,
         }))}
       />
     </div>

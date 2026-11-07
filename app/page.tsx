@@ -45,6 +45,7 @@ export default async function Home() {
       excerpt: a.excerpt ?? "",
       image: a.image,
       publisherName: "VAAP",
+      authorName: a.authorName?.trim() || null,
       publisherLogo: null,
       externalUrl: null,
       createdAt: (a.publishedAt ?? new Date(0)).toISOString(),

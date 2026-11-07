@@ -86,6 +86,8 @@ export const news = pgTable("news", {
 export const events = pgTable("events", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
+  // SEO-friendly URL segment, e.g. /events/web3-summit-karachi-2026.
+  slug: text("slug").unique(),
   description: text("description").notNull().default(""),
   location: text("location").notNull().default(""),
   timeLabel: text("timeLabel").notNull().default(""),
@@ -114,6 +116,8 @@ export const eventRsvps = pgTable("event_rsvps", {
   userId: text("userId"),
   name: text("name").notNull(),
   email: text("email").notNull(),
+  // Set by staff at the door; null until the participant is checked in.
+  checkedInAt: timestamp("checkedInAt"),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 })
 
@@ -333,6 +337,8 @@ export const members = pgTable("members", {
   website: text("website"),
   city: text("city"),
   bio: text("bio"),
+  // One-line (max 80 chars) bio shown in the "Written by" box on articles.
+  authorBio: text("authorBio"),
   // "ntn" | "blockchain" | "virtual-asset" | "other" — used to gate voting registration.
   assetType: text("assetType"),
   category: text("category").notNull().default("Verified Community Members"),
@@ -1087,4 +1093,71 @@ export const membershipCertificates = pgTable("membership_certificates", {
   revokedAt: timestamp("revokedAt"),
   revokedReason: text("revokedReason"),
   issuedBy: text("issuedBy"),
+})
+
+// --- Verified KOL (Key Opinion Leader) -------------------------------------
+// One profile per existing member. Membership approval and KOL verification
+// are separate processes; this table never creates member accounts.
+export type KolPlatform = {
+  platform: string
+  url: string
+  followers: number
+  avgViews: number
+  engagement: number
+  ownershipVerified: boolean
+}
+
+export type KolEvidence = { key: string; name: string; uploadedAt: string }
+
+export const kolProfiles = pgTable("kol_profiles", {
+  id: serial("id").primaryKey(),
+  memberId: integer("memberId")
+    .notNull()
+    .unique()
+    .references(() => members.id, { onDelete: "cascade" }),
+  slug: text("slug").notNull().unique(),
+  // draft | pending | under_review | info_required | verified | rejected | expired | revoked
+  status: text("status").notNull().default("draft"),
+  fullName: text("fullName").notNull().default(""),
+  professionalName: text("professionalName").notNull().default(""),
+  photo: text("photo").notNull().default(""),
+  country: text("country").notNull().default("Pakistan"),
+  city: text("city").notNull().default(""),
+  organization: text("organization").notNull().default(""),
+  title: text("title").notNull().default(""),
+  bio: text("bio").notNull().default(""),
+  expertise: jsonb("expertise").$type<string[]>().notNull().default([]),
+  platforms: jsonb("platforms").$type<KolPlatform[]>().notNull().default([]),
+  monthlyReach: integer("monthlyReach").notNull().default(0),
+  mediaAppearances: text("mediaAppearances").notNull().default(""),
+  collaborations: text("collaborations").notNull().default(""),
+  achievements: text("achievements").notNull().default(""),
+  collabInterests: text("collabInterests").notNull().default(""),
+  evidence: jsonb("evidence").$type<KolEvidence[]>().notNull().default([]),
+  evidenceNotes: text("evidenceNotes").notNull().default(""),
+  identityVerified: boolean("identityVerified").notNull().default(false),
+  metricsVerified: boolean("metricsVerified").notNull().default(false),
+  adminNote: text("adminNote").notNull().default(""),
+  invitedAt: timestamp("invitedAt"),
+  submittedAt: timestamp("submittedAt"),
+  verifiedAt: timestamp("verifiedAt"),
+  expiresAt: timestamp("expiresAt"),
+  reminderSentAt: timestamp("reminderSentAt"),
+  statsUpdatedAt: timestamp("statsUpdatedAt"),
+  reviewedBy: text("reviewedBy"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+})
+
+export const kolAuditLog = pgTable("kol_audit_log", {
+  id: serial("id").primaryKey(),
+  memberId: integer("memberId")
+    .notNull()
+    .references(() => members.id, { onDelete: "cascade" }),
+  action: text("action").notNull(),
+  fromStatus: text("fromStatus"),
+  toStatus: text("toStatus"),
+  note: text("note").notNull().default(""),
+  actor: text("actor").notNull().default(""),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
 })

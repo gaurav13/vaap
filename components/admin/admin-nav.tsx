@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation"
 import { useRouter } from "next/navigation"
 import {
   Award,
+  BadgeCheck,
   BookOpen,
   CalendarDays,
   Clapperboard,
@@ -70,6 +71,7 @@ const GROUPS: { heading: string; links: { href: string; label: string; icon: typ
       { href: "/admin/membership-plans", label: "Membership Plans", icon: Wallet },
       { href: "/admin/membership-faqs", label: "Membership FAQs", icon: HelpCircle },
       { href: "/admin/applications", label: "Applications", icon: FileText },
+      { href: "/admin/kols", label: "KOL Verification", icon: BadgeCheck },
       { href: "/admin/messages", label: "Messages", icon: Inbox },
       { href: "/admin/users", label: "Users & Roles", icon: Users, adminOnly: true },
     ],

@@ -20,7 +20,7 @@ export default async function PositionPage() {
 
   if (!isElevated(sessionRole)) {
     return (
-      <div className="mx-auto max-w-2xl">
+      <div className="w-full max-w-3xl">
         <div className="rounded-2xl border border-line bg-card p-8 text-center">
           <span className="mx-auto flex size-12 items-center justify-center rounded-full bg-mint">
             <Award className="size-6 text-green" />
@@ -49,7 +49,7 @@ export default async function PositionPage() {
   const { role, staff, membership, rewards } = data
 
   return (
-    <div className="max-w-3xl">
+    <div className="w-full">
       <h1 className="font-serif text-2xl font-bold text-heading">My Position in VAAP</h1>
       <p className="mt-1 text-muted-2">Your role, appointments, and standing within the association.</p>
 

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
-import { CalendarDays, Check, Eye, MapPin, Pencil, Plus, Trash2, User, X } from "lucide-react"
+import { CalendarDays, Check, Eye, MapPin, Pencil, Plus, Trash2, User, Users, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { FileUpload } from "@/components/admin/file-upload"
 import { createEvent, updateEvent, deleteEvent, setEventStatus } from "@/app/actions/admin"
@@ -10,6 +10,8 @@ import { EVENT_CATEGORIES, EVENT_CITIES, EVENT_FORMATS } from "@/lib/event-optio
 
 type EventItem = {
   id: number
+  slug?: string | null
+  rsvpCount?: number
   title: string
   description: string
   location: string
@@ -256,7 +258,16 @@ export function EventsManager({ items }: { items: EventItem[] }) {
                     </button>
                   )}
                   <a
-                    href={`/events/${item.id}`}
+                    href={`/admin/events/${item.id}/participants`}
+                    className="flex h-9 items-center gap-1.5 rounded-md px-2 text-sm font-semibold text-muted-2 transition-colors hover:bg-mint hover:text-green"
+                    aria-label={`Participants (${item.rsvpCount ?? 0})`}
+                    title="Participants"
+                  >
+                    <Users className="size-4" />
+                    <span className="tabular-nums">{item.rsvpCount ?? 0}</span>
+                  </a>
+                  <a
+                    href={`/events/${item.slug || item.id}`}
                     target="_blank"
                     rel="noreferrer"
                     className={`flex size-9 items-center justify-center rounded-md transition-colors ${

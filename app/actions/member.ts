@@ -12,6 +12,7 @@ import {
   rewardTransactions,
 } from "@/lib/db/schema"
 import { getSession } from "@/lib/session"
+import { uniqueEventSlug } from "@/lib/event-slug-server"
 import { notify } from "@/lib/notifications"
 import { eq, desc, or, sql, inArray } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
@@ -33,10 +34,12 @@ export async function updateProfile(formData: FormData) {
   const website = String(formData.get("website") ?? "").trim()
   const city = String(formData.get("city") ?? "").trim()
   const bio = String(formData.get("bio") ?? "").trim()
+  const authorBio = String(formData.get("authorBio") ?? "").replace(/\s+/g, " ").trim()
   const assetType = String(formData.get("assetType") ?? "").trim()
   const image = String(formData.get("image") ?? "").trim()
 
   if (!name) return { ok: false, error: "Name is required." }
+  if (authorBio.length > 80) return { ok: false, error: "Author bio must be 80 characters or fewer." }
 
   try {
     await db
@@ -57,6 +60,7 @@ export async function updateProfile(formData: FormData) {
       website: website || null,
       city: city || null,
       bio: bio || null,
+      authorBio: authorBio || null,
       assetType: assetType || null,
     }
     const [existingMember] = await db
@@ -260,6 +264,7 @@ export async function submitMemberEvent(formData: FormData) {
   try {
     await db.insert(events).values({
       title,
+      slug: await uniqueEventSlug(title),
       description,
       location,
       timeLabel,

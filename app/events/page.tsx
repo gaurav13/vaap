@@ -16,6 +16,7 @@ export default async function EventsPage() {
 
   const events = rows.map((e) => ({
     id: e.id,
+    slug: e.slug,
     title: e.title,
     description: e.description,
     location: e.location,
