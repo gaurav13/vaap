@@ -71,6 +71,18 @@ export async function ensureKolReferralCode(memberId: number) {
   })
 }
 
+/** Read-only lookup of the KOL's active referral code for public display; never issues a new one. */
+export async function getActiveKolReferralCode(memberId: number) {
+  const [row] = await db
+    .select({ code: referralCodes.code })
+    .from(referralCodes)
+    .innerJoin(members, eq(members.userId, referralCodes.ownerUserId))
+    .where(and(eq(members.id, memberId), eq(referralCodes.active, true)))
+    .orderBy(referralCodes.id)
+    .limit(1)
+  return row?.code ?? null
+}
+
 /** Pauses a KOL-issued code when verification ends; staff-owned codes are left alone. */
 async function deactivateKolReferralCode(memberId: number) {
   const [member] = await db.select({ userId: members.userId }).from(members).where(eq(members.id, memberId)).limit(1)

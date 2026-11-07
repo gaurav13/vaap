@@ -5,7 +5,9 @@ import { SiteHeaderServer } from "@/components/site-header-server"
 import { SiteFooter } from "@/components/site-footer"
 import { PlatformIcon, VerifiedBadge } from "@/components/kol/kol-ui"
 import { CollaborationForm } from "@/components/kol/collaboration-form"
-import { getPublicKolBySlug, totalFollowers } from "@/lib/kol"
+import { KolReferralCard } from "@/components/kol/kol-referral-card"
+import { getActiveKolReferralCode, getPublicKolBySlug, totalFollowers } from "@/lib/kol"
+import { referralUrl } from "@/lib/referral"
 import { formatCount, formatDate, platformLabel } from "@/lib/kol-shared"
 import { seoMetadata } from "@/lib/seo"
 import { kolSubject } from "@/lib/seo/subjects"
@@ -43,6 +45,7 @@ export default async function KolProfilePage({ params }: Props) {
   if (!kol) notFound()
   const name = kol.professionalName || kol.fullName
   const location = [kol.city, kol.country].filter(Boolean).join(", ")
+  const referralCode = await getActiveKolReferralCode(kol.memberId)
 
   return (
     <>
@@ -161,6 +164,8 @@ export default async function KolProfilePage({ params }: Props) {
                 {kol.statsUpdatedAt ? ` · stats updated ${formatDate(kol.statsUpdatedAt)}` : ""}
               </p>
             </section>
+
+            {referralCode && <KolReferralCard code={referralCode} url={referralUrl(referralCode)} firstName={name.split(" ")[0]} />}
 
             <section className="flex flex-col gap-4 rounded-2xl bg-card p-6" aria-labelledby="collab-heading">
               <h2 id="collab-heading" className="font-serif text-xl font-bold text-heading">
