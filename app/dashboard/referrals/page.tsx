@@ -1,6 +1,7 @@
 import { getSession } from "@/lib/session"
 import { getMyReferralDashboard, getOrCreateMyReferralCode } from "@/app/actions/referrals"
 import { canOwnReferralCode } from "@/lib/permissions"
+import { isVerifiedKolUser } from "@/lib/kol"
 import { ReferralDashboard } from "@/components/member/referral-dashboard"
 import { Share2 } from "lucide-react"
 
@@ -9,7 +10,8 @@ export const dynamic = "force-dynamic"
 export default async function ReferralsPage() {
   const session = await getSession()
   const role = session?.user?.role ?? "member"
-  const eligible = canOwnReferralCode(role)
+  const eligible =
+    canOwnReferralCode(role) || (session?.user ? await isVerifiedKolUser(session.user.id) : false)
 
   if (!eligible) {
     return (

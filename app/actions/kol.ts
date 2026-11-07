@@ -96,6 +96,29 @@ function cleanPlatforms(input: unknown, keepOwnership: KolPlatform[] = []): KolP
     .filter((p) => p.url)
 }
 
+function cleanProfile(input: KolApplicationInput, priorPlatforms: KolPlatform[]) {
+  const expertiseSet = new Set<string>(KOL_EXPERTISE)
+  return {
+    fullName: text(input.fullName, 120),
+    professionalName: text(input.professionalName, 120),
+    photo: safeUrl(input.photo),
+    country: text(input.country, 80) || "Pakistan",
+    city: text(input.city, 80),
+    organization: text(input.organization, 160),
+    title: text(input.title, 160),
+    bio: text(input.bio, 2000),
+    expertise: (Array.isArray(input.expertise) ? input.expertise : []).filter((e) => expertiseSet.has(e)).slice(0, 8),
+    platforms: cleanPlatforms(input.platforms, priorPlatforms),
+    monthlyReach: Math.round(num(input.monthlyReach)),
+    mediaAppearances: text(input.mediaAppearances, 2000),
+    collaborations: text(input.collaborations, 2000),
+    achievements: text(input.achievements, 2000),
+    collabInterests: text(input.collabInterests, 1000),
+    evidenceNotes: text(input.evidenceNotes, 2000),
+    updatedAt: new Date(),
+  }
+}
+
 export async function saveKolApplication(input: KolApplicationInput, submit: boolean): Promise<Result> {
   try {
     const { user, member } = await currentMember()
@@ -107,26 +130,7 @@ export async function saveKolApplication(input: KolApplicationInput, submit: boo
       return { ok: false, error: "Your application can't be edited while it is being reviewed." }
     }
 
-    const expertiseSet = new Set<string>(KOL_EXPERTISE)
-    const data = {
-      fullName: text(input.fullName, 120),
-      professionalName: text(input.professionalName, 120),
-      photo: safeUrl(input.photo),
-      country: text(input.country, 80) || "Pakistan",
-      city: text(input.city, 80),
-      organization: text(input.organization, 160),
-      title: text(input.title, 160),
-      bio: text(input.bio, 2000),
-      expertise: (Array.isArray(input.expertise) ? input.expertise : []).filter((e) => expertiseSet.has(e)).slice(0, 8),
-      platforms: cleanPlatforms(input.platforms, profile.platforms),
-      monthlyReach: Math.round(num(input.monthlyReach)),
-      mediaAppearances: text(input.mediaAppearances, 2000),
-      collaborations: text(input.collaborations, 2000),
-      achievements: text(input.achievements, 2000),
-      collabInterests: text(input.collabInterests, 1000),
-      evidenceNotes: text(input.evidenceNotes, 2000),
-      updatedAt: new Date(),
-    }
+    const data = cleanProfile(input, profile.platforms)
 
     if (submit) {
       const missing: string[] = []
@@ -269,6 +273,35 @@ export async function adminSetKolStatus(memberId: number, status: KolStatus, not
     return { ok: true }
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : "Could not update status." }
+  }
+}
+
+/** Staff edit any profile content in place; status, checks and timestamps are left untouched. */
+export async function adminUpdateKolProfile(memberId: number, input: KolApplicationInput): Promise<Result> {
+  try {
+    const user = await requireStaffUser()
+    const profile = await getKolByMemberId(Number(memberId))
+    if (!profile) return { ok: false, error: "Profile not found." }
+    const data = cleanProfile(input, profile.platforms)
+    if (!data.fullName) return { ok: false, error: "Full name is required." }
+
+    await db.update(kolProfiles).set(data).where(eq(kolProfiles.memberId, profile.memberId))
+    const nameChanged =
+      data.fullName !== profile.fullName || data.professionalName !== profile.professionalName
+    if (nameChanged) await refreshSlug(profile.memberId, data.professionalName || data.fullName)
+
+    const changed = (Object.keys(data) as (keyof typeof data)[])
+      .filter((k) => k !== "updatedAt" && JSON.stringify(data[k]) !== JSON.stringify(profile[k]))
+      .join(", ")
+    await logKol(profile.memberId, "admin_edited", { actor: user.email, note: changed ? `Updated: ${changed}` : "No changes" })
+
+    revalidatePath("/admin/kols")
+    revalidatePath("/dashboard/kol")
+    revalidatePath("/membership/verified-opinion-leaders")
+    revalidatePath(`/membership/verified-opinion-leaders/${profile.slug}`)
+    return { ok: true, message: "Profile updated." }
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Could not update profile." }
   }
 }
 
