@@ -3,11 +3,14 @@ import { notFound } from "next/navigation"
 import {
   ArrowLeft,
   Award,
+  CalendarCheck,
   ChevronDown,
   ExternalLink,
   Handshake,
   Mail,
   MapPin,
+  Megaphone,
+  Network,
   Newspaper,
   ShieldCheck,
   Sparkles,
@@ -78,10 +81,10 @@ export default async function KolProfilePage({ params }: Props) {
   const referralCode = await getActiveKolReferralCode(kol.memberId)
   const total = totalFollowers(kol)
   const stats = [
-    { label: "Total followers", value: formatCount(total) },
-    { label: "Monthly reach", value: kol.monthlyReach > 0 ? formatCount(kol.monthlyReach) : "—" },
-    { label: "Platforms", value: String(kol.platforms.length) },
-    { label: "Verified since", value: formatDate(kol.verifiedAt) },
+    { Icon: Users, label: "Total Followers", value: formatCount(total) },
+    { Icon: Megaphone, label: "Monthly Reach", value: kol.monthlyReach > 0 ? formatCount(kol.monthlyReach) : "—" },
+    { Icon: Network, label: "Platforms", value: String(kol.platforms.length) },
+    { Icon: CalendarCheck, label: "Verified Since", value: formatDate(kol.verifiedAt) },
   ]
 
   return (
@@ -175,14 +178,24 @@ export default async function KolProfilePage({ params }: Props) {
         </section>
 
         <div className="vaap-container flex flex-col gap-6 py-8 sm:gap-8 sm:py-12">
-          <dl className="grid grid-cols-2 overflow-hidden rounded-2xl border border-line-light bg-card shadow-sm md:grid-cols-4">
-            {stats.map((s, i) => (
+          <dl className="grid grid-cols-2 rounded-2xl border border-line-light bg-card py-2 shadow-sm lg:grid-cols-4 lg:py-7">
+            {stats.map(({ Icon, label, value }, i) => (
               <div
-                key={s.label}
-                className={`flex flex-col gap-1 px-4 py-4 sm:px-6 sm:py-5 ${i % 2 === 1 ? "border-l border-line-light" : ""} ${i >= 2 ? "border-t border-line-light md:border-t-0" : ""} ${i === 2 ? "md:border-l" : ""}`}
+                key={label}
+                className={[
+                  "flex min-w-0 flex-col gap-3 px-4 py-5 sm:flex-row sm:items-center sm:gap-4 sm:px-6 lg:py-0",
+                  i % 2 === 0 ? "border-r border-line-light lg:border-r-0" : "",
+                  i >= 2 ? "border-t border-line-light lg:border-t-0" : "",
+                  i > 0 ? "lg:border-l lg:border-line-light" : "",
+                ].join(" ")}
               >
-                <dt className="text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-muted-2">{s.label}</dt>
-                <dd className="font-serif text-xl font-bold text-heading sm:text-2xl">{s.value}</dd>
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-mint text-green sm:size-12">
+                  <Icon className="size-5 sm:size-6" strokeWidth={1.75} aria-hidden="true" />
+                </span>
+                <div className="flex min-w-0 flex-col">
+                  <dt className="order-2 text-sm leading-snug text-body">{label}</dt>
+                  <dd className="order-1 text-xl font-bold leading-tight text-heading sm:text-2xl">{value}</dd>
+                </div>
               </div>
             ))}
           </dl>
