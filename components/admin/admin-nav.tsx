@@ -21,6 +21,7 @@ import {
   LayoutDashboard,
   LayoutTemplate,
   LogOut,
+  Mail,
   Map,
   Newspaper,
   Percent,
@@ -94,6 +95,7 @@ const GROUPS: { heading: string; links: { href: string; label: string; icon: typ
   {
     heading: "Settings",
     links: [
+      { href: "/admin/emails", label: "Email Templates", icon: Mail, adminOnly: true },
       { href: "/admin/sitemap", label: "Sitemap", icon: Map },
       { href: "/admin/settings", label: "Website Settings", icon: Settings, adminOnly: true },
     ],

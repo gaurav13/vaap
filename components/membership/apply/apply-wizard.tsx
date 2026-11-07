@@ -157,6 +157,7 @@ type FormState = {
   cardPaid: boolean
   stripeSessionId: string
   txid: string
+  cryptoCoin: CryptoCoinId
   agree: boolean
 }
 
@@ -175,25 +176,38 @@ const INITIAL: FormState = {
   cardPaid: false,
   stripeSessionId: "",
   txid: "",
+  cryptoCoin: "USDT_TRC20",
   agree: false,
+}
+
+export type ResumeApplication = {
+  applicationId: number
+  values: Partial<Pick<FormState, "companyName" | "registrationNumber" | "website" | "industrySector" | "fullName" | "designation" | "email" | "phone" | "cnic">>
 }
 
 export function ApplyWizard({
   plans,
   initialPlanId,
+  resume,
 }: {
   plans: ApplyPlan[]
   initialPlanId?: number | null
+  /** Saved draft opened from a reminder email's secure link. */
+  resume?: ResumeApplication | null
 }) {
   // When arriving with a preselected membership type (e.g. chosen on the
   // dashboard), skip the "Select Membership" step and land on Information.
   const preselected = initialPlanId != null && plans.some((p) => p.id === initialPlanId) ? initialPlanId : null
   const [step, setStep] = useState(preselected ? 1 : 0)
-  const [form, setForm] = useState<FormState>(preselected ? { ...INITIAL, planId: preselected } : INITIAL)
+  const [form, setForm] = useState<FormState>(() => ({
+    ...INITIAL,
+    ...(preselected ? { planId: preselected } : {}),
+    ...(resume?.values ?? {}),
+  }))
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [reference, setReference] = useState<string | null>(null)
-  const [applicationId, setApplicationId] = useState<number | null>(null)
+  const [applicationId, setApplicationId] = useState<number | null>(resume?.applicationId ?? null)
   const [account, setAccount] = useState<{ created: boolean; tempPassword?: string } | null>(null)
 
   const selectedPlan = useMemo(
@@ -289,6 +303,7 @@ export function ApplyWizard({
       cnic: form.cnic,
       paymentMethod: form.paymentMethod,
       txid: form.paymentMethod === "crypto" ? form.txid : form.stripeSessionId,
+      cryptoCoin: form.paymentMethod === "crypto" ? form.cryptoCoin : undefined,
       admissionFee: selectedPlan.admissionFee,
       annualFee: selectedPlan.annualFee,
       totalAmount: totalForPlan(selectedPlan),
@@ -1028,13 +1043,16 @@ function CryptoPayment({
   plan,
   txid,
   onTxid,
+  selected,
+  onSelect: setSelected,
 }: {
   plan: ApplyPlan
   txid: string
   onTxid: (value: string) => void
+  selected: CryptoCoinId
+  onSelect: (coin: CryptoCoinId) => void
 }) {
   const [config, setConfig] = useState<CryptoConfig | null>(null)
-  const [selected, setSelected] = useState<CryptoCoinId>("USDT_TRC20")
   const [loading, setLoading] = useState(true)
   const [qr, setQr] = useState("")
   const [copied, setCopied] = useState("")
@@ -1387,7 +1405,13 @@ function StepPayment({
         {paymentHeader}
         <div className="mx-auto max-w-3xl">
           {methodToggle}
-          <CryptoPayment plan={plan} txid={form.txid} onTxid={(v) => update("txid", v)} />
+          <CryptoPayment
+            plan={plan}
+            txid={form.txid}
+            onTxid={(v) => update("txid", v)}
+            selected={form.cryptoCoin}
+            onSelect={(coin) => update("cryptoCoin", coin)}
+          />
           {secureNote}
         </div>
       </div>

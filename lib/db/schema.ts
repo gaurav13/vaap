@@ -1,4 +1,5 @@
-import { pgTable, text, timestamp, boolean, serial, integer } from "drizzle-orm/pg-core"
+import { pgTable, text, timestamp, boolean, serial, integer, jsonb } from "drizzle-orm/pg-core"
+import type { EmailContent } from "@/lib/email-templates/registry"
 
 // --- Better Auth required tables -------------------------------------------
 // Column names are camelCase to match Better Auth's defaults. Do not rename.
@@ -135,6 +136,9 @@ export const membershipApplications = pgTable("membership_applications", {
   paymentMethod: text("paymentMethod"), // "card" | "crypto"
   // Crypto transaction hash / TXID captured when paying with cryptocurrency.
   txid: text("txid"),
+  // Coin the applicant chose (e.g. BTC) and the VAAP wallet address they were shown.
+  cryptoCoin: text("cryptoCoin"),
+  cryptoAddress: text("cryptoAddress"),
   admissionFee: text("admissionFee"),
   annualFee: text("annualFee"),
   totalAmount: text("totalAmount"),
@@ -977,4 +981,93 @@ export const governanceAuditLogs = pgTable("governance_audit_logs", {
   detail: text("detail").notNull().default(""), // JSON
   ipAddress: text("ipAddress").notNull().default(""),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
+// --- Email template management ---------------------------------------------
+
+export const emailTemplates = pgTable("email_templates", {
+  key: text("key").primaryKey(),
+  publishedContent: jsonb("published_content").$type<EmailContent>(),
+  publishedVersion: integer("published_version").notNull().default(0),
+  publishedAt: timestamp("published_at"),
+  publishedBy: text("published_by"),
+  draftContent: jsonb("draft_content").$type<EmailContent>(),
+  draftUpdatedAt: timestamp("draft_updated_at"),
+  draftUpdatedBy: text("draft_updated_by"),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+})
+
+export const emailTemplateVersions = pgTable("email_template_versions", {
+  id: serial("id").primaryKey(),
+  templateKey: text("template_key").notNull(),
+  version: integer("version").notNull(),
+  content: jsonb("content").$type<EmailContent>().notNull(),
+  publishedBy: text("published_by"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+})
+
+export const emailLogs = pgTable("email_logs", {
+  id: serial("id").primaryKey(),
+  templateKey: text("template_key"),
+  recipient: text("recipient").notNull(),
+  subject: text("subject").notNull(),
+  status: text("status").notNull(), // sent | failed | skipped
+  error: text("error"),
+  isTest: boolean("is_test").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+})
+
+// --- Email automations ------------------------------------------------------
+
+export const emailAutomations = pgTable("email_automations", {
+  key: text("key").primaryKey(),
+  enabled: boolean("enabled").notNull().default(true),
+  config: jsonb("config").$type<Record<string, unknown>>().notNull().default({}),
+  lastRunAt: timestamp("last_run_at"),
+  lastSentAt: timestamp("last_sent_at"),
+  totalSent: integer("total_sent").notNull().default(0),
+  updatedBy: text("updated_by"),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+})
+
+export const emailAutomationRuns = pgTable("email_automation_runs", {
+  id: serial("id").primaryKey(),
+  automationKey: text("automation_key").notNull(),
+  trigger: text("trigger").notNull(),
+  sent: integer("sent").notNull().default(0),
+  skipped: integer("skipped").notNull().default(0),
+  failed: integer("failed").notNull().default(0),
+  note: text("note").notNull().default(""),
+  actor: text("actor"),
+  startedAt: timestamp("started_at").notNull().defaultNow(),
+  finishedAt: timestamp("finished_at"),
+})
+
+export const emailSends = pgTable("email_sends", {
+  id: serial("id").primaryKey(),
+  automationKey: text("automation_key").notNull(),
+  dedupeKey: text("dedupe_key").notNull().unique(),
+  recipient: text("recipient").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+})
+
+export const emailSuppressions = pgTable("email_suppressions", {
+  id: serial("id").primaryKey(),
+  email: text("email").notNull(),
+  topic: text("topic").notNull(),
+  reason: text("reason").notNull().default("unsubscribed"),
+  source: text("source").notNull().default("recipient"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+})
+
+export const newsletterIssues = pgTable("newsletter_issues", {
+  id: serial("id").primaryKey(),
+  weekKey: text("week_key").notNull().unique(),
+  status: text("status").notNull().default("draft"),
+  content: jsonb("content").$type<EmailContent>().notNull(),
+  sentCount: integer("sent_count").notNull().default(0),
+  sentAt: timestamp("sent_at"),
+  updatedBy: text("updated_by"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 })

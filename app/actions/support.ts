@@ -53,17 +53,8 @@ export async function submitComplaint(formData: FormData) {
       type: "info",
       title: "We received your complaint",
       body: `Thank you, ${name}. Your case reference is ${reference}. Our team will review it and respond.`,
-      emailTemplate: {
-        subject: `Your VAAP case reference ${reference}`,
-        heading: "We've received your submission",
-        intro: [
-          `Thank you for contacting the VAAP Member Support & Grievance Centre regarding "${category}".`,
-          `Your case reference is ${reference}. Please keep it — you can use it any time to track your case status.`,
-          "Our team reviews every submission and will guide you or refer the matter to the relevant authority where needed.",
-        ],
-        footnote:
-          "VAAP is an industry association and does not have regulatory, investigative or enforcement powers. Matters involving unlicensed providers, fraud or regulatory violations may be referred to PVARA or other competent authorities.",
-      },
+      emailKey: "support.complaint-received",
+      emailVars: { name, category, reference },
     })
     await notify({
       role: "staff",

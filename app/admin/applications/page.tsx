@@ -28,6 +28,8 @@ export default async function AdminApplicationsPage() {
           designation: r.designation,
           paymentMethod: r.paymentMethod,
           txid: r.txid,
+          cryptoCoin: r.cryptoCoin,
+          cryptoAddress: r.cryptoAddress,
           admissionFee: r.admissionFee,
           annualFee: r.annualFee,
           totalAmount: r.totalAmount,

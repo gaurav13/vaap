@@ -22,6 +22,8 @@ type Application = {
   designation: string | null
   paymentMethod: string | null
   txid: string | null
+  cryptoCoin: string | null
+  cryptoAddress: string | null
   admissionFee: string | null
   annualFee: string | null
   totalAmount: string | null
@@ -209,6 +211,12 @@ export function ApplicationsManager({ items, isAdmin = false }: { items: Applica
                           : a.paymentMethod
                     }
                   />
+                  {a.paymentMethod === "crypto" && (
+                    <>
+                      <DetailRow label="Coin Selected" value={a.cryptoCoin} />
+                      <DetailRow label="Wallet Address" value={a.cryptoAddress} />
+                    </>
+                  )}
                   <DetailRow label="Transaction ID (TXID)" value={a.txid} />
                   <DetailRow label="Admission Fee" value={a.admissionFee} />
                   <DetailRow label="Annual Fee" value={a.annualFee} />

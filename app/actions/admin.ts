@@ -12,6 +12,8 @@ import { notify } from "@/lib/notifications"
 import { and, desc, eq } from "drizzle-orm"
 import { randomUUID } from "crypto"
 import { revalidatePath } from "next/cache"
+import { after } from "next/server"
+import { announceEventIfEnabled } from "@/lib/email-automations/engine"
 
 async function requireStaff() {
   const session = await getSession()
@@ -132,6 +134,17 @@ export async function deleteNews(id: number) {
 
 // --- Events ----------------------------------------------------------------
 
+// Runs after the response so admins are not blocked while members are emailed.
+function scheduleEventAnnouncement(eventId: number) {
+  after(async () => {
+    try {
+      await announceEventIfEnabled(eventId)
+    } catch (err) {
+      console.error("[email-automation] event announcement failed:", err)
+    }
+  })
+}
+
 export async function createEvent(formData: FormData) {
   await requireStaff()
   const title = String(formData.get("title") ?? "").trim()
@@ -149,7 +162,7 @@ export async function createEvent(formData: FormData) {
   if (!title) return { ok: false, error: "Title is required." }
 
   // Admin-created events are approved by default.
-  await db.insert(events).values({
+  const [created] = await db.insert(events).values({
     title,
     description,
     location,
@@ -162,7 +175,8 @@ export async function createEvent(formData: FormData) {
     startsAt: startsAtRaw ? new Date(startsAtRaw) : new Date(),
     published,
     status: "approved",
-  })
+  }).returning({ id: events.id })
+  if (published) scheduleEventAnnouncement(created.id)
   revalidatePath("/admin/events")
   revalidatePath("/events")
   revalidatePath("/")
@@ -199,6 +213,8 @@ export async function updateEvent(id: number, formData: FormData) {
       published,
     })
     .where(eq(events.id, id))
+  // Already-announced members are skipped by the dedupe ledger.
+  if (published) scheduleEventAnnouncement(id)
   revalidatePath("/admin/events")
   revalidatePath("/events")
   revalidatePath("/")
@@ -208,6 +224,7 @@ export async function updateEvent(id: number, formData: FormData) {
 export async function setEventStatus(id: number, status: "approved" | "pending" | "rejected") {
   await requireStaff()
   await db.update(events).set({ status }).where(eq(events.id, id))
+  if (status === "approved") scheduleEventAnnouncement(id)
   revalidatePath("/admin/events")
   revalidatePath("/events")
   revalidatePath("/")
@@ -249,16 +266,8 @@ export async function setApplicationStatus(id: number, status: "pending" | "appr
         title: "Update on your membership application",
         body: "After review, your membership application was not approved at this time. Please contact us if you'd like more information.",
         link: "/dashboard/applications",
-        emailTemplate: {
-          subject: "Update on your VAAP membership application",
-          heading: "Application update",
-          intro: [
-            `Dear ${statusApp.name},`,
-            "Thank you for your interest in the Virtual Asset Industry Alliance of Pakistan. After careful review, we're unable to approve your membership application at this time.",
-            "If you believe this was in error or would like guidance on reapplying, simply reply to this email and our team will be glad to help.",
-          ],
-          footnote: "This decision does not prevent you from applying again in the future.",
-        },
+        emailKey: "application.rejected",
+        emailVars: { name: statusApp.name },
       })
     } else if (status === "pending") {
       await notify({
@@ -364,16 +373,8 @@ export async function setApplicationStatus(id: number, status: "pending" | "appr
         title: "Your membership is approved",
         body: `Congratulations! Your ${application.category} membership (${membershipId}) is now active. Welcome to VAAP.`,
         link: "/dashboard/membership",
-        emailTemplate: {
-          subject: "Your VAAP membership is approved",
-          heading: `Welcome to VAAP, ${application.name}`,
-          intro: [
-            `Congratulations — your ${application.category} membership has been approved and is now active.`,
-            `Your membership ID is ${membershipId}. You can view your membership card, register to vote, and access member resources from your dashboard.`,
-          ],
-          ctaLabel: "Go to my membership",
-          ctaPath: "/dashboard/membership",
-        },
+        emailKey: "membership.approved",
+        emailVars: { name: application.name, category: application.category, membershipId },
       })
     }
   }

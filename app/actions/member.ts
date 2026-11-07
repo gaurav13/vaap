@@ -140,16 +140,8 @@ export async function requestRenewal() {
     title: "Renewal request submitted",
     body: `We've received your renewal request for ${member.membershipId}. Our team will review it shortly.`,
     link: "/dashboard/applications",
-    emailTemplate: {
-      subject: "We received your VAAP membership renewal request",
-      heading: "Renewal request received",
-      intro: [
-        `Thank you — we've received your renewal request for membership ${member.membershipId}.`,
-        "Our team will review it and update you once it has been processed. You can track its status any time from your dashboard.",
-      ],
-      ctaLabel: "View my applications",
-      ctaPath: "/dashboard/applications",
-    },
+    emailKey: "membership.renewal-received",
+    emailVars: { name: member.name, membershipId: member.membershipId },
   })
   await notify({
     role: "staff",
@@ -192,16 +184,8 @@ export async function requestUpgrade(formData: FormData) {
       ? `We've received your request to move to "${targetCategory}". Our team will review it shortly.`
       : "We've received your membership application. Our team will review it shortly.",
     link: "/dashboard/applications",
-    emailTemplate: {
-      subject: "We received your VAAP membership application",
-      heading: "Application received",
-      intro: [
-        "Thank you — we've received your membership application.",
-        "Our team will review it and let you know as soon as there's an update. You can track its status any time from your dashboard.",
-      ],
-      ctaLabel: "View my applications",
-      ctaPath: "/dashboard/applications",
-    },
+    emailKey: "application.dashboard-submitted",
+    emailVars: { name: member?.name ?? current.name ?? "", targetCategory },
   })
   await notify({
     role: "staff",
