@@ -43,6 +43,8 @@ export default async function AdminKolsPage() {
     memberStatus,
     displayName: kol.professionalName || kol.fullName || memberName,
     fullName: kol.fullName,
+    professionalName: kol.professionalName,
+    collabInterests: kol.collabInterests,
     photo: kol.photo,
     title: kol.title,
     organization: kol.organization,

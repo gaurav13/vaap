@@ -3,7 +3,8 @@
 import { useMemo, useState, useTransition } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Download, ExternalLink, FileText, Loader2, Search, UserPlus, UserRound } from "lucide-react"
+import { Download, ExternalLink, FileText, Loader2, Pencil, Search, UserPlus, UserRound } from "lucide-react"
+import { KolAdminEditor } from "@/components/kol/kol-admin-editor"
 import { adminInviteKols, adminSetKolCheck, adminSetKolStatus } from "@/app/actions/kol"
 import type { KolEvidence, KolPlatform } from "@/lib/db/schema"
 import { KOL_STATUSES, KOL_STATUS_LABEL, formatCount, formatDate, platformLabel, type KolStatus } from "@/lib/kol-shared"
@@ -24,6 +25,8 @@ export type AdminKolRow = {
   memberStatus: string
   displayName: string
   fullName: string
+  professionalName: string
+  collabInterests: string
   photo: string
   title: string
   organization: string
@@ -73,6 +76,7 @@ export function KolAdminManager({ items, invitable }: { items: AdminKolRow[]; in
   const [query, setQuery] = useState("")
   const [openId, setOpenId] = useState<number | null>(null)
   const [inviteOpen, setInviteOpen] = useState(false)
+  const [startEditing, setStartEditing] = useState(false)
 
   const counts = useMemo(() => {
     const c: Record<string, number> = { all: items.length }
@@ -177,10 +181,31 @@ export function KolAdminManager({ items, invitable }: { items: AdminKolRow[]; in
                     {i.platforms.length}
                   </td>
                   <td className="px-4 py-3 text-xs text-body">{formatDate(i.submittedAt)}</td>
-                  <td className="px-4 py-3 text-right">
-                    <Button size="sm" variant="outline" onClick={() => setOpenId(i.memberId)}>
-                      Review
-                    </Button>
+                  <td className="px-4 py-3">
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        aria-label={`Edit ${i.displayName}`}
+                        onClick={() => {
+                          setStartEditing(true)
+                          setOpenId(i.memberId)
+                        }}
+                      >
+                        <Pencil className="size-4" aria-hidden="true" />
+                        Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setStartEditing(false)
+                          setOpenId(i.memberId)
+                        }}
+                      >
+                        Review
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               )
@@ -191,7 +216,7 @@ export function KolAdminManager({ items, invitable }: { items: AdminKolRow[]; in
 
       <Dialog open={!!open} onOpenChange={(o) => !o && setOpenId(null)}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
-          {open && <ReviewPanel row={open} />}
+          {open && <ReviewPanel key={`${open.memberId}-${startEditing}`} row={open} initialEditing={startEditing} />}
         </DialogContent>
       </Dialog>
 
@@ -229,8 +254,9 @@ function Detail({ label, value }: { label: string; value: string }) {
   )
 }
 
-function ReviewPanel({ row }: { row: AdminKolRow }) {
+function ReviewPanel({ row, initialEditing = false }: { row: AdminKolRow; initialEditing?: boolean }) {
   const router = useRouter()
+  const [editing, setEditing] = useState(initialEditing)
   const [note, setNote] = useState(row.adminNote)
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
   const [pending, startTransition] = useTransition()
@@ -263,9 +289,22 @@ function ReviewPanel({ row }: { row: AdminKolRow }) {
               {[row.title, row.organization].filter(Boolean).join(", ") || row.memberEmail}
             </DialogDescription>
           </div>
-          <KolStatusPill status={row.status} className="ml-auto" />
+          <div className="ml-auto flex flex-col items-end gap-2 pr-6 sm:flex-row sm:items-center">
+            <KolStatusPill status={row.status} />
+            {!editing && (
+              <Button size="sm" variant="outline" onClick={() => setEditing(true)}>
+                <Pencil className="size-4" aria-hidden="true" />
+                Edit profile
+              </Button>
+            )}
+          </div>
         </div>
       </DialogHeader>
+
+      {editing ? (
+        <KolAdminEditor row={row} onDone={() => setEditing(false)} />
+      ) : (
+        <>
 
       {row.memberStatus !== "active" && (
         <p className="rounded-lg bg-gold-tint px-3 py-2 text-sm text-heading">
@@ -421,6 +460,8 @@ function ReviewPanel({ row }: { row: AdminKolRow }) {
           {row.audit.length === 0 && <li className="text-xs text-muted-2">No history yet.</li>}
         </ol>
       </section>
+        </>
+      )}
     </div>
   )
 }
