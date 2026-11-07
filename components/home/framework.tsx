@@ -68,7 +68,7 @@ export function Framework() {
   src="/images/framework-flag-left.png"
   alt=""
   aria-hidden="true"
-  className="pointer-events-none absolute left-0 top-0 h-40 w-auto max-w-[26%] select-none object-contain object-left-top opacity-80 mix-blend-multiply sm:h-56 lg:h-64"
+  className="pointer-events-none absolute left-0 top-0 h-48 w-auto max-w-[32%] select-none object-contain object-left-top opacity-80 mix-blend-multiply sm:h-64 lg:h-80"
       />
 
       <div className="vaap-container relative">
