@@ -44,24 +44,24 @@ export function KolHero({ leaders, reach, sectors }: { leaders: number; reach: n
       </section>
 
       <section aria-label="Network at a glance" className="bg-surface">
-        <div className="vaap-container py-8 sm:py-12">
-          <dl className="grid grid-cols-1 divide-y divide-line-light rounded-2xl border border-line-light bg-card shadow-sm sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4 lg:py-6">
+        <div className="vaap-container flex flex-col gap-3 py-6 sm:py-8">
+          <dl className="grid grid-cols-2 rounded-2xl border border-line-light bg-card shadow-sm md:grid-cols-4">
             {stats.map(({ Icon, value, label }, i) => (
               <div
                 key={label}
                 className={[
-                  "flex min-w-0 items-center gap-4 px-5 py-4 sm:px-6 sm:py-6 lg:py-0",
-                  i % 2 === 1 ? "sm:border-l sm:border-line-light" : "",
-                  i >= 2 ? "sm:border-t sm:border-line-light lg:border-t-0" : "",
-                  i === 2 ? "lg:border-l lg:border-line-light" : "",
+                  "flex min-w-0 items-center gap-3 px-4 py-3 md:py-4",
+                  i % 2 === 1 ? "border-l border-line-light" : "",
+                  i >= 2 ? "border-t border-line-light md:border-t-0" : "",
+                  i === 2 ? "md:border-l" : "",
                 ].join(" ")}
               >
-                <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-mint text-green lg:size-12">
-                  <Icon className="size-5 lg:size-6" strokeWidth={1.75} aria-hidden="true" />
+                <span className="hidden size-9 shrink-0 items-center justify-center rounded-full bg-mint text-green sm:flex lg:size-10">
+                  <Icon className="size-4 lg:size-5" strokeWidth={1.75} aria-hidden="true" />
                 </span>
-                <div className="flex min-w-0 flex-col gap-0.5">
-                  <dt className="order-2 text-sm leading-snug text-body">{label}</dt>
-                  <dd className="order-1 whitespace-nowrap text-xl font-bold leading-tight text-heading lg:text-2xl">
+                <div className="flex min-w-0 flex-col">
+                  <dt className="order-2 truncate text-xs leading-snug text-body sm:text-sm">{label}</dt>
+                  <dd className="order-1 whitespace-nowrap text-base font-bold leading-tight text-heading sm:text-lg lg:text-xl">
                     {value}
                   </dd>
                 </div>
@@ -69,36 +69,32 @@ export function KolHero({ leaders, reach, sectors }: { leaders: number; reach: n
             ))}
           </dl>
 
-          <div className="mt-5 flex flex-col rounded-2xl border border-line-light bg-card shadow-sm">
-            <div className="flex flex-col gap-4 px-5 py-5 sm:px-6 md:flex-row md:items-center md:justify-between">
-              <p className="flex items-center gap-2.5 font-serif text-lg font-bold text-heading">
-                <Handshake className="size-6 shrink-0 text-heading" strokeWidth={1.75} aria-hidden="true" />
-                Benefits to Join VAAP
-              </p>
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <p className="flex items-center gap-2.5 rounded-full bg-mint py-2 pl-2 pr-4 text-sm font-medium leading-snug text-heading">
-                  <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-green text-card">
-                    <Check className="size-3.5" strokeWidth={3} aria-hidden="true" />
-                  </span>
-                  Approval to Mention Verified VAAP KOLs
-                </p>
-                <Link
-                  href="/membership"
-                  className="inline-flex shrink-0 items-center justify-center gap-2 self-start rounded-full bg-heading px-5 py-2.5 text-sm font-semibold text-card transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green sm:self-auto"
-                >
-                  Read More
-                  <ArrowRight className="size-4" aria-hidden="true" />
-                </Link>
-              </div>
-            </div>
-            <ul className="grid grid-cols-1 gap-x-6 gap-y-3 border-t border-line-light px-5 py-4 sm:grid-cols-2 sm:px-6 lg:grid-cols-4">
+          <div className="flex flex-col gap-3 rounded-2xl border border-line-light bg-card px-4 py-3 shadow-sm md:flex-row md:items-center md:gap-5">
+            <p className="flex shrink-0 items-center gap-2 font-serif text-base font-bold text-heading">
+              <Handshake className="size-5 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+              Benefits to Join VAAP
+            </p>
+            <ul className="flex min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-2 md:border-l md:border-line-light md:pl-5">
               {benefits.map((benefit) => (
-                <li key={benefit} className="flex items-center gap-2 text-sm text-heading">
-                  <CircleCheck className="size-4.5 shrink-0 text-green" strokeWidth={2} aria-hidden="true" />
+                <li key={benefit} className="flex items-center gap-1.5 text-sm text-heading">
+                  <CircleCheck className="size-4 shrink-0 text-green" strokeWidth={2} aria-hidden="true" />
                   {benefit}
                 </li>
               ))}
+              <li className="flex items-center gap-1.5 rounded-full bg-mint py-1 pl-1 pr-3 text-sm font-medium text-heading">
+                <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-green text-card">
+                  <Check className="size-3" strokeWidth={3} aria-hidden="true" />
+                </span>
+                Approval to Mention Verified VAAP KOLs
+              </li>
             </ul>
+            <Link
+              href="/membership"
+              className="inline-flex shrink-0 items-center justify-center gap-1.5 self-start rounded-full bg-heading px-4 py-2 text-sm font-semibold text-card transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green md:self-auto"
+            >
+              Read More
+              <ArrowRight className="size-4" aria-hidden="true" />
+            </Link>
           </div>
         </div>
       </section>
