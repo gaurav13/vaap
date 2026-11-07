@@ -73,6 +73,8 @@ export default async function InsightDetailPage({ params }: { params: Promise<{ 
             />
           )}
 
+          <FollowVaap social={social} className="mt-6 shadow-sm" />
+
           {article.image && (
             <div className="relative mt-8 aspect-[16/9] overflow-hidden rounded-2xl bg-muted">
               <Image src={article.image || "/placeholder.svg"} alt={article.title} fill className="object-cover" />
@@ -102,7 +104,6 @@ export default async function InsightDetailPage({ params }: { params: Promise<{ 
             </div>
           )}
 
-          <FollowVaap social={social} className="mt-10" />
         </article>
       </main>
       <SiteFooter />

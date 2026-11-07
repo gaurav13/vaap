@@ -8,6 +8,8 @@ import { and, eq } from "drizzle-orm"
 import { SiteHeaderServer } from "@/components/site-header-server"
 import { SiteFooter } from "@/components/site-footer"
 import { getHeaderUser } from "@/lib/header-user"
+import { getSiteSettings } from "@/lib/site-settings"
+import { FollowVaap } from "@/components/follow-vaap"
 
 export default async function NewsDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -22,7 +24,7 @@ export default async function NewsDetailPage({ params }: { params: Promise<{ id:
 
   if (!post) notFound()
 
-  const user = await getHeaderUser()
+  const [user, { social }] = await Promise.all([getHeaderUser(), getSiteSettings()])
 
   return (
     <>
@@ -43,6 +45,8 @@ export default async function NewsDetailPage({ params }: { params: Promise<{ id:
           {post.title}
         </h1>
         <p className="mt-4 text-lg text-body">{post.excerpt}</p>
+
+        <FollowVaap social={social} className="mt-6 shadow-sm" />
 
         {post.image && (
           <div className="relative mt-8 aspect-[16/9] overflow-hidden rounded-2xl bg-muted">
