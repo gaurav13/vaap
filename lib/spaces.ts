@@ -1,4 +1,4 @@
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3"
+import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3"
 import { randomUUID } from "node:crypto"
 
 const FILE_TYPES = new Map([
@@ -39,7 +39,7 @@ export function publicSpaceUrl(key: string) {
   return `${base}/${key}`
 }
 
-const IMAGE_FOLDERS = new Set(["pages", "news", "articles", "events", "publications", "governance"])
+const IMAGE_FOLDERS = new Set(["pages", "news", "articles", "events", "publications", "governance", "kol"])
 
 export const DOCUMENT_TYPES = new Map([
   ["application/pdf", "pdf"],
@@ -57,6 +57,33 @@ export const DOCUMENT_TYPES = new Map([
 export const MAX_DOCUMENT_BYTES = 20 * 1024 * 1024
 const DOCUMENT_EXTENSIONS = new Set(DOCUMENT_TYPES.values())
 const EXTENSION_MIME = new Map([...DOCUMENT_TYPES].map(([mime, ext]) => [ext, mime]))
+
+// Private uploads (KOL verification evidence). Stored without a public ACL and
+// only ever streamed back through an authorised route.
+export async function uploadPrivateDocument(file: { bytes: Uint8Array; fileName: string; folder: string }) {
+  const detected = sniffedType(file.bytes)
+  const extension = detected ? FILE_TYPES.get(detected) : undefined
+  if (!detected || !extension) throw new Error("Upload a PDF or an image (JPEG, PNG, WebP).")
+  if (file.bytes.byteLength === 0) throw new Error("That file is empty.")
+  if (file.bytes.byteLength > MAX_PDF_BYTES) throw new Error("File is too large (max 20MB).")
+  const key = `${file.folder}/${randomUUID()}.${extension}`
+  await spacesClient().send(
+    new PutObjectCommand({
+      Bucket: requiredEnv("SPACES_BUCKET"),
+      Key: key,
+      Body: file.bytes,
+      ContentType: detected,
+      ACL: "private",
+    }),
+  )
+  return { key, contentType: detected }
+}
+
+export async function getPrivateObject(key: string) {
+  const res = await spacesClient().send(new GetObjectCommand({ Bucket: requiredEnv("SPACES_BUCKET"), Key: key }))
+  if (!res.Body) throw new Error("File not found")
+  return { bytes: await res.Body.transformToByteArray(), contentType: res.ContentType ?? "application/octet-stream" }
+}
 
 export async function uploadProposalDocument(file: { bytes: Uint8Array; contentType: string; fileName: string }) {
   const nameExt = file.fileName.toLowerCase().split(".").pop() ?? ""

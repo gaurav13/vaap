@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { runDueAutomations } from "@/lib/email-automations/engine"
+import { runKolMaintenance } from "@/lib/kol"
 
 export const maxDuration = 300
 export const dynamic = "force-dynamic"
@@ -14,5 +15,6 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
   const results = await runDueAutomations()
-  return NextResponse.json({ ok: true, results })
+  const kol = await runKolMaintenance().catch((error) => ({ error: error instanceof Error ? error.message : "failed" }))
+  return NextResponse.json({ ok: true, results, kol })
 }

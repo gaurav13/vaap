@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation"
 import { useRouter } from "next/navigation"
 import {
   Award,
+  BadgeCheck,
   Bell,
   BookOpen,
   Briefcase,
@@ -44,6 +45,7 @@ const NAV: NavItem[] = [
   { label: "Governance & Voting", href: "/dashboard/governance", icon: Vote },
   { label: "Elections", href: "/dashboard/elections", icon: Vote },
   { label: "My Applications", href: "/dashboard/applications", icon: FileCheck2 },
+  { label: "KOL Verification", href: "/dashboard/kol", icon: BadgeCheck },
   { label: "Events", href: "/dashboard/events", icon: CalendarDays, group: "Explore" },
   { label: "Knowledge & Resources", href: "/dashboard/resources", icon: BookOpen },
   { label: "Opportunities", href: "/dashboard/opportunities", icon: Briefcase },
