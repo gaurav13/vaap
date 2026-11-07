@@ -1,9 +1,10 @@
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 
-export function EmailTabs({ active }: { active: "templates" | "logs" }) {
+export function EmailTabs({ active }: { active: "templates" | "automations" | "logs" }) {
   const tabs = [
     { id: "templates", label: "Templates", href: "/admin/emails" },
+    { id: "automations", label: "Automations", href: "/admin/emails/automations" },
     { id: "logs", label: "Email Logs", href: "/admin/emails/logs" },
   ] as const
   return (

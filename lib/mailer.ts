@@ -52,6 +52,7 @@ type SendEmailArgs = {
   /** Registry key of the template that produced this email, for the email log. */
   templateKey?: string
   isTest?: boolean
+  headers?: Record<string, string>
 }
 
 type LogEntry = { templateKey?: string; recipient: string; subject: string; status: "sent" | "failed" | "skipped"; error?: string; isTest?: boolean }
@@ -76,7 +77,7 @@ async function logEmail(entry: LogEntry) {
  * Sends an email via Gmail SMTP. Returns true if sent, false if email is not
  * configured (in which case callers should fall back to logging).
  */
-export async function sendEmail({ to, subject, html, text, templateKey, isTest }: SendEmailArgs): Promise<boolean> {
+export async function sendEmail({ to, subject, html, text, templateKey, isTest, headers }: SendEmailArgs): Promise<boolean> {
   const tx = getTransporter()
   if (!tx) {
     console.error("[v0] Email is not configured: missing GMAIL_USER or Gmail app password")
@@ -93,6 +94,7 @@ export async function sendEmail({ to, subject, html, text, templateKey, isTest }
       subject,
       html,
       text,
+      ...(headers ? { headers } : {}),
     })
     await logEmail({ templateKey, recipient: to, subject, status: "sent", isTest })
     return true

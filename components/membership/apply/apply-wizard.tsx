@@ -180,22 +180,34 @@ const INITIAL: FormState = {
   agree: false,
 }
 
+export type ResumeApplication = {
+  applicationId: number
+  values: Partial<Pick<FormState, "companyName" | "registrationNumber" | "website" | "industrySector" | "fullName" | "designation" | "email" | "phone" | "cnic">>
+}
+
 export function ApplyWizard({
   plans,
   initialPlanId,
+  resume,
 }: {
   plans: ApplyPlan[]
   initialPlanId?: number | null
+  /** Saved draft opened from a reminder email's secure link. */
+  resume?: ResumeApplication | null
 }) {
   // When arriving with a preselected membership type (e.g. chosen on the
   // dashboard), skip the "Select Membership" step and land on Information.
   const preselected = initialPlanId != null && plans.some((p) => p.id === initialPlanId) ? initialPlanId : null
   const [step, setStep] = useState(preselected ? 1 : 0)
-  const [form, setForm] = useState<FormState>(preselected ? { ...INITIAL, planId: preselected } : INITIAL)
+  const [form, setForm] = useState<FormState>(() => ({
+    ...INITIAL,
+    ...(preselected ? { planId: preselected } : {}),
+    ...(resume?.values ?? {}),
+  }))
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [reference, setReference] = useState<string | null>(null)
-  const [applicationId, setApplicationId] = useState<number | null>(null)
+  const [applicationId, setApplicationId] = useState<number | null>(resume?.applicationId ?? null)
   const [account, setAccount] = useState<{ created: boolean; tempPassword?: string } | null>(null)
 
   const selectedPlan = useMemo(

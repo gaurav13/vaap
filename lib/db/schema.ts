@@ -1016,3 +1016,58 @@ export const emailLogs = pgTable("email_logs", {
   isTest: boolean("is_test").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 })
+
+// --- Email automations ------------------------------------------------------
+
+export const emailAutomations = pgTable("email_automations", {
+  key: text("key").primaryKey(),
+  enabled: boolean("enabled").notNull().default(true),
+  config: jsonb("config").$type<Record<string, unknown>>().notNull().default({}),
+  lastRunAt: timestamp("last_run_at"),
+  lastSentAt: timestamp("last_sent_at"),
+  totalSent: integer("total_sent").notNull().default(0),
+  updatedBy: text("updated_by"),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+})
+
+export const emailAutomationRuns = pgTable("email_automation_runs", {
+  id: serial("id").primaryKey(),
+  automationKey: text("automation_key").notNull(),
+  trigger: text("trigger").notNull(),
+  sent: integer("sent").notNull().default(0),
+  skipped: integer("skipped").notNull().default(0),
+  failed: integer("failed").notNull().default(0),
+  note: text("note").notNull().default(""),
+  actor: text("actor"),
+  startedAt: timestamp("started_at").notNull().defaultNow(),
+  finishedAt: timestamp("finished_at"),
+})
+
+export const emailSends = pgTable("email_sends", {
+  id: serial("id").primaryKey(),
+  automationKey: text("automation_key").notNull(),
+  dedupeKey: text("dedupe_key").notNull().unique(),
+  recipient: text("recipient").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+})
+
+export const emailSuppressions = pgTable("email_suppressions", {
+  id: serial("id").primaryKey(),
+  email: text("email").notNull(),
+  topic: text("topic").notNull(),
+  reason: text("reason").notNull().default("unsubscribed"),
+  source: text("source").notNull().default("recipient"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+})
+
+export const newsletterIssues = pgTable("newsletter_issues", {
+  id: serial("id").primaryKey(),
+  weekKey: text("week_key").notNull().unique(),
+  status: text("status").notNull().default("draft"),
+  content: jsonb("content").$type<EmailContent>().notNull(),
+  sentCount: integer("sent_count").notNull().default(0),
+  sentAt: timestamp("sent_at"),
+  updatedBy: text("updated_by"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+})

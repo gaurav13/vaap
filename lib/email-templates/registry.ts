@@ -23,7 +23,7 @@ export type EmailVariable = { name: string; description: string; sample: string 
 export type EmailTemplateDefinition = {
   key: string
   name: string
-  category: "Account" | "Membership" | "Applications" | "Support"
+  category: "Account" | "Membership" | "Applications" | "Support" | "Engagement"
   trigger: string
   /** Where in the codebase the email is sent from, for reference. */
   recipient: string
@@ -279,6 +279,102 @@ export const EMAIL_TEMPLATES = [
       body: "Thank you for contacting the VAAP Member Support & Grievance Centre regarding \"{{category}}\".\n\nYour case reference is **{{reference}}**. Please keep it — you can use it any time to track your case status.\n\nOur team reviews every submission and will guide you or refer the matter to the relevant authority where needed.",
       footnote:
         "VAAP is an industry association and does not have regulatory, investigative or enforcement powers. Matters involving unlicensed providers, fraud or regulatory violations may be referred to PVARA or other competent authorities.",
+    },
+  },
+  {
+    key: "automation.article-invite",
+    name: "Weekly Article Invitation",
+    category: "Engagement",
+    trigger: "Weekly automation for confirmed members",
+    recipient: "Confirmed members",
+    variables: [NAME],
+    defaults: {
+      ...base,
+      subject: "Share your expertise with the VAAP community",
+      heading: "Write for VAAP this week",
+      body: "Dear {{name}},\n\nWe invite you to submit an article for publication on the VAAP website. Member insights on regulation, compliance, technology and market developments help the whole industry move forward.\n\n**Submission guidelines**\n- Original work between 600 and 1,500 words\n- A clear title and a short summary\n- Factual, non-promotional and properly sourced\n- Optional cover image you have the rights to use\n\nOur editorial team reviews every submission before publication.",
+      ctaLabel: "Submit Your Article",
+      ctaUrl: "/dashboard/articles",
+      footnote: "You receive this because you are a confirmed VAAP member.",
+    },
+  },
+  {
+    key: "automation.event-announcement",
+    name: "Event Announcement",
+    category: "Engagement",
+    trigger: "An event is published, or an admin announces it manually",
+    recipient: "Confirmed members",
+    variables: [
+      NAME,
+      { name: "eventTitle", description: "Event title", sample: "Virtual Assets Compliance Roundtable" },
+      { name: "eventDate", description: "Event date and time", sample: "Thursday, 20 November 2026 · 3:00 PM" },
+      { name: "eventLocation", description: "Venue or online location", sample: "Islamabad · Serena Hotel" },
+      { name: "eventDescription", description: "Event description", sample: "A closed-door discussion on upcoming licensing requirements." },
+      { name: "eventUrl", description: "Event registration page", sample: "https://vaap.org.pk/events/1" },
+    ],
+    defaults: {
+      ...base,
+      subject: "You're invited: {{eventTitle}}",
+      heading: "{{eventTitle}}",
+      body: "Dear {{name}},\n\nA new event has been published and you are invited to take part.\n\n**Date:** {{eventDate}}\n**Location:** {{eventLocation}}\n\n{{eventDescription}}",
+      ctaLabel: "Register for Event",
+      ctaUrl: "{{eventUrl}}",
+      footnote: "Seats may be limited, so please register early.",
+    },
+  },
+  {
+    key: "automation.newsletter",
+    name: "Weekly Newsletter",
+    category: "Engagement",
+    trigger: "Weekly digest generated from published website content",
+    recipient: "Confirmed members",
+    variables: [
+      NAME,
+      { name: "weekLabel", description: "Week covered by the issue", sample: "Week of 2 November 2026" },
+      { name: "digest", description: "Generated list of articles, events and news", sample: "**Latest articles**\n- [Sample article](https://vaap.org.pk)" },
+    ],
+    defaults: {
+      ...base,
+      subject: "VAAP Weekly · {{weekLabel}}",
+      heading: "This week at VAAP",
+      body: "Dear {{name}},\n\nHere is your round-up of the latest from the Virtual Asset Industry Alliance of Pakistan.\n\n{{digest}}\n\n**Membership opportunities**\nInvite colleagues to join VAAP, submit an article, or host an event for the community from your member dashboard.",
+      ctaLabel: "Open your dashboard",
+      ctaUrl: "/dashboard",
+      footnote: "",
+    },
+  },
+  {
+    key: "automation.verification-reminder",
+    name: "Verification Reminder",
+    category: "Engagement",
+    trigger: "Account email is still unverified",
+    recipient: "Pending verification",
+    variables: [NAME, { name: "url", description: "Secure verification link (expires in 7 days)", sample: "https://vaap.org.pk/api/email/verify?token=sample" }],
+    defaults: {
+      ...base,
+      subject: "Please verify your VAAP membership",
+      heading: "One step left: verify your membership",
+      body: "Dear {{name}},\n\nYour VAAP account is not verified yet. Verifying confirms your email address and unlocks your full member dashboard, voting eligibility and member communications.",
+      ctaLabel: "Verify Your Membership",
+      ctaUrl: "{{url}}",
+      footnote: "This secure link expires in 7 days. If you did not create a VAAP account, you can ignore this email.",
+    },
+  },
+  {
+    key: "automation.incomplete-application",
+    name: "Incomplete Application Reminder",
+    category: "Engagement",
+    trigger: "A membership application was started but not submitted",
+    recipient: "Incomplete applications",
+    variables: [NAME, CATEGORY, { name: "url", description: "Secure link to the saved application (expires in 7 days)", sample: "https://vaap.org.pk/membership/apply?resume=sample" }],
+    defaults: {
+      ...base,
+      subject: "Your VAAP membership application is waiting",
+      heading: "Complete your membership application",
+      body: "Dear {{name}},\n\nYou started an application for **{{category}}** but have not submitted it yet. Your details are saved, so you can pick up right where you left off.\n\nOnce submitted, our membership team will review your application and be in touch.",
+      ctaLabel: "Complete Your Membership",
+      ctaUrl: "{{url}}",
+      footnote: "This secure link expires in 7 days. If you no longer wish to apply, you can ignore this email.",
     },
   },
 ] as const satisfies readonly EmailTemplateDefinition[]

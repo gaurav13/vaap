@@ -49,8 +49,12 @@ export async function getLiveContent(key: EmailTemplateKey): Promise<EmailConten
   }
 }
 
-export function renderWith(content: EmailContent, vars: Record<string, string | undefined>) {
-  return renderEmail(content, vars, { baseUrl: appBaseUrl(), supportEmail: emailSupportAddress })
+export function renderWith(
+  content: EmailContent,
+  vars: Record<string, string | undefined>,
+  opts: { unsubscribeUrl?: string } = {},
+) {
+  return renderEmail(content, vars, { baseUrl: appBaseUrl(), supportEmail: emailSupportAddress, ...opts })
 }
 
 /** Renders the live version of a template and sends it. Returns true when delivered. */

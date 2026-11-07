@@ -12,6 +12,8 @@ import { notify } from "@/lib/notifications"
 import { and, desc, eq } from "drizzle-orm"
 import { randomUUID } from "crypto"
 import { revalidatePath } from "next/cache"
+import { after } from "next/server"
+import { announceEventIfEnabled } from "@/lib/email-automations/engine"
 
 async function requireStaff() {
   const session = await getSession()
@@ -132,6 +134,17 @@ export async function deleteNews(id: number) {
 
 // --- Events ----------------------------------------------------------------
 
+// Runs after the response so admins are not blocked while members are emailed.
+function scheduleEventAnnouncement(eventId: number) {
+  after(async () => {
+    try {
+      await announceEventIfEnabled(eventId)
+    } catch (err) {
+      console.error("[email-automation] event announcement failed:", err)
+    }
+  })
+}
+
 export async function createEvent(formData: FormData) {
   await requireStaff()
   const title = String(formData.get("title") ?? "").trim()
@@ -149,7 +162,7 @@ export async function createEvent(formData: FormData) {
   if (!title) return { ok: false, error: "Title is required." }
 
   // Admin-created events are approved by default.
-  await db.insert(events).values({
+  const [created] = await db.insert(events).values({
     title,
     description,
     location,
@@ -162,7 +175,8 @@ export async function createEvent(formData: FormData) {
     startsAt: startsAtRaw ? new Date(startsAtRaw) : new Date(),
     published,
     status: "approved",
-  })
+  }).returning({ id: events.id })
+  if (published) scheduleEventAnnouncement(created.id)
   revalidatePath("/admin/events")
   revalidatePath("/events")
   revalidatePath("/")
@@ -199,6 +213,8 @@ export async function updateEvent(id: number, formData: FormData) {
       published,
     })
     .where(eq(events.id, id))
+  // Already-announced members are skipped by the dedupe ledger.
+  if (published) scheduleEventAnnouncement(id)
   revalidatePath("/admin/events")
   revalidatePath("/events")
   revalidatePath("/")
@@ -208,6 +224,7 @@ export async function updateEvent(id: number, formData: FormData) {
 export async function setEventStatus(id: number, status: "approved" | "pending" | "rejected") {
   await requireStaff()
   await db.update(events).set({ status }).where(eq(events.id, id))
+  if (status === "approved") scheduleEventAnnouncement(id)
   revalidatePath("/admin/events")
   revalidatePath("/events")
   revalidatePath("/")

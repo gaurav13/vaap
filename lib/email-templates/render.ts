@@ -7,6 +7,8 @@ type RenderOptions = {
   /** Absolute site origin used to turn paths like /dashboard into full links. */
   baseUrl?: string
   supportEmail: string
+  /** Marketing emails only: adds an unsubscribe link to the footer. */
+  unsubscribeUrl?: string
 }
 
 const VAR_PATTERN = /\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g
@@ -103,7 +105,11 @@ export function renderEmail(content: EmailContent, vars: Record<string, string |
     ${foot}
     <p style="font-size:12px;line-height:1.6;color:#9ca3af;margin:24px 0 0;border-top:1px solid #e5e7eb;padding-top:16px">
       This is an automated message from the Virtual Asset Industry Alliance of Pakistan.
-      Questions? Reach us at <a href="mailto:${support}" style="color:${accent}">${support}</a>.
+      Questions? Reach us at <a href="mailto:${support}" style="color:${accent}">${support}</a>.${
+        opts.unsubscribeUrl
+          ? `<br><a href="${escapeHtml(opts.unsubscribeUrl)}" style="color:#9ca3af;text-decoration:underline">Unsubscribe from these emails</a>`
+          : ""
+      }
     </p>
   </div>`
 
@@ -115,6 +121,7 @@ export function renderEmail(content: EmailContent, vars: Record<string, string |
     footnote ? stripInline(footnote) : "",
     "",
     `— Virtual Asset Industry Alliance of Pakistan · ${opts.supportEmail}`,
+    opts.unsubscribeUrl ? `Unsubscribe: ${opts.unsubscribeUrl}` : "",
   ]
     .filter((line, i, arr) => !(line === "" && arr[i - 1] === ""))
     .join("\n")
