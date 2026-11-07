@@ -1,4 +1,5 @@
 import Image from "next/image"
+import { Landmark } from "lucide-react"
 import { eq } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { members, staffProfiles, user } from "@/lib/db/schema"
@@ -71,24 +72,28 @@ export async function AuthorBox({
   return (
     <aside
       aria-label="About the author"
-      className="mt-6 flex items-center gap-4 rounded-2xl border border-line bg-muted/40 p-4 sm:p-5"
+      className="flex items-center gap-4 rounded-3xl border border-line bg-gradient-to-r from-card to-mint/60 p-4 shadow-sm sm:gap-6 sm:p-6"
     >
-      <div className="relative size-14 shrink-0 overflow-hidden rounded-full bg-mint ring-2 ring-background">
+      <div className="relative size-16 shrink-0 overflow-hidden rounded-full bg-mint ring-2 ring-green ring-offset-2 ring-offset-card sm:size-20">
         {photo ? (
-          <Image src={photo || "/placeholder.svg"} alt={authorName} fill sizes="56px" className="object-cover" />
+          <Image src={photo || "/placeholder.svg"} alt={authorName} fill sizes="80px" className="object-cover" />
         ) : (
-          <span className="flex size-full items-center justify-center text-base font-bold text-green" aria-hidden="true">
+          <span className="flex size-full items-center justify-center text-lg font-bold text-green" aria-hidden="true">
             {initials(authorName)}
           </span>
         )}
       </div>
-      <div className="flex min-w-0 flex-col gap-0.5">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-2">Written by</span>
-        <p className="flex flex-wrap items-baseline gap-x-2">
-          <span className="text-base font-bold text-heading">{authorName}</span>
-          <span className="truncate text-xs font-medium text-green">{role}</span>
-        </p>
-        <p className="text-sm leading-relaxed text-body text-pretty">{bio}</p>
+      <span className="hidden h-16 w-px self-center bg-green/40 sm:block" aria-hidden="true" />
+      <div className="flex min-w-0 flex-col gap-1">
+        <span className="text-xs font-semibold uppercase tracking-[0.16em] text-green">Written by</span>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+          <span className="text-xl font-bold text-heading sm:text-2xl">{authorName}</span>
+          <span className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-mint px-3 py-1 text-xs font-semibold text-green sm:text-sm">
+            <Landmark className="size-4 shrink-0" aria-hidden="true" />
+            <span className="truncate">{role}</span>
+          </span>
+        </div>
+        <p className="text-sm leading-relaxed text-body text-pretty sm:text-base">{bio}</p>
       </div>
     </aside>
   )
