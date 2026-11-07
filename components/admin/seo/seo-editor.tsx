@@ -1,8 +1,9 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { useState, useTransition } from "react"
-import { AlertCircle, AlertTriangle, Info, Loader2 } from "lucide-react"
+import { useRef, useState, useTransition } from "react"
+import { AlertCircle, AlertTriangle, ImageIcon, Info, Loader2, Upload, X } from "lucide-react"
+import { uploadPageImageFile } from "@/components/admin/upload-image"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { SeoImageField } from "@/components/admin/seo/seo-image-field"
@@ -42,6 +43,91 @@ const EVENT_FIELDS: { key: string; label: string; placeholder?: string }[] = [
   { key: "currency", label: "Currency", placeholder: "PKR" },
   { key: "availability", label: "Availability", placeholder: "InStock" },
 ]
+
+function PreviewImageUploader({
+  src,
+  hasOverride,
+  pageImage,
+  onChange,
+  onBusyChange,
+}: {
+  src: string
+  hasOverride: boolean
+  pageImage: string
+  onChange: (v: string) => void
+  onBusyChange: (busy: boolean) => void
+}) {
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function onPick(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setError(null)
+    setBusy(true)
+    onBusyChange(true)
+    try {
+      onChange(await uploadPageImageFile(file, "pages"))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Image upload failed.")
+    } finally {
+      setBusy(false)
+      onBusyChange(false)
+      if (fileRef.current) fileRef.current.value = ""
+    }
+  }
+
+  const btn =
+    "inline-flex h-8 items-center gap-1.5 rounded-md bg-background/95 px-2.5 text-xs font-medium text-heading shadow-sm hover:bg-background disabled:opacity-60"
+
+  return (
+    <div className="relative">
+      {src ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={src} alt="Share image preview" className="aspect-[1200/630] w-full bg-surface object-cover" />
+      ) : (
+        <div className="flex aspect-[1200/630] items-center justify-center bg-surface text-sm text-muted-2">No image</div>
+      )}
+      {busy && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background/60">
+          <Loader2 className="size-6 animate-spin text-green" aria-label="Uploading" />
+        </div>
+      )}
+      <div className="absolute inset-x-2 bottom-2 flex flex-wrap justify-end gap-1.5">
+        <button type="button" className={btn} disabled={busy} onClick={() => fileRef.current?.click()}>
+          <Upload className="size-3.5" aria-hidden />
+          {src ? "Change image" : "Upload image"}
+        </button>
+        {pageImage && (
+          <button type="button" className={btn} disabled={busy} onClick={() => onChange(pageImage)}>
+            <ImageIcon className="size-3.5" aria-hidden />
+            Page banner
+          </button>
+        )}
+        {hasOverride && (
+          <button type="button" className={btn} disabled={busy} onClick={() => onChange("")} aria-label="Remove custom share image">
+            <X className="size-3.5" aria-hidden />
+          </button>
+        )}
+      </div>
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp,image/gif,image/avif"
+        onChange={onPick}
+        className="sr-only"
+        tabIndex={-1}
+        aria-hidden
+      />
+      {error && (
+        <p role="alert" className="bg-destructive/10 px-3 py-2 text-xs text-destructive">
+          {error}
+        </p>
+      )}
+    </div>
+  )
+}
 
 function toInput(o: SeoOverride | null): SeoEntryInput {
   const base = { ...EMPTY_OVERRIDE, ...(o ?? {}) }
@@ -250,12 +336,13 @@ export function SeoEditor({ seoKey, kind, path, siteUrl, siteName, pageImage, fa
 
         <Section title="Social card preview">
           <div className="overflow-hidden rounded-lg border border-line">
-            {preview.ogImage ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={preview.ogImage} alt="Share image preview" className="aspect-[1200/630] w-full bg-surface object-cover" />
-            ) : (
-              <div className="flex aspect-[1200/630] items-center justify-center bg-surface text-sm text-muted-2">No image</div>
-            )}
+            <PreviewImageUploader
+              src={preview.ogImage}
+              hasOverride={Boolean(form.ogImage)}
+              pageImage={pageImage}
+              onChange={(v) => set("ogImage", v)}
+              onBusyChange={setUploading}
+            />
             <div className="flex flex-col gap-1 bg-surface p-3">
               <p className="text-xs uppercase text-muted-2">{siteName}</p>
               <p className="font-medium text-heading">{preview.ogTitle}</p>
