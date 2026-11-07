@@ -1,6 +1,6 @@
 import { betterAuth } from "better-auth"
 import { pool } from "@/lib/db"
-import { sendEmail, passwordResetEmail, brandedEmail } from "@/lib/mailer"
+import { sendTemplateEmail } from "@/lib/email-templates/service"
 import { notify } from "@/lib/notifications"
 
 // The live site is served from a custom domain. Vercel only auto-exposes the
@@ -77,8 +77,7 @@ export const auth = betterAuth({
     // Sends the reset link via Gmail SMTP when GMAIL_USER/GMAIL_APP_PASSWORD
     // are set; otherwise falls back to logging the link to the server logs.
     sendResetPassword: async ({ user, url }) => {
-      const { subject, html, text } = passwordResetEmail(url)
-      const sent = await sendEmail({ to: user.email, subject, html, text })
+      const sent = await sendTemplateEmail({ to: user.email, key: "auth.password-reset", vars: { url } })
       if (!sent) {
         console.error("[auth] Password reset email could not be sent.")
       }
@@ -91,18 +90,11 @@ export const auth = betterAuth({
     sendOnSignUp: true,
     autoSignInAfterVerification: true,
     sendVerificationEmail: async ({ user, url }) => {
-      const { subject, html, text } = brandedEmail({
-        subject: "Verify your VAAP email address",
-        heading: "Confirm your email address",
-        intro: [
-          `Welcome to the Virtual Asset Industry Alliance of Pakistan, ${user.name || "there"}.`,
-          "Please confirm this email address so we can keep your account and membership updates secure.",
-        ],
-        ctaLabel: "Verify email address",
-        ctaUrl: url,
-        footnote: "If you didn't create a VAAP account, you can safely ignore this email.",
+      const sent = await sendTemplateEmail({
+        to: user.email,
+        key: "auth.verify-email",
+        vars: { name: user.name || "there", url },
       })
-      const sent = await sendEmail({ to: user.email, subject, html, text })
       if (!sent) {
         console.error("[auth] Verification email could not be sent.")
       }
@@ -130,16 +122,8 @@ export const auth = betterAuth({
             title: "Welcome to VAAP",
             body: "Your account has been created. Explore your member dashboard to get started.",
             link: "/dashboard",
-            emailTemplate: {
-              subject: "Welcome to the Virtual Asset Industry Alliance of Pakistan",
-              heading: `Welcome aboard, ${createdUser.name || "member"}`,
-              intro: [
-                "Thank you for joining the Virtual Asset Industry Alliance of Pakistan.",
-                "Your account is ready. From your dashboard you can manage your profile, track your membership, register to vote, and stay up to date with events and resources.",
-              ],
-              ctaLabel: "Open your dashboard",
-              ctaPath: "/dashboard",
-            },
+            emailKey: "account.welcome",
+            emailVars: { name: createdUser.name || "member" },
           })
         },
       },

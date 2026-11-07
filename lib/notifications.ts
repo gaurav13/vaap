@@ -9,6 +9,8 @@ import { db } from "@/lib/db"
 import { notifications, user } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
 import { sendEmail, brandedEmail } from "@/lib/mailer"
+import { sendTemplateEmail } from "@/lib/email-templates/service"
+import type { EmailTemplateKey } from "@/lib/email-templates/registry"
 
 export type NotifyType =
   | "info"
@@ -44,6 +46,10 @@ type NotifyOptions = {
   link?: string
   /** When provided, also send a branded email to the resolved recipient. */
   emailTemplate?: EmailTemplate
+  /** Admin-managed template to send instead of an inline `emailTemplate`. */
+  emailKey?: EmailTemplateKey
+  /** Values for the `{{variables}}` used by `emailKey`. */
+  emailVars?: Record<string, string | undefined>
 }
 
 /** Resolve an absolute base URL for links inside emails. */
@@ -98,6 +104,16 @@ export async function notify(opts: NotifyOptions): Promise<void> {
     } catch (err) {
       console.log("[v0] notify: insert failed:", err instanceof Error ? err.message : err)
     }
+  }
+
+  if (opts.emailKey && email) {
+    try {
+      const sent = await sendTemplateEmail({ to: email, key: opts.emailKey, vars: opts.emailVars ?? {} })
+      if (!sent) console.log(`[v0] notify: email not configured, would send "${opts.emailKey}" to ${email}`)
+    } catch (err) {
+      console.log("[v0] notify: email send failed:", err instanceof Error ? err.message : err)
+    }
+    return
   }
 
   // Optional branded email to the resolved recipient.

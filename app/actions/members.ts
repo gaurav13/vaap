@@ -59,13 +59,8 @@ async function notifyMemberStatus(id: number, status: "active" | "suspended" | "
       title: copy.title,
       body: copy.body,
       link: "/dashboard/membership",
-      emailTemplate: {
-        subject: copy.subject,
-        heading: copy.title,
-        intro: [`Dear ${m.name},`, ...copy.intro],
-        ctaLabel: status === "expired" ? "Renew my membership" : "View my membership",
-        ctaPath: "/dashboard/membership",
-      },
+  emailKey: `membership.${status}` as const,
+  emailVars: { name: m.name },
     })
   } catch (err) {
     console.log("[v0] notifyMemberStatus failed:", err instanceof Error ? err.message : err)

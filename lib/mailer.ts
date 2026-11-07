@@ -1,6 +1,8 @@
 import "server-only"
 import nodemailer, { type Transporter } from "nodemailer"
 import { CONTACT_EMAIL } from "@/lib/contact"
+import { db } from "@/lib/db"
+import { emailLogs } from "@/lib/db/schema"
 
 const GMAIL_USER = process.env.GMAIL_USER
 // Prefer GMAIL_SMTP_PASSWORD (a fresh variable that saves cleanly); fall back to
@@ -47,16 +49,38 @@ type SendEmailArgs = {
   subject: string
   html: string
   text?: string
+  /** Registry key of the template that produced this email, for the email log. */
+  templateKey?: string
+  isTest?: boolean
+}
+
+type LogEntry = { templateKey?: string; recipient: string; subject: string; status: "sent" | "failed" | "skipped"; error?: string; isTest?: boolean }
+
+/** Records every send attempt for the admin Email Logs view. Never throws. */
+async function logEmail(entry: LogEntry) {
+  try {
+    await db.insert(emailLogs).values({
+      templateKey: entry.templateKey ?? null,
+      recipient: entry.recipient.slice(0, 320),
+      subject: entry.subject.slice(0, 500),
+      status: entry.status,
+      error: entry.error?.slice(0, 1000) ?? null,
+      isTest: entry.isTest ?? false,
+    })
+  } catch (err) {
+    console.log("[v0] email log insert failed:", err instanceof Error ? err.message : err)
+  }
 }
 
 /**
  * Sends an email via Gmail SMTP. Returns true if sent, false if email is not
  * configured (in which case callers should fall back to logging).
  */
-export async function sendEmail({ to, subject, html, text }: SendEmailArgs): Promise<boolean> {
+export async function sendEmail({ to, subject, html, text, templateKey, isTest }: SendEmailArgs): Promise<boolean> {
   const tx = getTransporter()
   if (!tx) {
     console.error("[v0] Email is not configured: missing GMAIL_USER or Gmail app password")
+    await logEmail({ templateKey, recipient: to, subject, status: "skipped", error: "Email delivery is not configured", isTest })
     return false
   }
 
@@ -70,10 +94,12 @@ export async function sendEmail({ to, subject, html, text }: SendEmailArgs): Pro
       html,
       text,
     })
+    await logEmail({ templateKey, recipient: to, subject, status: "sent", isTest })
     return true
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     console.error(`[v0] Email delivery failed for ${to}: ${message}`)
+    await logEmail({ templateKey, recipient: to, subject, status: "failed", error: message, isTest })
     throw error
   }
 }

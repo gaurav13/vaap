@@ -304,14 +304,8 @@ export async function submitMembershipApplication(formData: FormData) {
     title: "Membership application received",
     body: `Thank you, ${name}. We've received your ${category} application and will be in touch shortly.`,
     link: "/dashboard/applications",
-    emailTemplate: {
-      subject: "We received your VAAP membership application",
-      heading: "Application received",
-      intro: [
-        `Thank you for your interest in ${category} membership with the Virtual Asset Industry Alliance of Pakistan.`,
-        "Our team will review your application and get back to you shortly.",
-      ],
-    },
+    emailKey: "application.enquiry-received",
+    emailVars: { name, category },
   })
   await notify({
     role: "staff",
@@ -585,20 +579,8 @@ export async function submitFullApplication(input: ApplicationInput) {
       title: "Membership application received",
       body: `Thank you, ${name}. We've received your ${category} application${reference ? ` (ref ${reference})` : ""} and our team will review it shortly.`,
       link: "/dashboard/applications",
-      emailTemplate: {
-        subject: "We received your VAAP membership application",
-        heading: "Application received",
-        intro: [
-          `Thank you for applying for ${category} membership with the Virtual Asset Industry Alliance of Pakistan.`,
-          reference
-            ? `Your application reference is ${reference}. Please keep it for your records.`
-            : "Our team will review your application shortly.",
-          "We'll email you as soon as there's an update, and you can track the status from your member dashboard.",
-        ],
-        ctaLabel: "View my applications",
-        ctaPath: "/dashboard/applications",
-        footnote: "If you paid by crypto, approval follows once your transaction is confirmed.",
-      },
+      emailKey: "application.received",
+      emailVars: { name, category, reference: reference ?? "" },
     })
     await notify({
       role: "staff",

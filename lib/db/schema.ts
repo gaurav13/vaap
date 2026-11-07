@@ -1,4 +1,5 @@
-import { pgTable, text, timestamp, boolean, serial, integer } from "drizzle-orm/pg-core"
+import { pgTable, text, timestamp, boolean, serial, integer, jsonb } from "drizzle-orm/pg-core"
+import type { EmailContent } from "@/lib/email-templates/registry"
 
 // --- Better Auth required tables -------------------------------------------
 // Column names are camelCase to match Better Auth's defaults. Do not rename.
@@ -977,4 +978,38 @@ export const governanceAuditLogs = pgTable("governance_audit_logs", {
   detail: text("detail").notNull().default(""), // JSON
   ipAddress: text("ipAddress").notNull().default(""),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
+// --- Email template management ---------------------------------------------
+
+export const emailTemplates = pgTable("email_templates", {
+  key: text("key").primaryKey(),
+  publishedContent: jsonb("published_content").$type<EmailContent>(),
+  publishedVersion: integer("published_version").notNull().default(0),
+  publishedAt: timestamp("published_at"),
+  publishedBy: text("published_by"),
+  draftContent: jsonb("draft_content").$type<EmailContent>(),
+  draftUpdatedAt: timestamp("draft_updated_at"),
+  draftUpdatedBy: text("draft_updated_by"),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+})
+
+export const emailTemplateVersions = pgTable("email_template_versions", {
+  id: serial("id").primaryKey(),
+  templateKey: text("template_key").notNull(),
+  version: integer("version").notNull(),
+  content: jsonb("content").$type<EmailContent>().notNull(),
+  publishedBy: text("published_by"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+})
+
+export const emailLogs = pgTable("email_logs", {
+  id: serial("id").primaryKey(),
+  templateKey: text("template_key"),
+  recipient: text("recipient").notNull(),
+  subject: text("subject").notNull(),
+  status: text("status").notNull(), // sent | failed | skipped
+  error: text("error"),
+  isTest: boolean("is_test").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 })
