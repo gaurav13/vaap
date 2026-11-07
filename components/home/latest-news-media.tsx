@@ -167,11 +167,11 @@ export function LatestNewsMedia({ items }: { items: HomeNewsItem[] }) {
                   >
                     <img src={item.image || "/images/news-skyline.png"} alt="" className="size-full object-cover" />
                   </div>
-                  <span className="absolute left-2.5 top-2.5 rounded-full bg-green px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-primary-foreground shadow-md">
-                    {item.category}
-                  </span>
                 </div>
                 <div className="flex flex-1 flex-col gap-2 px-3 pb-3 pt-1">
+                  <span className="self-start rounded-full bg-green px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-primary-foreground">
+                    {item.category}
+                  </span>
                   <h3 className="font-serif text-base font-bold leading-snug text-heading text-balance line-clamp-2">
                     {item.title}
                   </h3>
