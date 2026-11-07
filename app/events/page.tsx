@@ -4,11 +4,12 @@ import { EventsHero } from "@/components/events/events-hero"
 import { EventsBrowser } from "@/components/events/events-browser"
 import { getAllPublicEvents } from "@/app/actions/public"
 import { getHeaderUser } from "@/lib/header-user"
+import { seoMetadata } from "@/lib/seo"
+import { staticSubjectByPath } from "@/lib/seo/subjects"
+import { SeoJsonLd } from "@/components/seo/json-ld"
 
-export const metadata = {
-  title: "Events Hub | VAAP",
-  description:
-    "Discover, join, and submit digital asset, blockchain, and Web3 events across Pakistan with the Virtual Asset Industry Alliance of Pakistan.",
+export function generateMetadata() {
+  return seoMetadata(staticSubjectByPath('/events'))
 }
 
 export default async function EventsPage() {
@@ -31,12 +32,15 @@ export default async function EventsPage() {
 
   return (
     <>
+      <SeoJsonLd subject={staticSubjectByPath('/events')} />
+    <>
       <SiteHeaderServer active="Media & Events" user={user} />
       <main>
         <EventsHero submitHref={submitHref} />
         <EventsBrowser events={events} now={new Date().toISOString()} />
       </main>
       <SiteFooter />
+    </>
     </>
   )
 }

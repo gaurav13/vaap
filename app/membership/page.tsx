@@ -13,6 +13,9 @@ import { db } from "@/lib/db"
 import { membershipPlans } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
 import { getMembershipSettings } from "@/lib/site-settings"
+import { seoMetadata } from "@/lib/seo"
+import { staticSubjectByPath } from "@/lib/seo/subjects"
+import { SeoJsonLd } from "@/components/seo/json-ld"
 
 function toLines(value: string): string[] {
   return value
@@ -21,9 +24,8 @@ function toLines(value: string): string[] {
     .filter(Boolean)
 }
 
-export const metadata = {
-  title: "Membership | VAAP",
-  description: "Join the Virtual Asset Industry Alliance of Pakistan and help build a responsible digital asset ecosystem.",
+export function generateMetadata() {
+  return seoMetadata(staticSubjectByPath('/membership'))
 }
 
 export default async function MembershipPage() {
@@ -59,6 +61,8 @@ export default async function MembershipPage() {
 
   return (
     <>
+      <SeoJsonLd subject={staticSubjectByPath('/membership')} />
+    <>
       <SiteHeaderServer active="Membership" user={user} />
       <main>
         <MembershipHero />
@@ -79,6 +83,7 @@ export default async function MembershipPage() {
         />
       </main>
       <SiteFooter />
+    </>
     </>
   )
 }

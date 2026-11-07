@@ -12,15 +12,15 @@ import { sanitizeRichHtml } from "@/lib/html"
 import { isHtml } from "@/lib/sanitize"
 import { getSiteSettings } from "@/lib/site-settings"
 import { FollowVaap } from "@/components/follow-vaap"
+import { seoMetadata } from "@/lib/seo"
+import { articleSubject } from "@/lib/seo/subjects"
+import { SeoJsonLd } from "@/components/seo/json-ld"
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const article = await getPublishedArticleBySlug(slug)
-  if (!article) return { title: "Insight | VAAP" }
-  return {
-    title: `${article.seoTitle || article.title} | VAAP`,
-    description: article.seoDescription || article.excerpt,
-  }
+  if (!article) return { title: "Insight" }
+  return seoMetadata(articleSubject(article))
 }
 
 export default async function InsightDetailPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -39,6 +39,7 @@ export default async function InsightDetailPage({ params }: { params: Promise<{ 
 
   return (
     <>
+      <SeoJsonLd subject={articleSubject(article)} />
       <SiteHeaderServer active="Knowledge" user={user} />
       <main>
         <header className="mx-auto max-w-6xl px-5 pt-10 lg:px-8 lg:pt-14">

@@ -6,6 +6,9 @@ import { getHeaderUser } from "@/lib/header-user"
 import { getCmsPage } from "@/app/actions/cms"
 import { getSession, isStaff } from "@/lib/session"
 import { plainTextToHtml, sanitizeRichHtml } from "@/lib/html"
+import { seoMetadata } from "@/lib/seo"
+import { cmsSubject } from "@/lib/seo/subjects"
+import { SeoJsonLd } from "@/components/seo/json-ld"
 
 type Params = { slug: string[] }
 
@@ -40,12 +43,9 @@ async function loadPage(slug: string[]) {
 export async function generateMetadata({ params }: { params: Promise<Params> }) {
   const { slug } = await params
   const page = await loadPage(slug)
-  if (!page) return { title: "Not found | VAAP" }
-  return {
-    title: page.seoTitle || `${page.title} | VAAP`,
-    description: page.metaDescription || page.heroSubtitle,
-    robots: page.status === "draft" ? { index: false, follow: false } : undefined,
-  }
+  if (!page) return { title: "Not found" }
+  const metadata = await seoMetadata(cmsSubject(page))
+  return page.status === "draft" ? { ...metadata, robots: { index: false, follow: false } } : metadata
 }
 
 export default async function CmsPage({ params }: { params: Promise<Params> }) {
@@ -59,6 +59,7 @@ export default async function CmsPage({ params }: { params: Promise<Params> }) {
 
   return (
     <>
+      {page.status !== "draft" && <SeoJsonLd subject={cmsSubject(page)} />}
       <SiteHeaderServer user={user} />
       <main>
         {page.status === "draft" && (

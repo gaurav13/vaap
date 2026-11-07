@@ -4,10 +4,12 @@ import { PageHero } from "@/components/page-hero"
 import { getHeaderUser } from "@/lib/header-user"
 import { lookupMembership } from "@/app/actions/cms"
 import { VerifyForm } from "@/components/member/verify-form"
+import { seoMetadata } from "@/lib/seo"
+import { staticSubjectByPath } from "@/lib/seo/subjects"
+import { SeoJsonLd } from "@/components/seo/json-ld"
 
-export const metadata = {
-  title: "Verify Membership | VAAP",
-  description: "Confirm the status of a VAAP membership by ID or registered email.",
+export function generateMetadata() {
+  return seoMetadata(staticSubjectByPath('/membership/verify'))
 }
 
 export default async function VerifyMembershipPage({
@@ -21,6 +23,8 @@ export default async function VerifyMembershipPage({
   // so the scanner sees the result without re-typing the ID.
   const initialResult = id ? await lookupMembership(id) : undefined
   return (
+    <>
+      <SeoJsonLd subject={staticSubjectByPath('/membership/verify')} />
     <>
         <SiteHeaderServer user={user} />
       <main>
@@ -38,6 +42,7 @@ export default async function VerifyMembershipPage({
         </section>
       </main>
       <SiteFooter />
+    </>
     </>
   )
 }

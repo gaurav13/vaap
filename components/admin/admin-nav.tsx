@@ -27,6 +27,7 @@ import {
   Newspaper,
   Percent,
   PenSquare,
+  Search,
   Settings,
   ShieldCheck,
   Users,
@@ -99,6 +100,7 @@ const GROUPS: { heading: string; links: { href: string; label: string; icon: typ
     heading: "Settings",
     links: [
       { href: "/admin/emails", label: "Email Templates", icon: Mail, adminOnly: true },
+      { href: "/admin/seo", label: "SEO", icon: Search },
       { href: "/admin/sitemap", label: "Sitemap", icon: Map },
       { href: "/admin/settings", label: "Website Settings", icon: Settings, adminOnly: true },
     ],

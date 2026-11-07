@@ -7,6 +7,9 @@ import { membershipApplications } from "@/lib/db/schema"
 import { verifyToken } from "@/lib/email-tokens"
 import { getHeaderUser } from "@/lib/header-user"
 import { getMembershipPlans } from "@/app/actions/cms"
+import { seoMetadata } from "@/lib/seo"
+import { staticSubjectByPath } from "@/lib/seo/subjects"
+import { SeoJsonLd } from "@/components/seo/json-ld"
 
 async function loadResume(token: string | undefined): Promise<{ category: string; draft: ResumeApplication } | null> {
   const payload = verifyToken(token, "resume")
@@ -50,10 +53,8 @@ function toLines(value: string | null): string[] {
     .filter(Boolean)
 }
 
-export const metadata = {
-  title: "Apply for Membership | VAAP",
-  description:
-    "Apply for VAAP membership in a few simple steps — select your membership type, share your details, and submit for review.",
+export function generateMetadata() {
+  return seoMetadata(staticSubjectByPath('/membership/apply'))
 }
 
 export default async function ApplyPage({
@@ -85,6 +86,8 @@ export default async function ApplyPage({
 
   return (
     <>
+      <SeoJsonLd subject={staticSubjectByPath('/membership/apply')} />
+    <>
       <SiteHeaderServer active="Membership" user={user} />
       <main className="bg-muted/40">
         <div className="mx-auto max-w-6xl px-5 py-10 lg:px-8 lg:py-14">
@@ -92,6 +95,7 @@ export default async function ApplyPage({
         </div>
       </main>
       <SiteFooter />
+    </>
     </>
   )
 }

@@ -11,6 +11,13 @@ import { getMenuItems, getNewsAlert, getSiteSettings } from "@/lib/site-settings
 import { getPublishedNews, getPublishedEvents } from "@/app/actions/public"
 import { getMediaHighlights } from "@/app/actions/cms"
 import { toHeaderUser } from "@/lib/header-user"
+import { seoMetadata } from "@/lib/seo"
+import { staticSubjectByPath } from "@/lib/seo/subjects"
+import { SeoJsonLd } from "@/components/seo/json-ld"
+
+export function generateMetadata() {
+  return seoMetadata(staticSubjectByPath('/'))
+}
 
 export default async function Home() {
   const [session, nav, news, articles, events, newsAlert, media, settings] = await Promise.all([
@@ -53,6 +60,8 @@ export default async function Home() {
   ].sort((x, y) => y.createdAt.localeCompare(x.createdAt))
 
   return (
+    <>
+      <SeoJsonLd subject={staticSubjectByPath('/')} />
     <div className="flex min-h-screen flex-col bg-background">
       <SiteHeader variant="solid" active="Home" user={toHeaderUser(session)} nav={nav} newsAlert={newsAlert} />
       <main className="flex-1">
@@ -64,5 +73,6 @@ export default async function Home() {
       </main>
       <SiteFooter />
     </div>
+    </>
   )
 }

@@ -3,13 +3,14 @@ import { SiteFooter } from "@/components/site-footer"
 import { KolHero } from "@/components/kol/kol-hero"
 import { KolDirectory, type PublicKolCard } from "@/components/kol/kol-directory"
 import { getPublicKols, totalFollowers } from "@/lib/kol"
+import { seoMetadata } from "@/lib/seo"
+import { staticSubjectByPath } from "@/lib/seo/subjects"
+import { SeoJsonLd } from "@/components/seo/json-ld"
 
 export const dynamic = "force-dynamic"
 
-export const metadata = {
-  title: "Verified Opinion Leaders | VAAP",
-  description:
-    "Recognized industry experts, founders, and thought leaders shaping Pakistan's digital assets ecosystem, verified by VAAP.",
+export function generateMetadata() {
+  return seoMetadata(staticSubjectByPath('/membership/verified-opinion-leaders'))
 }
 
 export default async function KolDirectoryPage() {
@@ -28,12 +29,15 @@ export default async function KolDirectoryPage() {
 
   return (
     <>
+      <SeoJsonLd subject={staticSubjectByPath('/membership/verified-opinion-leaders')} />
+    <>
       <SiteHeaderServer />
       <main className="bg-background">
         <KolHero leaders={kols.length} reach={reach} sectors={categories.length} />
         <KolDirectory kols={cards} categories={categories} />
       </main>
       <SiteFooter />
+    </>
     </>
   )
 }

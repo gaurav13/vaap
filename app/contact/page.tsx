@@ -5,15 +5,19 @@ import { PageHero } from "@/components/page-hero"
 import { ContactForm } from "@/components/contact-form"
 import { getHeaderUser } from "@/lib/header-user"
 import { CONTACT_ADDRESS, CONTACT_EMAIL } from "@/lib/contact"
+import { seoMetadata } from "@/lib/seo"
+import { staticSubjectByPath } from "@/lib/seo/subjects"
+import { SeoJsonLd } from "@/components/seo/json-ld"
 
-export const metadata = {
-  title: "Contact | VAAP",
-  description: "Get in touch with the Virtual Asset Industry Alliance of Pakistan.",
+export function generateMetadata() {
+  return seoMetadata(staticSubjectByPath('/contact'))
 }
 
 export default async function ContactPage() {
   const user = await getHeaderUser()
   return (
+    <>
+      <SeoJsonLd subject={staticSubjectByPath('/contact')} />
     <>
         <SiteHeaderServer active="Contact" user={user} />
       <main>
@@ -44,6 +48,7 @@ export default async function ContactPage() {
         </section>
       </main>
       <SiteFooter />
+    </>
     </>
   )
 }
