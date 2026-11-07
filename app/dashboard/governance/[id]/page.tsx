@@ -1,3 +1,4 @@
+import { RichContent } from "@/components/rich-content"
 import Link from "next/link"
 import { notFound, redirect } from "next/navigation"
 import { ArrowLeft, CheckCircle2, ExternalLink, Users, Layers, Percent, ShieldCheck, Calendar } from "lucide-react"
@@ -101,7 +102,7 @@ export default async function MemberProposalPage({ params }: { params: Promise<{
       {proposal.description && (
         <div className="mb-6 rounded-2xl border border-line bg-card p-6">
           <h2 className="mb-2 text-base font-bold text-heading">Resolution text</h2>
-          <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-2">{proposal.description}</p>
+          <RichContent value={proposal.description} size="sm" />
         </div>
       )}
 

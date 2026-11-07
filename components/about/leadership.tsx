@@ -1,7 +1,7 @@
 import Image from "next/image"
 import Link from "next/link"
 import { ArrowRight } from "lucide-react"
-import { plainTextToHtml, sanitizeRichHtml } from "@/lib/html"
+import { RichContent } from "@/components/rich-content"
 
 type Profile = {
   id: number
@@ -189,15 +189,7 @@ function ProfileGroup({
 }
 
 function RichBio({ html }: { html: string }) {
-  const looksLikeHtml = /<[a-z][\s\S]*>/i.test(html)
-  const cleaned = looksLikeHtml ? sanitizeRichHtml(html) : plainTextToHtml(html)
-
-  return (
-    <div
-      className="mt-5 max-w-3xl space-y-4 text-pretty leading-relaxed text-body [&_a]:font-medium [&_a]:text-green [&_a]:underline [&_p]:leading-relaxed"
-      dangerouslySetInnerHTML={{ __html: cleaned }}
-    />
-  )
+  return <RichContent value={html} className="mt-5 max-w-3xl" />
 }
 
 function SocialLink({ href, label }: { href: string; label: string }) {

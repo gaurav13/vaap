@@ -1,3 +1,4 @@
+import { RichContent } from "@/components/rich-content"
 import { SplitTitle } from "@/components/news/split-title"
 import Image from "next/image"
 import Link from "next/link"
@@ -128,7 +129,7 @@ export default async function NewsDetailPage({ params }: { params: Promise<{ id:
               {publisher && (
                 <h2 className="text-xs font-bold uppercase tracking-[0.16em] text-muted-2">Summary</h2>
               )}
-              <div className="whitespace-pre-line text-pretty text-base leading-relaxed text-body">{post.content}</div>
+              <RichContent value={post.content} />
             </div>
           )}
           {publisher && <PublisherInfo {...publisher} />}

@@ -1,3 +1,4 @@
+import { RichContent } from "@/components/rich-content"
 import { cache } from "react"
 import type { Metadata } from "next"
 import { notFound, permanentRedirect } from "next/navigation"
@@ -136,7 +137,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
             {event.description && (
               <div className="mt-8">
                 <h2 className="font-serif text-xl font-bold text-heading">About this event</h2>
-                <div className="mt-3 whitespace-pre-line text-pretty leading-relaxed text-body">{event.description}</div>
+                <RichContent value={event.description} className="mt-3" />
               </div>
             )}
 

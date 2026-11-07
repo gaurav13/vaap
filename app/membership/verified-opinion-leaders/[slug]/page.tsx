@@ -10,6 +10,7 @@ import { formatCount, formatDate, platformLabel } from "@/lib/kol-shared"
 import { seoMetadata } from "@/lib/seo"
 import { kolSubject } from "@/lib/seo/subjects"
 import { SeoJsonLd } from "@/components/seo/json-ld"
+import { RichContent } from "@/components/rich-content"
 
 export const dynamic = "force-dynamic"
 
@@ -32,18 +33,8 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 function Paragraphs({ text }: { text: string }) {
-  return (
-    <div className="flex flex-col gap-3 text-base leading-relaxed text-body">
-      {text
-        .split(/\n+/)
-        .filter(Boolean)
-        .map((p, i) => (
-          <p key={i} className="text-pretty">
-            {p}
-          </p>
-        ))}
-    </div>
-  )
+  return <RichContent value={text} />
+
 }
 
 export default async function KolProfilePage({ params }: Props) {

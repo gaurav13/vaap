@@ -1,3 +1,4 @@
+import { RichContent } from "@/components/rich-content"
 import Image from "next/image"
 import Link from "next/link"
 import { notFound } from "next/navigation"
@@ -94,7 +95,7 @@ export default async function CommitteeProfilePage({ params }: { params: Promise
               {committee.description ? (
                 <div className="mt-8">
                   <h2 className="text-sm font-bold uppercase tracking-wide text-muted-2">About the working group</h2>
-                  <p className="mt-3 max-w-2xl text-pretty leading-relaxed text-body">{committee.description}</p>
+                  <RichContent value={committee.description} className="mt-3 max-w-2xl" />
                 </div>
               ) : null}
             </div>

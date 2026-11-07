@@ -1,3 +1,4 @@
+import { RichContent } from "@/components/rich-content"
 import { redirect, notFound } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, CalendarDays, MapPin, Clock } from "lucide-react"
@@ -62,7 +63,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
           </div>
 
           {event.description ? (
-            <p className="whitespace-pre-line text-sm leading-relaxed text-heading">{event.description}</p>
+            <RichContent value={event.description} size="sm" />
           ) : (
             <p className="text-sm text-muted-2">More details about this event will be shared soon.</p>
           )}
