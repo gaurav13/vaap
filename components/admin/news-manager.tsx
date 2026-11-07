@@ -18,6 +18,8 @@ type NewsItem = {
   publisherName: string
   publisherLogo: string | null
   externalUrl: string | null
+  sourceType: "original" | "external"
+  originalPublishedAt: string | null
   committeeId: number | null
   published: boolean
   createdAt: string
@@ -34,6 +36,14 @@ export function NewsManager({ items, committees = [] }: { items: NewsItem[]; com
   const [pending, startTransition] = useTransition()
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [sourceType, setSourceType] = useState<"original" | "external">("original")
+
+  function openEditor(item: NewsItem | null) {
+    setEditing(item)
+    setCreating(item === null)
+    setSourceType(item?.sourceType ?? "original")
+    setError(null)
+  }
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -63,7 +73,7 @@ export function NewsManager({ items, committees = [] }: { items: NewsItem[]; com
   return (
     <div className="mt-6">
       {!showForm && (
-        <Button onClick={() => setCreating(true)} className="mb-6">
+        <Button onClick={() => openEditor(null)} className="mb-6">
           <Plus className="size-4" /> New Post
         </Button>
       )}
@@ -115,27 +125,66 @@ export function NewsManager({ items, committees = [] }: { items: NewsItem[]; com
               />
             </div>
             <fieldset className="grid gap-4 rounded-lg border border-line p-4">
-              <legend className="px-1 text-sm font-semibold text-heading">News publisher (optional)</legend>
-              <p className="-mt-1 text-xs text-muted-2">
-                For media coverage, add the outlet and a link to the original article. The home page shows a
-                &quot;Read on …&quot; button that opens this link.
+              <legend className="px-1 text-sm font-semibold text-heading">Article type &amp; publisher</legend>
+              <div className="grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label="Article type">
+                {(
+                  [
+                    { value: "original", label: "Original Content", hint: "Written and published by VAAP" },
+                    { value: "external", label: "External Publisher", hint: "Credits and links to the original outlet" },
+                  ] as const
+                ).map((opt) => (
+                  <label
+                    key={opt.value}
+                    className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors ${
+                      sourceType === opt.value ? "border-green bg-mint" : "border-line hover:border-green-border"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="sourceType"
+                      value={opt.value}
+                      checked={sourceType === opt.value}
+                      onChange={() => setSourceType(opt.value)}
+                      className="mt-0.5 size-4 accent-[var(--color-green)]"
+                    />
+                    <span>
+                      <span className="block text-sm font-semibold text-heading">{opt.label}</span>
+                      <span className="block text-xs text-muted-2">{opt.hint}</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+              <p className="text-xs text-muted-2">
+                {sourceType === "external"
+                  ? "A publisher credit with a “Read Original Article” button is shown on the article page. Only post an authorised excerpt or summary — not the full copyrighted article."
+                  : "Optional: add an outlet and link if this post was also covered elsewhere."}
               </p>
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Publisher name">
+                <Field label={sourceType === "external" ? "Publisher name *" : "Publisher name"}>
                   <input
                     name="publisherName"
                     defaultValue={editing?.publisherName}
                     placeholder="e.g. Dawn"
                     maxLength={80}
+                    required={sourceType === "external"}
                     className={inputCls}
                   />
                 </Field>
-                <Field label="Article link">
+                <Field label={sourceType === "external" ? "Original article URL *" : "Original article URL"}>
                   <input
                     name="externalUrl"
                     type="url"
                     defaultValue={editing?.externalUrl ?? ""}
                     placeholder="https://www.dawn.com/news/..."
+                    required={sourceType === "external"}
+                    className={inputCls}
+                  />
+                </Field>
+                <Field label="Original publication date">
+                  <input
+                    name="originalPublishedAt"
+                    type="date"
+                    defaultValue={editing?.originalPublishedAt ?? ""}
                     className={inputCls}
                   />
                 </Field>
@@ -165,8 +214,8 @@ export function NewsManager({ items, committees = [] }: { items: NewsItem[]; com
                 Linked posts appear in the &quot;Latest Updates&quot; section on the Committees page.
               </span>
             </Field>
-            <Field label="Excerpt">
-              <textarea name="excerpt" defaultValue={editing?.excerpt} required rows={2} className={inputCls} />
+            <Field label="Summary (optional — shown below the social bar)">
+              <textarea name="excerpt" defaultValue={editing?.excerpt} rows={2} className={inputCls} />
             </Field>
             <Field label="Content">
               <textarea name="content" defaultValue={editing?.content} rows={5} className={inputCls} />
@@ -208,6 +257,11 @@ export function NewsManager({ items, committees = [] }: { items: NewsItem[]; com
                     <span className="rounded-md bg-mint px-2 py-0.5 text-[11px] font-semibold text-green">
                       {item.category}
                     </span>
+                    {item.sourceType === "external" && (
+                      <span className="rounded-md bg-navy/10 px-2 py-0.5 text-[11px] font-semibold text-navy">
+                        External · {item.publisherName || "Publisher"}
+                      </span>
+                    )}
                     {item.committeeId && (
                       <span className="rounded-md bg-navy/10 px-2 py-0.5 text-[11px] font-semibold text-navy">
                         {committees.find((c) => c.id === item.committeeId)?.name ?? "Committee"}
@@ -239,10 +293,7 @@ export function NewsManager({ items, committees = [] }: { items: NewsItem[]; com
                   </a>
                   <button
                     type="button"
-                    onClick={() => {
-                      setEditing(item)
-                      setCreating(false)
-                    }}
+                    onClick={() => openEditor(item)}
                     className="flex size-9 items-center justify-center rounded-md text-muted-2 transition-colors hover:bg-mint hover:text-navy"
                     aria-label="Edit"
                   >
