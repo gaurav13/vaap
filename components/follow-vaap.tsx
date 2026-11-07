@@ -36,7 +36,7 @@ export function FollowVaap({
     <div
       className={cn(
         "flex flex-wrap gap-4 rounded-3xl px-6 py-5",
-        dark ? "bg-green-hover text-white shadow-lg sm:px-8" : "border border-line bg-card shadow-md",
+        dark ? "bg-[#2b2f33] text-white shadow-lg sm:px-8" : "border border-line bg-card shadow-md",
         stacked ? "flex-col items-start" : "items-center",
         className,
       )}
@@ -56,7 +56,7 @@ export function FollowVaap({
               className={cn(
                 "flex size-10 items-center justify-center shadow-sm transition-colors",
                 dark
-                  ? "rounded-full bg-white text-green-hover hover:bg-mint"
+                  ? "rounded-full bg-white text-[#2b2f33] hover:bg-mint hover:text-green"
                   : "rounded-xl bg-green text-white hover:bg-navy",
               )}
             >
@@ -73,7 +73,7 @@ export function FollowVaap({
             className={cn(
               "inline-flex items-center gap-2 rounded-full border px-5 py-2.5 text-sm font-semibold transition-colors",
               dark
-                ? "border-white/80 text-white hover:bg-white hover:text-green-hover"
+                ? "border-white/80 text-white hover:bg-white hover:text-[#2b2f33]"
                 : "border-green text-green hover:bg-green hover:text-white",
             )}
           >
