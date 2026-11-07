@@ -74,23 +74,16 @@ export default async function NewsDetailPage({ params }: { params: Promise<{ id:
             </div>
 
             {post.image && (
-              <div
-                className="relative aspect-[16/11] overflow-hidden rounded-3xl bg-green shadow-lg"
-                style={{ clipPath: "polygon(14% 0, 100% 0, 100% 100%, 0 100%)" }}
-              >
-                <div
-                  className="absolute inset-0"
-                  style={{ clipPath: "polygon(calc(14% + 8px) 0, 100% 0, 100% 100%, 8px 100%)" }}
-                >
-                  <Image
-                    src={post.image || "/placeholder.svg"}
-                    alt={post.title}
-                    fill
-                    priority
-                    sizes="(min-width: 1024px) 560px, 100vw"
-                    className="object-cover"
-                  />
-                </div>
+              <div className="overflow-hidden rounded-3xl border-4 border-green bg-green shadow-lg">
+                <Image
+                  src={post.image || "/placeholder.svg"}
+                  alt={post.title}
+                  width={1600}
+                  height={900}
+                  priority
+                  sizes="(min-width: 1024px) 560px, 100vw"
+                  className="block h-auto w-full rounded-[1.25rem]"
+                />
               </div>
             )}
           </div>
