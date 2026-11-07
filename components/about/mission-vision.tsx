@@ -16,20 +16,20 @@ const ITEMS = [
 export function MissionVision() {
   return (
     <section id="mission" className="scroll-mt-24 bg-surface">
-      <div className="vaap-container grid gap-5 py-12 sm:grid-cols-2 lg:py-16">
+      <div className="vaap-container grid grid-cols-1 gap-4 py-10 sm:grid-cols-2 sm:gap-5 lg:py-16">
         {ITEMS.map(({ icon: Icon, title, desc }) => (
-          <div
+          <article
             key={title}
-            className="flex items-start gap-5 rounded-2xl border border-line bg-card p-7 shadow-sm"
+            className="flex min-w-0 flex-col gap-3 rounded-xl border border-line bg-card p-5 shadow-sm sm:p-7"
           >
-            <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-mint text-green">
-              <Icon className="size-6" />
-            </span>
-            <div>
-              <h2 className="text-xl font-bold text-heading">{title}</h2>
-              <p className="mt-2 leading-relaxed text-body">{desc}</p>
+            <div className="flex items-center gap-3">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-mint text-green sm:size-10">
+                <Icon className="size-4 sm:size-5" aria-hidden="true" />
+              </span>
+              <h2 className="text-lg font-bold text-heading sm:text-xl">{title}</h2>
             </div>
-          </div>
+            <p className="text-pretty text-[15px] leading-relaxed text-body sm:text-base">{desc}</p>
+          </article>
         ))}
       </div>
     </section>
