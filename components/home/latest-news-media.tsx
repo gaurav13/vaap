@@ -153,7 +153,7 @@ export function LatestNewsMedia({ items }: { items: HomeNewsItem[] }) {
                 key={item.key}
                 data-slide
                 aria-roledescription="slide"
-                className="flex w-full shrink-0 snap-start flex-col overflow-hidden rounded-2xl border border-line bg-card shadow-sm transition-shadow hover:shadow-md sm:w-[calc((100%-1.25rem)/2)] md:w-[calc((100%-2.5rem)/3)] lg:w-[calc((100%-3.75rem)/4)]"
+                className="relative flex w-full shrink-0 snap-start flex-col overflow-hidden rounded-2xl border border-line bg-card shadow-sm transition-shadow hover:shadow-md sm:w-[calc((100%-1.25rem)/2)] md:w-[calc((100%-2.5rem)/3)] lg:w-[calc((100%-3.75rem)/4)]"
               >
                 <div className="relative aspect-[2/1]">
                   <div

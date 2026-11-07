@@ -86,8 +86,8 @@ export default async function KolProfilePage({ params }: Props) {
           </div>
         </section>
 
-        <div className="vaap-container grid gap-8 py-10 lg:grid-cols-3">
-          <div className="flex flex-col gap-8 rounded-2xl bg-card p-6 md:p-8 lg:col-span-2">
+        <div className="vaap-container grid grid-cols-1 gap-8 py-10 lg:grid-cols-3">
+          <div className="flex min-w-0 flex-col gap-8 rounded-2xl bg-card p-6 md:p-8 lg:col-span-2">
             {kol.bio && (
               <Section title="About">
                 <Paragraphs text={kol.bio} />
