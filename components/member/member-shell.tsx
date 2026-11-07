@@ -275,7 +275,7 @@ function SidebarContent({
 
             const GroupIcon = entry.icon
             const groupActive = entry.items.some((item) => isActive(pathname, item.href))
-            const open = collapsed || groupActive || !closedGroups[entry.id]
+            const open = collapsed || !closedGroups[entry.id]
             const panelId = `member-nav-${entry.id}`
 
             return (
