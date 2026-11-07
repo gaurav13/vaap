@@ -28,7 +28,7 @@ export default async function NewsDetailPage({ params }: { params: Promise<{ id:
   const [user, { social }] = await Promise.all([getHeaderUser(), getSiteSettings()])
   const createdAt = new Date(post.createdAt)
   const publisher =
-    post.sourceType === "external" && post.publisherName && post.externalUrl
+    post.publisherName && post.externalUrl
       ? {
           name: post.publisherName,
           logo: post.publisherLogo,
