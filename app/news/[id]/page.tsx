@@ -49,9 +49,9 @@ export default async function NewsDetailPage({ params }: { params: Promise<{ id:
             <ArrowLeft className="size-4" /> Back to News
           </Link>
 
-          <div className={`mt-6 grid items-center gap-8 lg:gap-10 ${post.image ? "lg:grid-cols-[1.05fr_1fr]" : ""}`}>
-            <div className="flex flex-col gap-5">
-              <div className="flex items-center gap-4 text-sm">
+          <div className="mt-8 flex flex-col gap-10 lg:mt-10 lg:gap-12">
+            <div className="flex max-w-4xl flex-col gap-6">
+              <div className="flex flex-wrap items-center gap-4 text-sm">
                 <span className="rounded-full bg-green px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-white">
                   {post.category}
                 </span>
@@ -64,7 +64,7 @@ export default async function NewsDetailPage({ params }: { params: Promise<{ id:
                 </span>
               </div>
 
-              <h1 className="text-3xl font-bold leading-tight text-heading text-balance lg:text-[2.6rem]">
+              <h1 className="text-3xl font-bold leading-[1.15] tracking-tight text-heading text-balance md:text-4xl lg:text-5xl">
                 {post.title}
               </h1>
 
@@ -74,22 +74,16 @@ export default async function NewsDetailPage({ params }: { params: Promise<{ id:
             </div>
 
             {post.image && (
-              <figure className="relative pb-3 pr-3">
-                <div
-                  aria-hidden="true"
-                  className="absolute inset-0 left-3 top-3 rounded-2xl bg-green-light ring-1 ring-green-border"
+              <figure className="overflow-hidden rounded-3xl bg-card p-2 shadow-[0_30px_60px_-30px_rgba(16,40,32,0.35)] ring-1 ring-line">
+                <Image
+                  src={post.image || "/placeholder.svg"}
+                  alt={post.title}
+                  width={1600}
+                  height={900}
+                  priority
+                  sizes="(min-width: 1152px) 1088px, 100vw"
+                  className="block h-auto w-full rounded-2xl"
                 />
-                <div className="relative rounded-2xl bg-card p-1.5 shadow-[0_24px_48px_-24px_rgba(16,40,32,0.35)] ring-1 ring-line">
-                  <Image
-                    src={post.image || "/placeholder.svg"}
-                    alt={post.title}
-                    width={1600}
-                    height={900}
-                    priority
-                    sizes="(min-width: 1024px) 560px, 100vw"
-                    className="block h-auto w-full rounded-xl"
-                  />
-                </div>
               </figure>
             )}
           </div>
