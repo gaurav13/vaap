@@ -21,12 +21,12 @@ export function KolHero({ leaders, reach, sectors }: { leaders: number; reach: n
     <section className="relative isolate overflow-hidden bg-surface">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src="/images/kol-hero-network.png"
+        src="/images/kol-profile-hero-bg.png"
         alt=""
-        className="absolute inset-x-0 top-0 -z-10 h-full w-full object-cover object-right-top opacity-40 md:h-auto md:min-h-[30rem] md:opacity-100"
+        className="absolute inset-0 -z-10 size-full object-cover object-right-bottom opacity-50 lg:opacity-100"
       />
       <div
-        className="absolute inset-0 -z-10 bg-gradient-to-r from-surface via-surface/70 to-transparent md:via-surface/20"
+        className="absolute inset-0 -z-10 bg-gradient-to-r from-surface/90 via-surface/60 to-transparent lg:via-surface/30"
         aria-hidden="true"
       />
 
