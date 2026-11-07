@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { db } from "@/lib/db"
-import { members, membershipApplications } from "@/lib/db/schema"
+import { members, membershipApplications, membershipCertificates } from "@/lib/db/schema"
 import { desc, eq, isNull, isNotNull } from "drizzle-orm"
 import { serializeRows } from "@/lib/cms/serialize"
 import { MembersAdmin } from "@/components/admin/members-admin"
@@ -12,12 +12,31 @@ export default async function AdminMembersPage() {
   const session = await getSession()
   const isSuperAdmin = session?.user?.role === "admin"
 
-  const [rows, trashed, pending, votingRows] = await Promise.all([
+  const [memberRows, trashed, pending, votingRows, certRows] = await Promise.all([
     db.select().from(members).where(isNull(members.deletedAt)).orderBy(desc(members.joinedAt)),
     db.select().from(members).where(isNotNull(members.deletedAt)).orderBy(desc(members.deletedAt)),
     db.select({ id: membershipApplications.id }).from(membershipApplications).where(eq(membershipApplications.status, "pending")),
     isSuperAdmin ? listMemberVotingRights() : Promise.resolve(null),
+    db
+      .select({
+        memberId: membershipCertificates.memberId,
+        status: membershipCertificates.status,
+        issuedAt: membershipCertificates.issuedAt,
+      })
+      .from(membershipCertificates)
+      .orderBy(desc(membershipCertificates.issuedAt)),
   ])
+
+  // Latest certificate per member: "issued" if one is live, else "revoked" if
+  // they only have revoked ones, else none yet.
+  const certByMember = new Map<number, { status: string; issuedAt: string }>()
+  for (const c of certRows) {
+    const prev = certByMember.get(c.memberId)
+    if (!prev || (prev.status !== "issued" && c.status === "issued")) {
+      certByMember.set(c.memberId, { status: c.status, issuedAt: c.issuedAt.toISOString() })
+    }
+  }
+  const rows = memberRows.map((r) => ({ ...r, certificate: certByMember.get(r.id) ?? null }))
 
   const now = new Date()
   const in30 = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)

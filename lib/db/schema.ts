@@ -1071,3 +1071,20 @@ export const newsletterIssues = pgTable("newsletter_issues", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 })
+
+// --- Membership certificates (QR verification) ------------------------------
+// Each issued certificate carries a random, non-guessable token encoded in its
+// QR code. Regenerating revokes the previous token so old prints stop verifying.
+export const membershipCertificates = pgTable("membership_certificates", {
+  id: serial("id").primaryKey(),
+  memberId: integer("memberId")
+    .notNull()
+    .references(() => members.id, { onDelete: "cascade" }),
+  token: text("token").notNull().unique(),
+  status: text("status").notNull().default("issued"), // issued | revoked
+  issuedAt: timestamp("issuedAt").notNull().defaultNow(),
+  expiresAt: timestamp("expiresAt"),
+  revokedAt: timestamp("revokedAt"),
+  revokedReason: text("revokedReason"),
+  issuedBy: text("issuedBy"),
+})
