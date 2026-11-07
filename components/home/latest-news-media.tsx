@@ -1,8 +1,8 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
-import { ArrowRight, CalendarDays, ExternalLink, Newspaper } from "lucide-react"
+import { ArrowRight, CalendarDays, ChevronLeft, ChevronRight, ExternalLink, Newspaper } from "lucide-react"
 import { NEWS_TABS, newsTabFor, type NewsTab } from "@/lib/news-options"
 import { cn } from "@/lib/utils"
 
@@ -60,10 +60,35 @@ export function LatestNewsMedia({ items }: { items: HomeNewsItem[] }) {
   const [tab, setTab] = useState<NewsTab>("All Updates")
 
   const visible = useMemo(
-    () => (tab === "All Updates" ? items : items.filter((i) => newsTabFor(i) === tab)).slice(0, 2),
+    () => (tab === "All Updates" ? items : items.filter((i) => newsTabFor(i) === tab)).slice(0, 12),
     [items, tab],
   )
   const featured = visible[0]
+  const trackRef = useRef<HTMLDivElement>(null)
+  const [paused, setPaused] = useState(false)
+
+  const step = useCallback((dir: 1 | -1) => {
+    const track = trackRef.current
+    const slide = track?.querySelector<HTMLElement>("[data-slide]")
+    if (!track || !slide) return
+    const amount = slide.offsetWidth + 20
+    const atEnd = track.scrollLeft + track.clientWidth >= track.scrollWidth - 4
+    const atStart = track.scrollLeft <= 4
+    if (dir === 1 && atEnd) track.scrollTo({ left: 0 })
+    else if (dir === -1 && atStart) track.scrollTo({ left: track.scrollWidth })
+    else track.scrollBy({ left: dir * amount })
+  }, [])
+
+  useEffect(() => {
+    trackRef.current?.scrollTo({ left: 0 })
+  }, [tab])
+
+  useEffect(() => {
+    if (paused || visible.length <= 1) return
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
+    const id = window.setInterval(() => step(1), 4000)
+    return () => window.clearInterval(id)
+  }, [paused, visible.length, step])
 
   return (
     <section aria-labelledby="latest-news-heading" className="mx-auto w-full max-w-7xl px-5 py-12 lg:px-8 lg:py-16">
@@ -110,57 +135,91 @@ export function LatestNewsMedia({ items }: { items: HomeNewsItem[] }) {
           No updates in this category yet.
         </p>
       ) : (
-        <div className="mt-8 grid gap-6 md:grid-cols-2">
-          {visible.map((item) => (
-            <article
-              key={item.key}
-              className="flex flex-col overflow-hidden rounded-3xl border border-line bg-card shadow-md"
-            >
-              <div className="relative aspect-video">
-                <div
-                  aria-hidden="true"
-                  className="absolute inset-0 bg-gold"
-                  style={{ clipPath: "polygon(0 0, 100% 0, 100% 88%, 0 100%)" }}
-                />
-                <div
-                  className="absolute inset-0 bg-muted"
-                  style={{ clipPath: "polygon(0 0, 100% 0, 100% calc(88% - 6px), 0 calc(100% - 6px))" }}
-                >
-                  <img src={item.image || "/images/news-skyline.png"} alt="" className="size-full object-cover" />
+        <div
+          className="relative mt-8"
+          onMouseEnter={() => setPaused(true)}
+          onMouseLeave={() => setPaused(false)}
+          onFocusCapture={() => setPaused(true)}
+          onBlurCapture={() => setPaused(false)}
+        >
+          <div
+            ref={trackRef}
+            aria-roledescription="carousel"
+            aria-label="Latest news"
+            className="flex snap-x snap-mandatory gap-5 overflow-x-auto scroll-smooth pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
+            {visible.map((item) => (
+              <article
+                key={item.key}
+                data-slide
+                aria-roledescription="slide"
+                className="flex w-full shrink-0 snap-start flex-col overflow-hidden rounded-2xl border border-line bg-card shadow-sm transition-shadow hover:shadow-md sm:w-[calc((100%-1.25rem)/2)] md:w-[calc((100%-2.5rem)/3)] lg:w-[calc((100%-3.75rem)/4)]"
+              >
+                <div className="relative aspect-video">
+                  <div
+                    aria-hidden="true"
+                    className="absolute inset-0 bg-gold"
+                    style={{ clipPath: "polygon(0 0, 100% 0, 100% 86%, 0 100%)" }}
+                  />
+                  <div
+                    className="absolute inset-0 bg-muted"
+                    style={{ clipPath: "polygon(0 0, 100% 0, 100% calc(86% - 4px), 0 calc(100% - 4px))" }}
+                  >
+                    <img src={item.image || "/images/news-skyline.png"} alt="" className="size-full object-cover" />
+                  </div>
                 </div>
-              </div>
-              <div className="flex flex-1 flex-col gap-4 px-6 pb-6 pt-2 lg:px-8 lg:pb-8">
-                <div className="flex items-center">
-                  <span className="rounded-full bg-green px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-primary-foreground">
-                    {item.category}
-                  </span>
-                  <span aria-hidden="true" className="h-0.5 w-12 bg-green" />
-                </div>
-                <h3 className="font-serif text-2xl font-bold leading-tight text-heading text-balance line-clamp-3 lg:text-3xl">
-                  {item.title}
-                </h3>
-                <p className="text-base leading-relaxed text-body line-clamp-3">{item.excerpt}</p>
-                <div className="mt-auto flex flex-wrap items-center justify-between gap-x-4 gap-y-3 border-t border-line pt-5 text-sm">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <span className="flex items-center gap-2">
-                      <CalendarDays className="size-5 text-green" aria-hidden="true" />
+                <div className="flex flex-1 flex-col gap-3 px-4 pb-4 pt-1">
+                  <div className="flex items-center">
+                    <span className="rounded-full bg-green px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-primary-foreground">
+                      {item.category}
+                    </span>
+                    <span aria-hidden="true" className="h-0.5 w-8 bg-green" />
+                  </div>
+                  <h3 className="font-serif text-lg font-bold leading-snug text-heading text-balance line-clamp-2">
+                    {item.title}
+                  </h3>
+                  <p className="text-sm leading-relaxed text-body line-clamp-2">{item.excerpt}</p>
+                  <div className="mt-auto flex flex-col gap-3 border-t border-line pt-3 text-xs">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <CalendarDays className="size-4 shrink-0 text-green" aria-hidden="true" />
                       <time dateTime={item.createdAt} className="whitespace-nowrap text-muted-2">
                         {formatDate(item.createdAt)}
                       </time>
-                    </span>
-                    <span aria-hidden="true" className="h-5 w-px bg-line" />
-                    <span className="truncate font-bold text-heading">
-                      By {item.authorName || item.publisherName || "VAAP"}
-                    </span>
+                      <span aria-hidden="true" className="h-4 w-px bg-line" />
+                      <span className="truncate font-bold text-heading">
+                        By {item.authorName || item.publisherName || "VAAP"}
+                      </span>
+                    </div>
+                    <ReadLink
+                      item={item}
+                      className="w-full border-transparent bg-green px-4 py-2 text-xs text-primary-foreground hover:bg-green-hover"
+                    />
                   </div>
-                  <ReadLink
-                    item={item}
-                    className="border-transparent bg-green px-5 py-2.5 text-primary-foreground shadow-sm hover:bg-green-hover"
-                  />
                 </div>
-              </div>
-            </article>
-          ))}
+              </article>
+            ))}
+          </div>
+
+          {visible.length > 1 && (
+            <div className="mt-2 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => step(-1)}
+                aria-label="Previous news"
+                className="flex size-9 items-center justify-center rounded-full border border-line bg-card text-heading transition-colors hover:border-green hover:text-green"
+              >
+                <ChevronLeft className="size-4" aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                onClick={() => step(1)}
+                aria-label="Next news"
+                className="flex size-9 items-center justify-center rounded-full border border-line bg-card text-heading transition-colors hover:border-green hover:text-green"
+              >
+                <ChevronRight className="size-4" aria-hidden="true" />
+              </button>
+            </div>
+          )}
         </div>
       )}
     </section>
