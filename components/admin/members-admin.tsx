@@ -17,6 +17,7 @@ import {
   RotateCcw,
   Search,
   ShieldCheck,
+  ShieldX,
   Trash2,
   Upload,
   UserPlus,
@@ -37,6 +38,7 @@ import {
   importMembers,
   type MemberInput,
 } from "@/app/actions/members"
+import { regenerateMemberCertificate, revokeMemberCertificate } from "@/app/actions/certificates"
 
 type Member = {
   id: number
@@ -48,6 +50,7 @@ type Member = {
   status: string
   votingEligible: boolean
   goodStanding: boolean
+  certificate?: { status: string; issuedAt: string } | null
   joinedAt: string
   expiresAt: string | null
   deletedAt?: string | null
@@ -427,6 +430,18 @@ export function MembersAdmin({ items, trashed = [], stats }: { items: Member[]; 
                       onStatus={(s) => run(() => setMemberStatus(m.id, s))}
                       onVoting={() => run(() => setMemberVoting(m.id, !m.votingEligible))}
                       onDelete={() => run(() => deleteMembers([m.id]))}
+                      onRegenerateCert={() =>
+                        run(async () => {
+                          const res = await regenerateMemberCertificate(m.id)
+                          if (!res.ok) alert(res.error)
+                        })
+                      }
+                      onRevokeCert={() =>
+                        run(async () => {
+                          const res = await revokeMemberCertificate(m.id)
+                          if (!res.ok) alert(res.error)
+                        })
+                      }
                     />
                   </td>
                 </tr>
@@ -670,6 +685,8 @@ function RowMenu({
   onStatus,
   onVoting,
   onDelete,
+  onRegenerateCert,
+  onRevokeCert,
 }: {
   member: Member
   pending: boolean
@@ -677,7 +694,10 @@ function RowMenu({
   onStatus: (s: "active" | "suspended" | "expired") => void
   onVoting: () => void
   onDelete: () => void
+  onRegenerateCert: () => void
+  onRevokeCert: () => void
 }) {
+  const certIssued = member.certificate?.status === "issued"
   const [open, setOpen] = useState(false)
   const btnRef = useRef<HTMLButtonElement>(null)
   const [coords, setCoords] = useState<{ top: number; left: number; flipUp: boolean }>({ top: 0, left: 0, flipUp: false })
@@ -689,7 +709,7 @@ function RowMenu({
   if (!el) return
   const r = el.getBoundingClientRect()
   const menuW = 208 // w-52
-  const menuH = 260 // approx height
+  const menuH = 400 // approx height
   const flipUp = r.bottom + menuH > window.innerHeight - 8
   setCoords({
   top: flipUp ? r.top - menuH - 4 : r.bottom + 4,
@@ -741,6 +761,43 @@ function RowMenu({
             <MenuItem onClick={() => { setOpen(false); onStatus("expired") }} icon={<RotateCcw className="size-4" />} disabled={pending}>
               Mark expired
             </MenuItem>
+            <div className="my-1 border-t border-line" />
+            <p className="px-3 pb-1 pt-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-2">
+              Certificate ·{" "}
+              {certIssued ? "Issued" : member.certificate?.status === "revoked" ? "Revoked" : "Not issued"}
+            </p>
+            <a
+              href={`/api/certificate?id=${encodeURIComponent(member.membershipId)}`}
+              onClick={() => setOpen(false)}
+              className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-heading transition-colors hover:bg-surface"
+            >
+              <Download className="size-4" />
+              {certIssued ? "Download certificate" : "Issue & download"}
+            </a>
+            <MenuItem
+              onClick={() => {
+                setOpen(false)
+                if (!certIssued || confirm(`Regenerate ${member.name}'s certificate? The current QR code will stop verifying.`))
+                  onRegenerateCert()
+              }}
+              icon={<RotateCcw className="size-4" />}
+              disabled={pending}
+            >
+              {certIssued ? "Regenerate certificate" : "Issue certificate"}
+            </MenuItem>
+            {certIssued && (
+              <MenuItem
+                onClick={() => {
+                  setOpen(false)
+                  if (confirm(`Revoke ${member.name}'s certificate? Scanning it will show "Revoked".`)) onRevokeCert()
+                }}
+                icon={<ShieldX className="size-4" />}
+                danger
+                disabled={pending}
+              >
+                Revoke certificate
+              </MenuItem>
+            )}
             <div className="my-1 border-t border-line" />
             <MenuItem
               onClick={() => { setOpen(false); if (confirm(`Move ${member.name} to trash? You can restore them later.`)) onDelete() }}
