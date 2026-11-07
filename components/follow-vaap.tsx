@@ -86,17 +86,21 @@ export function FollowVaap({
   return (
     <div
       className={cn(
-        "flex flex-wrap gap-4 rounded-3xl px-6 py-5",
-        dark ? "bg-[#2b2f33] text-white shadow-lg sm:px-8" : "border border-line bg-card shadow-md",
-        stacked ? "flex-col items-start" : "items-center",
+        "flex flex-col gap-3 rounded-xl p-4 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4 sm:rounded-2xl sm:px-6 sm:py-4",
+        dark ? "bg-[#2b2f33] text-white shadow-md sm:px-8" : "border border-line bg-card shadow-sm",
         className,
       )}
     >
-      <p className={cn("text-lg font-bold", dark ? "text-white lg:text-xl" : "text-heading")}>{title}</p>
-      {!stacked && (
-        <span className={cn("hidden h-8 w-px sm:block", dark ? "bg-white/30" : "bg-line")} aria-hidden="true" />
-      )}
-      <ul className="flex flex-wrap items-center gap-2 sm:gap-3">
+      <p
+        className={cn(
+          "text-xs font-semibold uppercase tracking-widest sm:text-base sm:normal-case sm:tracking-normal sm:font-bold",
+          dark ? "text-white/70 sm:text-white lg:text-lg" : "text-muted-2 sm:text-heading",
+        )}
+      >
+        {title}
+      </p>
+      <span className={cn("hidden h-6 w-px sm:block", dark ? "bg-white/20" : "bg-line")} aria-hidden="true" />
+      <ul className="flex flex-wrap items-center gap-1.5 sm:gap-2">
         {socials.map(({ Icon, href, label }) => (
           <li key={label}>
             <a
@@ -105,33 +109,28 @@ export function FollowVaap({
               rel="noopener noreferrer"
               aria-label={`VAAP on ${label} (opens in a new tab)`}
               className={cn(
-                "flex size-10 items-center justify-center shadow-sm transition-colors",
+                "flex size-8 items-center justify-center rounded-full transition-colors sm:size-9",
                 dark
-                  ? "rounded-full bg-white text-[#2b2f33] hover:bg-mint hover:text-green"
-                  : "rounded-xl bg-green text-white hover:bg-navy",
+                  ? "bg-white/10 text-white hover:bg-white hover:text-[#2b2f33]"
+                  : "bg-mint text-green hover:bg-green hover:text-white",
               )}
             >
-              <Icon className="size-[18px]" />
+              <Icon className="size-4" />
             </a>
           </li>
         ))}
       </ul>
       {cta && (
-        <div className="flex items-center gap-4 lg:ml-auto">
-          <span className={cn("hidden h-8 w-px lg:block", dark ? "bg-white/30" : "bg-line")} aria-hidden="true" />
-          <Link
-            href={cta.href}
-            className={cn(
-              "inline-flex items-center gap-2 rounded-full border px-5 py-2.5 text-sm font-semibold transition-colors",
-              dark
-                ? "border-white/80 text-white hover:bg-white hover:text-[#2b2f33]"
-                : "border-green text-green hover:bg-green hover:text-white",
-            )}
-          >
-            {cta.label}
-            <ArrowRight className="size-4" aria-hidden="true" />
-          </Link>
-        </div>
+        <Link
+          href={cta.href}
+          className={cn(
+            "group flex items-center justify-between gap-3 border-t pt-3 text-xs font-medium transition-colors sm:ml-auto sm:border-t-0 sm:pt-0 sm:text-sm",
+            dark ? "border-white/10 text-white/80 hover:text-white" : "border-line text-green hover:text-navy",
+          )}
+        >
+          <span className="text-pretty">{cta.label}</span>
+          <ArrowRight className="size-3.5 shrink-0 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+        </Link>
       )}
     </div>
   )

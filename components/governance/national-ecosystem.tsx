@@ -76,7 +76,7 @@ export function NationalEcosystem() {
             Pakistan.
           </p>
 
-          <div className="mt-8 grid gap-4 sm:grid-cols-3">
+          <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
             {PILLARS.map(({ icon: Icon, title, text }) => (
               <div
                 key={title}

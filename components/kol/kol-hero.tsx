@@ -41,18 +41,27 @@ export function KolHero({ leaders, reach, sectors }: { leaders: number; reach: n
       </section>
 
       <section aria-label="Network at a glance" className="border-b border-line-light bg-card">
-        <dl className="vaap-container grid grid-cols-2 gap-y-6 py-8 lg:grid-cols-4">
+        <dl className="vaap-container grid grid-cols-2 py-2 lg:grid-cols-4 lg:py-8">
           {stats.map(({ Icon, value, label }, i) => (
             <div
               key={label}
-              className={`flex items-center gap-4 px-2 lg:px-6 ${i > 0 ? "lg:border-l lg:border-line" : ""}`}
+              className={[
+                "flex min-w-0 flex-col gap-3 px-3 py-5 sm:px-5 lg:flex-row lg:items-center lg:gap-4 lg:px-6 lg:py-0",
+                i % 2 === 0 ? "border-r border-line lg:border-r-0" : "",
+                i >= 2 ? "border-t border-line lg:border-t-0" : "",
+                i > 0 ? "lg:border-l lg:border-line" : "",
+              ].join(" ")}
             >
-              <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-mint text-green">
-                <Icon className="size-6" strokeWidth={1.75} aria-hidden="true" />
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-mint text-green lg:size-12">
+                <Icon className="size-[18px] lg:size-6" strokeWidth={1.75} aria-hidden="true" />
               </span>
-              <div className="flex flex-col">
-                <dt className="order-2 text-sm text-body">{label}</dt>
-                <dd className="order-1 text-xl font-bold text-heading md:text-2xl">{value}</dd>
+              <div className="flex min-w-0 flex-col gap-1 lg:gap-0">
+                <dt className="order-2 text-[11px] font-semibold uppercase leading-snug tracking-wider text-body lg:text-sm lg:font-normal lg:normal-case lg:tracking-normal">
+                  {label}
+                </dt>
+                <dd className="order-1 text-lg font-bold leading-tight text-heading text-balance md:text-2xl">
+                  {value}
+                </dd>
               </div>
             </div>
           ))}

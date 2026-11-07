@@ -17,6 +17,7 @@ import {
 import { KOL_EDITABLE, KOL_EXPERTISE, KOL_PLATFORMS, type KolStatus } from "@/lib/kol-shared"
 import { sendEmail } from "@/lib/mailer"
 import { CONTACT_EMAIL } from "@/lib/contact"
+import { formatAlertDate, sendAdminAlert } from "@/lib/admin-alerts"
 
 type Result = { ok: true; message?: string } | { ok: false; error: string }
 
@@ -147,6 +148,12 @@ export async function saveKolApplication(input: KolApplicationInput, submit: boo
     if (submit) {
       await logKol(member.id, "submitted", { from: profile.status, to: "pending", actor: user.email })
       await emailKol(member.id, "kol.application-received")
+      sendAdminAlert("kol", {
+        name: data.professionalName || data.fullName,
+        email: user.email,
+        submittedAt: formatAlertDate(),
+        reviewUrl: "/admin/kols",
+      })
     } else {
       await logKol(member.id, "draft_saved", { actor: user.email })
     }

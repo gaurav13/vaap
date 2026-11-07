@@ -6,6 +6,7 @@ import { getSession } from "@/lib/session"
 import { can } from "@/lib/permissions"
 import { and, desc, eq, inArray, ne } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
+import { formatAlertDate, sendAdminAlert } from "@/lib/admin-alerts"
 
 function slugify(input: string): string {
   return input
@@ -151,6 +152,13 @@ export async function submitArticle(id: number) {
     title: "Article submitted for review",
     body: `${me.name ?? "A contributor"} submitted "${article.title}".`,
     link: "/admin/articles",
+  })
+  sendAdminAlert("article", {
+    name: me.name || "A contributor",
+    email: me.email,
+    title: article.title,
+    submittedAt: formatAlertDate(),
+    reviewUrl: "/admin/articles",
   })
   revalidatePath("/dashboard/articles")
   revalidatePath("/admin/articles")

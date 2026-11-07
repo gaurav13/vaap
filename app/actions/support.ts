@@ -5,6 +5,7 @@ import { complaints } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { notify } from "@/lib/notifications"
+import { formatAlertDate, reportSummary, sendAdminAlert } from "@/lib/admin-alerts"
 
 export type ComplaintStatus = "submitted" | "review" | "guidance" | "closed"
 
@@ -60,8 +61,15 @@ export async function submitComplaint(formData: FormData) {
       role: "staff",
       type: "info",
       title: "New support case",
-      body: `${name} submitted a "${category}" case (${reference}).`,
-      link: "/admin/messages",
+      body: `A new "${category}" case was submitted (${reference}).`,
+      link: "/admin/reports",
+    })
+    sendAdminAlert("report", {
+      reference,
+      category,
+      submittedAt: formatAlertDate(),
+      summary: reportSummary(category, description),
+      reviewUrl: `/admin/reports?ref=${encodeURIComponent(reference)}`,
     })
 
     revalidatePath("/support")

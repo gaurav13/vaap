@@ -41,7 +41,7 @@ export async function SiteFooter() {
       />
 
       <div className="relative mx-auto max-w-7xl px-5 py-14 lg:px-8 lg:py-16">
-        <div className="grid gap-10 lg:grid-cols-[1.4fr_1fr_1fr_1.3fr] lg:gap-12">
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1.4fr_1fr_1fr_1.3fr] lg:gap-12">
           {/* Brand column */}
           <div className="max-w-sm">
             <VaapLogo onDark height={60} />
