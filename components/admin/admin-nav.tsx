@@ -96,6 +96,7 @@ const GROUPS: { heading: string; links: { href: string; label: string; icon: typ
       { href: "/admin/referrals", label: "Referral Console", icon: Share2 },
       { href: "/admin/commissions", label: "Commission & Rewards", icon: Percent, adminOnly: true },
       { href: "/admin/rewards", label: "Rewards & Payouts", icon: Coins, adminOnly: true },
+      { href: "/admin/payments", label: "Crypto Payments", icon: Wallet, adminOnly: true },
     ],
   },
   {

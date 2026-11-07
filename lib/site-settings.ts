@@ -469,6 +469,35 @@ export async function getSiteSettings(): Promise<SiteSettings> {
   }
 }
 
+export type CryptoPaymentCoinId = "USDT_TRC20" | "XRP" | "BTC" | "ETH"
+export const CRYPTO_PAYMENT_COIN_IDS: CryptoPaymentCoinId[] = ["USDT_TRC20", "XRP", "BTC", "ETH"]
+export type CryptoPaymentCoin = { enabled: boolean; address: string }
+// Admin-editable crypto wallets. An empty address falls back to the matching
+// CRYPTO_WALLET_* env var, so existing deployments keep working unchanged.
+export type CryptoPayment = {
+  coins: Record<CryptoPaymentCoinId, CryptoPaymentCoin>
+  xrpTag: string
+  instructions: string
+}
+
+export async function getCryptoPayment(): Promise<CryptoPayment> {
+  const map = await readAll()
+  const stored = parse<Partial<CryptoPayment>>(map.cryptoPayment, {})
+  const coins = {} as Record<CryptoPaymentCoinId, CryptoPaymentCoin>
+  for (const id of CRYPTO_PAYMENT_COIN_IDS) {
+    const saved = stored.coins?.[id]
+    coins[id] = {
+      enabled: saved?.enabled !== false,
+      address: typeof saved?.address === "string" ? saved.address : "",
+    }
+  }
+  return {
+    coins,
+    xrpTag: typeof stored.xrpTag === "string" ? stored.xrpTag : "",
+    instructions: typeof stored.instructions === "string" ? stored.instructions : "",
+  }
+}
+
 export async function getRewardPayout(): Promise<RewardPayout> {
   const map = await readAll()
   return parse<RewardPayout>(map.rewardPayout, DEFAULT_REWARD_PAYOUT)

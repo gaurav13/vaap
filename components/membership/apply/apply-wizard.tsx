@@ -1063,7 +1063,9 @@ function CryptoPayment({
     setLoading(true)
     getCryptoConfig()
       .then((c) => {
-        if (active) setConfig(c)
+        if (!active) return
+        setConfig(c)
+        if (c.coins.length > 0 && !c.coins.some((x) => x.id === selected)) setSelected(c.coins[0].id)
       })
       .catch(() => {})
       .finally(() => {
@@ -1137,6 +1139,11 @@ function CryptoPayment({
       </div>
 
       <div className="p-4 sm:p-6">
+        {config?.instructions ? (
+          <p className="mb-4 whitespace-pre-line rounded-xl border border-line bg-muted/40 px-4 py-3 text-sm leading-relaxed text-heading">
+            {config.instructions}
+          </p>
+        ) : null}
         {/* Coin / network selector */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {(config?.coins ?? []).map((c) => {

@@ -10,6 +10,7 @@ import { createAttributionForApplication } from "@/lib/referral-engine"
 import { notify } from "@/lib/notifications"
 import { sendTemplateEmail } from "@/lib/email-templates/service"
 import { CONTACT_EMAIL } from "@/lib/contact"
+import { getCryptoPayment } from "@/lib/site-settings"
 import { formatAlertDate, sendAdminAlert } from "@/lib/admin-alerts"
 import { redirect } from "next/navigation"
 import {
@@ -78,6 +79,7 @@ export type CryptoCoinConfig = {
 export type CryptoConfig = {
   coins: CryptoCoinConfig[]
   source: "live" | "fallback"
+  instructions: string
 }
 
 // Indicative USD prices used only when the live rate service is unreachable.
@@ -98,12 +100,30 @@ function resolveBtcAddress(): string {
   return BTC_ADDRESS_PATTERN.test(fromEnv) ? fromEnv : DEFAULT_BTC_ADDRESS
 }
 
-function cryptoWalletAddresses(): Record<CryptoCoinId, string> {
+function envWalletAddresses(): Record<CryptoCoinId, string> {
   return {
     USDT_TRC20: (process.env.CRYPTO_WALLET_USDT_TRC20 || "").trim(),
     XRP: (process.env.CRYPTO_WALLET_XRP || "").trim(),
     BTC: resolveBtcAddress(),
     ETH: (process.env.CRYPTO_WALLET_ETH || "").trim(),
+  }
+}
+
+// Admin-saved wallets win; blank fields fall back to the env defaults.
+async function resolveCryptoWallets() {
+  const saved = await getCryptoPayment()
+  const env = envWalletAddresses()
+  const addresses = {} as Record<CryptoCoinId, string>
+  const enabled = {} as Record<CryptoCoinId, boolean>
+  for (const id of Object.keys(env) as CryptoCoinId[]) {
+    addresses[id] = saved.coins[id].address.trim() || env[id]
+    enabled[id] = saved.coins[id].enabled
+  }
+  return {
+    addresses,
+    enabled,
+    xrpTag: saved.xrpTag.trim() || (process.env.CRYPTO_XRP_TAG || "").trim() || null,
+    instructions: saved.instructions.trim(),
   }
 }
 
@@ -119,8 +139,9 @@ function isCryptoCoinId(value: string): value is CryptoCoinId {
 }
 
 export async function getCryptoConfig(): Promise<CryptoConfig> {
-  const addresses = cryptoWalletAddresses()
-  const xrpTag = (process.env.CRYPTO_XRP_TAG || "").trim() || null
+  const wallets = await resolveCryptoWallets()
+  const addresses = wallets.addresses
+  const xrpTag = wallets.xrpTag
 
   let source: "live" | "fallback" = "fallback"
   let prices: Record<string, number> = {
@@ -196,7 +217,7 @@ export async function getCryptoConfig(): Promise<CryptoConfig> {
     },
   ]
 
-  return { coins, source }
+  return { coins: coins.filter((c) => wallets.enabled[c.id]), source, instructions: wallets.instructions }
 }
 
 export async function getPublishedNews(limit?: number) {
@@ -613,7 +634,7 @@ export async function submitFullApplication(input: ApplicationInput) {
   const requestedCoin = clean(input.cryptoCoin)
   // The wallet address is resolved server-side so a tampered client cannot change what is recorded.
   const cryptoCoin = paymentMethod === "crypto" && isCryptoCoinId(requestedCoin) ? requestedCoin : null
-  const cryptoAddress = cryptoCoin ? cryptoWalletAddresses()[cryptoCoin] || null : null
+  const cryptoAddress = cryptoCoin ? (await resolveCryptoWallets()).addresses[cryptoCoin] || null : null
 
   const values = {
     name,
