@@ -47,12 +47,22 @@ export async function ensureKolReferralCode(memberId: number) {
 
   for (let i = 0; i < 10; i++) {
     const code = buildReferralCode(name, (count ?? 0) + 1 + i, "KOL")
-    const [row] = await db
-      .insert(referralCodes)
-      .values({ code, ownerUserId: member.userId, label: KOL_CODE_LABEL })
-      .onConflictDoNothing({ target: referralCodes.code })
-      .returning({ code: referralCodes.code })
-    if (row) return row.code
+    // The live table has no unique constraint on `code`, so ON CONFLICT can't be used; check first instead.
+    const [taken] = await db
+      .select({ id: referralCodes.id })
+      .from(referralCodes)
+      .where(eq(referralCodes.code, code))
+      .limit(1)
+    if (taken) continue
+    try {
+      const [row] = await db
+        .insert(referralCodes)
+        .values({ code, ownerUserId: member.userId, label: KOL_CODE_LABEL })
+        .returning({ code: referralCodes.code })
+      if (row) return row.code
+    } catch (error) {
+      if ((error as { cause?: { code?: string } }).cause?.code !== "23505") throw error
+    }
   }
   return null
 }

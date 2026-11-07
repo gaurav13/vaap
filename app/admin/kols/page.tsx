@@ -35,7 +35,13 @@ export default async function AdminKolsPage() {
   // KOLs verified before automatic codes existed get one the first time this page loads.
   const missing = rows.filter((r) => r.kol.status === "verified" && r.userId && !codes.some((c) => c.owner === r.userId))
   if (missing.length) {
-    for (const r of missing) await ensureKolReferralCode(r.kol.memberId)
+    for (const r of missing) {
+      try {
+        await ensureKolReferralCode(r.kol.memberId)
+      } catch (error) {
+        console.error("[admin/kols] referral code backfill failed", r.kol.memberId, error)
+      }
+    }
     codes = await loadCodes()
   }
   const codeByUser = new Map(codes.map((c) => [c.owner, c]))

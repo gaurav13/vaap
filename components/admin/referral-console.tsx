@@ -1,8 +1,9 @@
 "use client"
 
 import { useState, useTransition } from "react"
-import { MousePointerClick, Share2, Ticket, Trophy, Users } from "lucide-react"
+import { Check, Copy, MousePointerClick, Share2, Ticket, Trophy, Users } from "lucide-react"
 import { toggleReferralCode } from "@/app/actions/admin-referrals"
+import { referralUrl } from "@/lib/referral"
 import { cn } from "@/lib/utils"
 
 type Code = {
@@ -66,7 +67,51 @@ function StatusPill({ status }: { status: string }) {
   )
 }
 
-export function ReferralConsole({ data, readOnly = false }: { data: ConsoleData; readOnly?: boolean }) {
+function CopyLink({ url }: { url: string }) {
+  const [copied, setCopied] = useState(false)
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(url)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    } catch {
+      setCopied(false)
+    }
+  }
+
+  return (
+    <div className="flex max-w-xs items-center gap-2">
+      <a
+        href={url}
+        target="_blank"
+        rel="noreferrer"
+        className="min-w-0 truncate font-mono text-xs text-green underline-offset-2 hover:underline"
+        title={url}
+      >
+        {url.replace(/^https?:\/\//, "")}
+      </a>
+      <button
+        type="button"
+        onClick={copy}
+        aria-label={copied ? "Link copied" : "Copy referral link"}
+        className="flex size-7 shrink-0 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+      >
+        {copied ? <Check className="size-3.5 text-green" /> : <Copy className="size-3.5" />}
+      </button>
+    </div>
+  )
+}
+
+export function ReferralConsole({
+  data,
+  readOnly = false,
+  baseUrl,
+}: {
+  data: ConsoleData
+  readOnly?: boolean
+  baseUrl?: string
+}) {
   const [codes, setCodes] = useState(data.codes)
   const [pending, startTransition] = useTransition()
 
@@ -159,6 +204,7 @@ export function ReferralConsole({ data, readOnly = false }: { data: ConsoleData;
                   <tr>
                     <th className="px-5 py-3 font-semibold">Code</th>
                     <th className="px-5 py-3 font-semibold">Label</th>
+                    <th className="px-5 py-3 font-semibold">Referral link</th>
                     <th className="px-5 py-3 font-semibold">Uses</th>
                     <th className="px-5 py-3 font-semibold">Status</th>
                   </tr>
@@ -166,7 +212,7 @@ export function ReferralConsole({ data, readOnly = false }: { data: ConsoleData;
                 <tbody className="divide-y divide-border">
                   {codes.length === 0 && (
                     <tr>
-                      <td colSpan={4} className="px-5 py-10 text-center text-sm text-muted-foreground">
+                      <td colSpan={5} className="px-5 py-10 text-center text-sm text-muted-foreground">
                         No referral codes generated yet.
                       </td>
                     </tr>
@@ -175,6 +221,9 @@ export function ReferralConsole({ data, readOnly = false }: { data: ConsoleData;
                     <tr key={c.id}>
                       <td className="px-5 py-3 font-mono text-xs font-semibold text-foreground">{c.code}</td>
                       <td className="px-5 py-3 text-muted-foreground">{c.label || "—"}</td>
+                      <td className="px-5 py-3">
+                        <CopyLink url={referralUrl(c.code, baseUrl)} />
+                      </td>
                       <td className="px-5 py-3 text-foreground">{c.uses}</td>
                       <td className="px-5 py-3">
                         <button
