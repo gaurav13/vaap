@@ -24,9 +24,9 @@ export function ExpertiseChips({ topics }: { topics: string[] }) {
         return (
           <li
             key={topic}
-            className="inline-flex items-center gap-1.5 rounded-full border border-card/15 bg-card/5 px-3 py-1 text-xs font-medium text-card/85"
+            className="inline-flex items-center gap-1.5 rounded-full border border-line-light bg-card/80 px-3 py-1.5 text-xs font-medium text-heading shadow-sm backdrop-blur"
           >
-            <Icon className="size-3.5 text-green-light" strokeWidth={2} aria-hidden="true" />
+            <Icon className="size-3.5 text-green" strokeWidth={2} aria-hidden="true" />
             {topic}
           </li>
         )
@@ -84,8 +84,8 @@ export function KolVerifiedSeal({ className = "" }: { className?: string }) {
         <LaurelBranch mirrored />
       </svg>
       <div className="relative flex flex-col items-center leading-none">
-        <span className="text-xs font-bold tracking-widest text-card">VAAP</span>
-        <span className="mt-1 text-4xl font-black tracking-tight text-gold">KOL</span>
+        <span className="text-xs font-bold tracking-widest text-heading">VAAP</span>
+        <span className="mt-1 text-4xl font-black tracking-tight text-green">KOL</span>
         <span className="mt-1 text-xs font-bold uppercase tracking-widest text-gold">Verified</span>
         <span className="mt-1.5 flex gap-0.5" aria-hidden="true">
           {[0, 1, 2].map((i) => (
@@ -94,20 +94,5 @@ export function KolVerifiedSeal({ className = "" }: { className?: string }) {
         </span>
       </div>
     </div>
-  )
-}
-
-export function HeroCurves() {
-  return (
-    <svg
-      viewBox="0 0 1440 400"
-      preserveAspectRatio="none"
-      className="pointer-events-none absolute inset-0 hidden size-full opacity-60 sm:block"
-      aria-hidden="true"
-    >
-      <path d="M0 330 C 300 420, 620 300, 900 360 S 1300 420, 1440 330" className="fill-none stroke-gold/40" strokeWidth="1.5" />
-      <path d="M0 360 C 340 440, 700 330, 1000 390" className="fill-none stroke-green-light/20" strokeWidth="1" />
-      <path d="M1120 0 C 1240 60, 1340 40, 1440 10" className="fill-none stroke-gold/40" strokeWidth="1.5" />
-    </svg>
   )
 }

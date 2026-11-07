@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { ArrowLeft, Check, ExternalLink, MapPin, UserRound } from "lucide-react"
-import { ExpertiseChips, HeroCurves, KolVerifiedSeal } from "@/components/kol/kol-hero-parts"
+import { ExpertiseChips, KolVerifiedSeal } from "@/components/kol/kol-hero-parts"
 import { SiteHeaderServer } from "@/components/site-header-server"
 import { SiteFooter } from "@/components/site-footer"
 import { PlatformIcon, VerifiedBadge } from "@/components/kol/kol-ui"
@@ -53,12 +53,21 @@ export default async function KolProfilePage({ params }: Props) {
       <SeoJsonLd subject={kolSubject(kol)} />
       <SiteHeaderServer />
       <main className="bg-surface">
-        <section className="relative isolate overflow-hidden bg-gradient-to-br from-navy via-navy-dark to-navy-dark">
-          <HeroCurves />
+        <section className="relative isolate overflow-hidden border-b border-line-light bg-surface">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/images/kol-hero-light.png"
+            alt=""
+            className="absolute inset-0 -z-10 size-full object-cover object-right opacity-25 lg:opacity-70"
+          />
+          <div
+            className="absolute inset-0 -z-10 bg-gradient-to-r from-surface via-surface/90 to-surface/30"
+            aria-hidden="true"
+          />
           <div className="vaap-container relative flex flex-col gap-6 py-6 sm:gap-8 sm:py-10 lg:py-14">
             <Link
               href="/membership/verified-opinion-leaders"
-              className="inline-flex items-center gap-2 self-start text-sm font-medium text-card/70 transition-colors hover:text-card"
+              className="inline-flex items-center gap-2 self-start text-sm font-medium text-body transition-colors hover:text-green"
             >
               <ArrowLeft className="size-4" aria-hidden="true" />
               All Verified KOLs
@@ -67,34 +76,36 @@ export default async function KolProfilePage({ params }: Props) {
             <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:gap-10">
               <div className="flex min-w-0 flex-1 flex-col gap-5">
                 <div className="flex items-start gap-4 sm:items-center sm:gap-6">
-                  <div className="size-20 shrink-0 rounded-2xl bg-gradient-to-br from-gold via-gold/60 to-gold p-0.5 shadow-xl sm:size-32 sm:rounded-3xl sm:p-1 lg:size-36">
-                    <div className="size-full overflow-hidden rounded-[0.9rem] bg-navy sm:rounded-[1.3rem]">
+                  <div className="size-20 shrink-0 rounded-2xl bg-card p-1 shadow-lg ring-1 ring-line-light sm:size-32 sm:rounded-3xl sm:p-1.5 lg:size-36">
+                    <div className="size-full overflow-hidden rounded-xl bg-mint sm:rounded-[1.25rem]">
                       {kol.photo ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={kol.photo} alt={`Portrait of ${name}`} className="size-full object-cover" />
                       ) : (
-                        <span className="flex size-full items-center justify-center text-card/40">
+                        <span className="flex size-full items-center justify-center text-green/50">
                           <UserRound className="size-10 sm:size-14" aria-hidden="true" />
                         </span>
                       )}
                     </div>
                   </div>
 
-                  <div className="flex min-w-0 flex-1 flex-col gap-1.5 sm:gap-2.5">
-                    <span className="inline-flex items-center gap-1.5 self-start rounded-full border border-gold/60 bg-gold/10 px-2.5 py-1 text-[0.65rem] font-bold uppercase tracking-[0.14em] text-gold sm:text-xs">
-                      <Check className="size-3.5" strokeWidth={3} aria-hidden="true" />
-                      VAAP Verified KOL
-                    </span>
-                    <h1 className="flex flex-wrap items-center gap-2 text-2xl font-bold leading-tight tracking-tight text-card text-balance sm:text-4xl lg:text-[2.75rem]">
+                  <div className="flex min-w-0 flex-1 flex-col gap-1.5 sm:gap-3">
+                    <p className="flex items-center gap-3 text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-heading sm:text-xs">
+                      <span className="text-green">Verified</span> Opinion Leader
+                      <span className="hidden h-px w-12 bg-green sm:block" aria-hidden="true" />
+                    </p>
+                    <h1 className="flex flex-wrap items-center gap-2 font-serif text-2xl font-bold leading-tight tracking-tight text-heading text-balance sm:text-4xl lg:text-5xl">
                       {name}
-                      <VerifiedBadge className="[&_svg]:size-6 sm:[&_svg]:size-8" />
+                      <VerifiedBadge className="[&_svg]:size-6 sm:[&_svg]:size-9" />
                     </h1>
                     {(kol.title || kol.organization) && (
-                      <p className="text-sm text-card/80 sm:text-lg">{[kol.title, kol.organization].filter(Boolean).join(", ")}</p>
+                      <p className="text-sm leading-relaxed text-body sm:border-l-2 sm:border-green sm:pl-4 sm:text-lg">
+                        {[kol.title, kol.organization].filter(Boolean).join(", ")}
+                      </p>
                     )}
                     {location && (
-                      <p className="flex items-center gap-1.5 text-xs text-card/60 sm:text-sm">
-                        <MapPin className="size-3.5 sm:size-4" aria-hidden="true" />
+                      <p className="flex items-center gap-1.5 text-xs text-body sm:text-sm">
+                        <MapPin className="size-3.5 text-green sm:size-4" aria-hidden="true" />
                         {location}
                       </p>
                     )}
