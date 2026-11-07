@@ -1,3 +1,4 @@
+import { SplitTitle } from "@/components/news/split-title"
 import Image from "next/image"
 import Link from "next/link"
 import { notFound } from "next/navigation"
@@ -49,8 +50,8 @@ export default async function InsightDetailPage({ params }: { params: Promise<{ 
           </Link>
 
           <div
-            className={`mt-8 grid grid-cols-1 items-center gap-10 lg:mt-10 lg:gap-14 ${
-              article.image ? "lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]" : ""
+            className={`mt-8 grid grid-cols-1 items-center gap-10 lg:mt-10 lg:gap-12 ${
+              article.image ? "lg:grid-cols-[minmax(0,1fr)_1px_minmax(0,1.2fr)]" : ""
             }`}
           >
             <div className="flex flex-col gap-6">
@@ -75,9 +76,7 @@ export default async function InsightDetailPage({ params }: { params: Promise<{ 
                 )}
               </div>
 
-              <h1 className="text-3xl font-bold leading-[1.15] tracking-tight text-heading text-balance md:text-4xl lg:text-[2.6rem]">
-                {article.title}
-              </h1>
+              <SplitTitle title={article.title} />
 
               <span className="h-1 w-16 rounded-full bg-green" aria-hidden="true" />
 
@@ -87,17 +86,20 @@ export default async function InsightDetailPage({ params }: { params: Promise<{ 
             </div>
 
             {article.image && (
-              <figure className="w-full overflow-hidden rounded-2xl bg-card p-2 shadow-[0_24px_48px_-30px_rgba(16,40,32,0.35)] ring-1 ring-line">
-                <Image
-                  src={article.image || "/placeholder.svg"}
-                  alt={article.title}
-                  width={1600}
-                  height={900}
-                  priority
-                  sizes="(min-width: 1024px) 600px, 100vw"
-                  className="block h-auto max-h-[380px] w-full rounded-xl object-contain"
-                />
-              </figure>
+              <>
+                <span className="hidden h-4/5 w-px self-center bg-line lg:block" aria-hidden="true" />
+                <figure className="w-full overflow-hidden rounded-3xl bg-muted shadow-[0_30px_60px_-35px_rgba(16,40,32,0.45)]">
+                  <Image
+                    src={article.image || "/placeholder.svg"}
+                    alt={article.title}
+                    width={1600}
+                    height={900}
+                    priority
+                    sizes="(min-width: 1024px) 640px, 100vw"
+                    className="block h-auto max-h-[400px] w-full object-contain"
+                  />
+                </figure>
+              </>
             )}
           </div>
 
