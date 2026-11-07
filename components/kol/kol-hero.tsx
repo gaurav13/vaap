@@ -40,32 +40,32 @@ export function KolHero({ leaders, reach, sectors }: { leaders: number; reach: n
         </div>
       </section>
 
-      <section aria-label="Network at a glance" className="border-b border-line-light bg-card">
-        <dl className="vaap-container grid grid-cols-2 py-2 lg:grid-cols-4 lg:py-8">
-          {stats.map(({ Icon, value, label }, i) => (
-            <div
-              key={label}
-              className={[
-                "flex min-w-0 flex-col gap-3 px-3 py-5 sm:px-5 lg:flex-row lg:items-center lg:gap-4 lg:px-6 lg:py-0",
-                i % 2 === 0 ? "border-r border-line lg:border-r-0" : "",
-                i >= 2 ? "border-t border-line lg:border-t-0" : "",
-                i > 0 ? "lg:border-l lg:border-line" : "",
-              ].join(" ")}
-            >
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-mint text-green lg:size-12">
-                <Icon className="size-[18px] lg:size-6" strokeWidth={1.75} aria-hidden="true" />
-              </span>
-              <div className="flex min-w-0 flex-col gap-1 lg:gap-0">
-                <dt className="order-2 text-[11px] font-semibold uppercase leading-snug tracking-wider text-body lg:text-sm lg:font-normal lg:normal-case lg:tracking-normal">
-                  {label}
-                </dt>
-                <dd className="order-1 text-lg font-bold leading-tight text-heading text-balance md:text-2xl">
-                  {value}
-                </dd>
+      <section aria-label="Network at a glance" className="bg-surface">
+        <div className="vaap-container pt-8 sm:pt-12">
+          <dl className="grid grid-cols-2 rounded-2xl border border-line-light bg-card py-2 shadow-sm lg:grid-cols-4 lg:py-7">
+            {stats.map(({ Icon, value, label }, i) => (
+              <div
+                key={label}
+                className={[
+                  "flex min-w-0 flex-col gap-3 px-4 py-5 sm:flex-row sm:items-center sm:gap-4 sm:px-6 lg:py-0",
+                  i % 2 === 0 ? "border-r border-line-light lg:border-r-0" : "",
+                  i >= 2 ? "border-t border-line-light lg:border-t-0" : "",
+                  i > 0 ? "lg:border-l lg:border-line-light" : "",
+                ].join(" ")}
+              >
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-mint text-green sm:size-12">
+                  <Icon className="size-5 sm:size-6" strokeWidth={1.75} aria-hidden="true" />
+                </span>
+                <div className="flex min-w-0 flex-col">
+                  <dt className="order-2 text-sm leading-snug text-body">{label}</dt>
+                  <dd className="order-1 text-xl font-bold leading-tight text-heading text-balance sm:text-2xl">
+                    {value}
+                  </dd>
+                </div>
               </div>
-            </div>
-          ))}
-        </dl>
+            ))}
+          </dl>
+        </div>
       </section>
     </>
   )
