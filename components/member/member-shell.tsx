@@ -118,8 +118,8 @@ function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(href + "/")
 }
 
-function isVisible(href: string, role: MemberUser["role"]) {
-  if (href === "/dashboard/referrals") return canOwnReferralCode(role)
+function isVisible(href: string, role: MemberUser["role"], referralAccess: boolean) {
+  if (href === "/dashboard/referrals") return referralAccess || canOwnReferralCode(role)
   if (href === "/dashboard/position") return isElevated(role)
   if (href === "/dashboard/articles") return can(role, "articles.create")
   return true
@@ -128,10 +128,12 @@ function isVisible(href: string, role: MemberUser["role"]) {
 export function MemberShell({
   user,
   notifications = [],
+  referralAccess = false,
   children,
 }: {
   user: MemberUser
   notifications?: NotificationItem[]
+  referralAccess?: boolean
   children: React.ReactNode
 }) {
   const pathname = usePathname()
@@ -166,6 +168,7 @@ export function MemberShell({
         <SidebarContent
           pathname={pathname}
           role={user.role}
+          referralAccess={referralAccess}
           collapsed={collapsed}
           onToggleCollapsed={toggleCollapsed}
         />
@@ -187,7 +190,13 @@ export function MemberShell({
                 <X className="size-5" />
               </button>
             </div>
-            <SidebarContent pathname={pathname} role={user.role} collapsed={false} hideHeader />
+            <SidebarContent
+              pathname={pathname}
+              role={user.role}
+              referralAccess={referralAccess}
+              collapsed={false}
+              hideHeader
+            />
           </aside>
         </div>
       )}
@@ -210,9 +219,11 @@ function SidebarContent({
   collapsed,
   onToggleCollapsed,
   hideHeader,
+  referralAccess = false,
 }: {
   pathname: string
   role: MemberUser["role"]
+  referralAccess?: boolean
   collapsed: boolean
   onToggleCollapsed?: () => void
   hideHeader?: boolean
@@ -221,8 +232,8 @@ function SidebarContent({
   const [closedGroups, setClosedGroups] = useState<Record<string, boolean>>({})
 
   const entries = NAV.flatMap<NavEntry>((entry) => {
-    if (entry.kind === "link") return isVisible(entry.href, role) ? [entry] : []
-    const items = entry.items.filter((item) => isVisible(item.href, role))
+    if (entry.kind === "link") return isVisible(entry.href, role, referralAccess) ? [entry] : []
+    const items = entry.items.filter((item) => isVisible(item.href, role, referralAccess))
     return items.length > 0 ? [{ ...entry, items }] : []
   })
 

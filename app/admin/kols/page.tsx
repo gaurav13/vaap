@@ -1,7 +1,7 @@
-import { and, desc, eq, isNull, notInArray } from "drizzle-orm"
+import { and, desc, eq, inArray, isNull, notInArray } from "drizzle-orm"
 import { db } from "@/lib/db"
-import { kolAuditLog, kolProfiles, members } from "@/lib/db/schema"
-import { ownershipCode } from "@/lib/kol"
+import { kolAuditLog, kolProfiles, members, referralCodes } from "@/lib/db/schema"
+import { ensureKolReferralCode, ownershipCode } from "@/lib/kol"
 import { KolAdminManager, type AdminKolRow } from "@/components/kol/kol-admin-manager"
 
 export const dynamic = "force-dynamic"
@@ -10,11 +10,35 @@ const iso = (d: Date | null) => (d ? d.toISOString() : null)
 
 export default async function AdminKolsPage() {
   const rows = await db
-    .select({ kol: kolProfiles, memberName: members.name, memberEmail: members.email, memberStatus: members.status })
+    .select({
+      kol: kolProfiles,
+      memberName: members.name,
+      memberEmail: members.email,
+      memberStatus: members.status,
+      userId: members.userId,
+    })
     .from(kolProfiles)
     .innerJoin(members, eq(members.id, kolProfiles.memberId))
     .where(isNull(members.deletedAt))
     .orderBy(desc(kolProfiles.updatedAt))
+
+  const userIds = rows.map((r) => r.userId).filter((v): v is string => !!v)
+  const loadCodes = async () =>
+    userIds.length
+      ? db
+          .select({ owner: referralCodes.ownerUserId, code: referralCodes.code, active: referralCodes.active })
+          .from(referralCodes)
+          .where(inArray(referralCodes.ownerUserId, userIds))
+      : []
+  let codes = await loadCodes()
+
+  // KOLs verified before automatic codes existed get one the first time this page loads.
+  const missing = rows.filter((r) => r.kol.status === "verified" && r.userId && !codes.some((c) => c.owner === r.userId))
+  if (missing.length) {
+    for (const r of missing) await ensureKolReferralCode(r.kol.memberId)
+    codes = await loadCodes()
+  }
+  const codeByUser = new Map(codes.map((c) => [c.owner, c]))
 
   const ids = rows.map((r) => r.kol.memberId)
   const audit = ids.length
@@ -34,8 +58,11 @@ export default async function AdminKolsPage() {
     .orderBy(members.name)
     .limit(1000)
 
-  const items: AdminKolRow[] = rows.map(({ kol, memberName, memberEmail, memberStatus }) => ({
+  const items: AdminKolRow[] = rows.map(({ kol, memberName, memberEmail, memberStatus, userId }) => ({
     memberId: kol.memberId,
+    referralCode: (userId && codeByUser.get(userId)?.code) || null,
+    referralActive: (userId && codeByUser.get(userId)?.active) || false,
+    hasLogin: !!userId,
     slug: kol.slug,
     status: kol.status,
     memberName,

@@ -18,6 +18,9 @@ import { KolStatusPill, PlatformIcon } from "@/components/kol/kol-ui"
 
 export type AdminKolRow = {
   memberId: number
+  referralCode: string | null
+  referralActive: boolean
+  hasLogin: boolean
   slug: string
   status: string
   memberName: string
@@ -169,6 +172,12 @@ export function KolAdminManager({ items, invitable }: { items: AdminKolRow[]; in
                       <div className="flex min-w-0 flex-col">
                         <span className="font-semibold text-heading">{i.displayName}</span>
                         <span className="truncate text-xs text-muted-2">{i.memberEmail}</span>
+                      {i.referralCode ? (
+                        <span className="font-mono text-xs text-muted-2">
+                          Ref {i.referralCode}
+                          {!i.referralActive ? " · paused" : ""}
+                        </span>
+                      ) : null}
                       </div>
                     </div>
                   </td>
@@ -317,6 +326,18 @@ function ReviewPanel({ row, initialEditing = false }: { row: AdminKolRow; initia
         <Detail label="Location" value={[row.city, row.country].filter(Boolean).join(", ")} />
         <Detail label="Expertise" value={row.expertise.join(", ")} />
         <Detail label="Monthly reach" value={row.monthlyReach ? formatCount(row.monthlyReach) : ""} />
+  <Detail
+    label="Referral code"
+    value={
+      row.referralCode
+        ? `${row.referralCode}${row.referralActive ? " (active)" : " (paused)"}`
+        : row.status === "verified"
+          ? row.hasLogin
+            ? "Generating on next load"
+            : "No login account linked"
+          : "Issued on verification"
+    }
+  />
         <div className="md:col-span-2">
           <Detail label="Bio" value={row.bio} />
         </div>

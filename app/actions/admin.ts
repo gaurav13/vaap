@@ -8,6 +8,8 @@ import { getSession } from "@/lib/session"
 import { auth } from "@/lib/auth"
 import { computeExpiry } from "@/lib/membership"
 import { processMembershipApproval } from "@/lib/referral-engine"
+import { canOwnReferralCode } from "@/lib/permissions"
+import { isVerifiedKolUser } from "@/lib/kol"
 import { notify } from "@/lib/notifications"
 import { and, desc, eq, sql } from "drizzle-orm"
 import { randomUUID } from "crypto"
@@ -376,7 +378,11 @@ export async function setApplicationStatus(id: number, status: "pending" | "appr
                 .from(user)
                 .where(eq(user.id, userId))
                 .limit(1)
-              return { name: u?.name ?? "", role: u?.role ?? "staff" }
+              // Verified KOLs earn under the "kol" commission rules, not the base member role.
+          if (u && !canOwnReferralCode(u.role) && (await isVerifiedKolUser(userId))) {
+            return { name: u.name ?? "", role: "kol" }
+          }
+          return { name: u?.name ?? "", role: u?.role ?? "staff" }
             }
             if (partnerId) {
               const [p] = await db

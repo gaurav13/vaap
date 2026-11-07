@@ -8,8 +8,10 @@ import {
   rewardPayments,
   referralClicks,
   notifications,
+  members,
 } from "@/lib/db/schema"
 import { getSession } from "@/lib/session"
+import { ensureKolReferralCode, isVerifiedKolUser } from "@/lib/kol"
 import { canOwnReferralCode } from "@/lib/permissions"
 import { buildReferralCode } from "@/lib/referral"
 import { and, desc, eq, inArray, sql } from "drizzle-orm"
@@ -26,6 +28,11 @@ async function requireUser() {
 export async function getOrCreateMyReferralCode() {
   const current = await requireUser()
   if (!canOwnReferralCode(current.role)) {
+    if (await isVerifiedKolUser(current.id)) {
+      const [member] = await db.select({ id: members.id }).from(members).where(eq(members.userId, current.id)).limit(1)
+      const code = member ? await ensureKolReferralCode(member.id) : null
+      if (code) return { ok: true as const, code }
+    }
     return { ok: false as const, error: "Your role does not include a referral code." }
   }
 
