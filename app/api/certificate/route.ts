@@ -32,6 +32,20 @@ function fit(value: string, font: PDFFont, size: number, maxWidth: number, min =
   return s
 }
 
+// The QR is printed on a permanent document, so production certificates always
+// point at the canonical domain. Elsewhere, req.url is the sandbox-internal
+// address (localhost), so use the public host the browser actually requested.
+function publicOrigin(req: Request) {
+  if (process.env.VERCEL_ENV === "production") return "https://vaap.org.pk"
+  const host = (req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? "").split(",")[0].trim()
+  if (host && !/^(localhost|127\.0\.0\.1)(:\d+)?$/.test(host)) {
+    const proto = (req.headers.get("x-forwarded-proto") ?? "https").split(",")[0].trim()
+    return `${proto}://${host}`
+  }
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`
+  return "https://vaap.org.pk"
+}
+
 export async function GET(req: Request) {
   const url = new URL(req.url)
   const id = (url.searchParams.get("id") ?? "").trim()
@@ -70,7 +84,7 @@ export async function GET(req: Request) {
     cert = await issueCertificate(member.id, staff ? session.user.email : "auto")
   }
 
-  const verifyUrl = new URL(verificationPath(cert.token), url.origin).toString()
+  const verifyUrl = new URL(verificationPath(cert.token), publicOrigin(req)).toString()
   const qrPng = await QRCode.toBuffer(verifyUrl, {
     type: "png",
     width: 480,
