@@ -13,7 +13,7 @@ export const NEWS_TABS = ["All Updates", "Media Coverage", "VAAP Updates", "Indu
 export type NewsTab = (typeof NEWS_TABS)[number]
 
 const VAAP_GROUP = new Set(["VAAP Updates", "Announcement", "Community", "Partnership"])
-const INDUSTRY_GROUP = new Set(["Industry News", "Industry Update", "Education"])
+const INDUSTRY_GROUP = new Set(["Industry News", "Industry Update", "Education", "Insight", "Policy", "Research"])
 
 export function newsTabFor(item: { category: string; externalUrl: string | null }): NewsTab {
   if (item.category === "Media Coverage") return "Media Coverage"

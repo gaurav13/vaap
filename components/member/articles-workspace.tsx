@@ -5,6 +5,12 @@ import { PenSquare, Plus, Send, Loader2, ArrowLeft, CheckCircle2, Clock, AlertCi
 import { cn } from "@/lib/utils"
 import { saveArticleDraft, submitArticle } from "@/app/actions/articles"
 import { RichTextField } from "@/components/admin/rich-text-editor"
+import { CoverImageField } from "@/components/member/cover-image-field"
+import { postImageUpload } from "@/lib/client-image"
+
+function uploadArticleImage(file: File) {
+  return postImageUpload("/api/member/upload", file, { folder: "articles" })
+}
 
 type Article = {
   id: number
@@ -190,15 +196,15 @@ export function ArticlesWorkspace({
               </Field>
             </div>
 
-            <Field label="Cover image URL (optional)">
-              <input
-                value={editing.image ?? ""}
-                onChange={(e) => setEditing({ ...editing, image: e.target.value })}
+            <div>
+              <span className="mb-1.5 block text-sm font-semibold text-heading">Cover picture (optional)</span>
+              <CoverImageField
+                value={editing.image}
+                onChange={(url) => setEditing((prev) => (prev ? { ...prev, image: url } : prev))}
+                onUpload={uploadArticleImage}
                 disabled={locked}
-                className="input"
-                placeholder="https://…"
               />
-            </Field>
+            </div>
 
             <Field label="Excerpt">
               <textarea
@@ -211,15 +217,17 @@ export function ArticlesWorkspace({
               />
             </Field>
 
-            <Field label="Content">
+            <div>
+              <span className="mb-1.5 block text-sm font-semibold text-heading">Content</span>
               <RichTextField
                 key={editing.id || "new"}
                 value={editing.content}
                 onChange={(html) => setEditing((prev) => (prev ? { ...prev, content: html } : prev))}
                 disabled={locked}
-                placeholder="Write your article here. Use the toolbar to format headings, bold, lists, and links."
+                onUploadImage={uploadArticleImage}
+                placeholder="Write your article here, or paste it from Word or Google Docs."
               />
-            </Field>
+            </div>
 
             <details className="rounded-lg border border-line bg-muted/40 p-4">
               <summary className="cursor-pointer text-sm font-semibold text-heading">SEO settings (optional)</summary>

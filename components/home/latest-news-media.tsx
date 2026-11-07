@@ -7,7 +7,8 @@ import { NEWS_TABS, newsTabFor, type NewsTab } from "@/lib/news-options"
 import { cn } from "@/lib/utils"
 
 export type HomeNewsItem = {
-  id: number
+  key: string
+  href: string
   title: string
   category: string
   excerpt: string
@@ -47,7 +48,7 @@ function ReadLink({ item, className }: { item: HomeNewsItem; className?: string 
     )
   }
   return (
-    <Link href={`/news/${item.id}`} className={base}>
+    <Link href={item.href} className={base}>
       {readLabel(item)}
       <ArrowRight className="size-4" aria-hidden="true" />
     </Link>
@@ -171,7 +172,7 @@ export function LatestNewsMedia({ items }: { items: HomeNewsItem[] }) {
             ) : (
               rest.map((item) => (
                 <article
-                  key={item.id}
+                  key={item.key}
                   className="flex flex-1 flex-col gap-3 rounded-2xl border border-line bg-card px-5 py-4 shadow-sm sm:flex-row sm:items-center"
                 >
                   <div className="flex w-28 shrink-0 items-center sm:justify-center">

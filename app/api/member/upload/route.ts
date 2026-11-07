@@ -27,12 +27,14 @@ export async function POST(request: Request) {
     return Response.json({ error: "Choose an image to upload." }, { status: 400 })
   }
 
+  // Members may only upload event banners and article images; uploadPageImage rejects PDFs outside "publications".
+  const folder = form.get("folder") === "articles" ? "articles" : "events"
+
   try {
-    // Members may only upload event banners; uploadPageImage rejects PDFs outside "publications".
     const url = await uploadPageImage({
       bytes: new Uint8Array(await file.arrayBuffer()),
       contentType: file.type || "application/octet-stream",
-      folder: "events",
+      folder,
       fileName: file.name,
     })
     return Response.json({ url })
