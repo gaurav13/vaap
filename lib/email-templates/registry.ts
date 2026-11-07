@@ -434,7 +434,7 @@ export const EMAIL_TEMPLATES = [
     category: "KOL",
     trigger: "An admin approves a KOL application",
     recipient: "Verified KOL",
-    variables: [NAME, { name: "url", description: "Public KOL profile link", sample: "https://vaap.org.pk/membership/kols/ayesha-khan" }, { name: "expires", description: "Verification expiry date", sample: "07 Nov 2027" }],
+    variables: [NAME, { name: "url", description: "Public KOL profile link", sample: "https://vaap.org.pk/membership/verified-opinion-leaders/ayesha-khan" }, { name: "expires", description: "Verification expiry date", sample: "07 Nov 2027" }],
     defaults: {
       ...base,
       subject: "Congratulations — you're a Verified VAAP Opinion Leader",

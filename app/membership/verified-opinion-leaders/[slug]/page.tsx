@@ -60,7 +60,7 @@ export default async function KolProfilePage({ params }: Props) {
       <main className="bg-surface">
         <section className="bg-navy-dark">
           <div className="vaap-container flex flex-col gap-8 py-10 md:py-14">
-            <Link href="/membership/kols" className="inline-flex items-center gap-2 self-start text-sm text-card/75 hover:text-card">
+            <Link href="/membership/verified-opinion-leaders" className="inline-flex items-center gap-2 self-start text-sm text-card/75 hover:text-card">
               <ArrowLeft className="size-4" aria-hidden="true" />
               All opinion leaders
             </Link>

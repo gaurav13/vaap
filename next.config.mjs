@@ -12,6 +12,8 @@ const nextConfig = {
       { source: "/committees/:path*", destination: "/working-groups/:path*", permanent: true },
       { source: "/governance/voting", destination: "/voting", permanent: true },
       { source: "/governance/voting/:path*", destination: "/voting/:path*", permanent: true },
+      { source: "/membership/kols", destination: "/membership/verified-opinion-leaders", permanent: true },
+      { source: "/membership/kols/:slug", destination: "/membership/verified-opinion-leaders/:slug", permanent: true },
       { source: "/governance/framework", destination: "/governance", permanent: true },
       { source: "/governance/register", destination: "/voting/results", permanent: true },
   { source: "/voting/register", destination: "/voting/results", permanent: true },

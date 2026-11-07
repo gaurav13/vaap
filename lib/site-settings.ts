@@ -193,11 +193,17 @@ export function ensureVotingMenu(input: MenuItem[]): MenuItem[] {
   return ensureKolLink(next)
 }
 
-export const KOL_MENU_LINK = { label: "Verified Opinion Leaders", href: "/membership/kols" }
+export const KOL_MENU_LINK = { label: "Verified Opinion Leaders", href: "/membership/verified-opinion-leaders" }
 
 // Adds the KOL directory under the Membership / Members menu once, without
 // touching menus that already link to it anywhere.
-function ensureKolLink(items: MenuItem[]): MenuItem[] {
+function ensureKolLink(saved: MenuItem[]): MenuItem[] {
+  const legacyHref = "/membership/kols"
+  const items = saved.map((i) => ({
+    ...i,
+    href: i.href === legacyHref ? KOL_MENU_LINK.href : i.href,
+    children: i.children?.map((c) => (c.href === legacyHref ? { ...c, href: KOL_MENU_LINK.href } : c)),
+  }))
   const linked = items.some(
     (i) => i.href === KOL_MENU_LINK.href || i.children?.some((c) => c.href === KOL_MENU_LINK.href),
   )

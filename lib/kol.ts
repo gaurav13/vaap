@@ -97,7 +97,7 @@ export function totalFollowers(p: Pick<KolProfile, "platforms">) {
 }
 
 export function profileUrl(slug: string) {
-  return `${appBaseUrl()}/membership/kols/${slug}`
+  return `${appBaseUrl()}/membership/verified-opinion-leaders/${slug}`
 }
 
 export async function emailKol(memberId: number, key: EmailTemplateKey, vars: Record<string, string> = {}) {

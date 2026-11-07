@@ -389,7 +389,7 @@ function ReviewPanel({ row }: { row: AdminKolRow }) {
           ))}
           {row.status === "verified" && (
             <Link
-              href={`/membership/kols/${row.slug}`}
+              href={`/membership/verified-opinion-leaders/${row.slug}`}
               target="_blank"
               className={buttonVariants({ size: "sm", variant: "ghost" })}
             >

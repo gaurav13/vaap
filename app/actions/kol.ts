@@ -173,8 +173,8 @@ export async function updateKolStats(platforms: KolPlatform[], monthlyReach: num
       .where(eq(kolProfiles.memberId, member.id))
     await logKol(member.id, "stats_updated", { actor: user.email, note: "Metrics awaiting re-confirmation" })
     revalidatePath("/dashboard/kol")
-    revalidatePath(`/membership/kols/${profile.slug}`)
-    revalidatePath("/membership/kols")
+    revalidatePath(`/membership/verified-opinion-leaders/${profile.slug}`)
+    revalidatePath("/membership/verified-opinion-leaders")
     return { ok: true, message: "Statistics updated. Our team will re-confirm them shortly." }
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : "Could not update statistics." }
@@ -258,7 +258,7 @@ export async function adminSetKolStatus(memberId: number, status: KolStatus, not
     await transitionKol(memberId, status, { actor: user.email, note: text(note, 1000) })
     revalidatePath("/admin/kol")
     revalidatePath(`/admin/kol/${memberId}`)
-    revalidatePath("/membership/kols")
+    revalidatePath("/membership/verified-opinion-leaders")
     return { ok: true }
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : "Could not update status." }

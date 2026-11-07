@@ -225,7 +225,7 @@ export function KolWorkspace({ profile, ownershipCode }: { profile: WorkspacePro
         </div>
         {profile.status === "verified" && (
           <Link
-            href={`/membership/kols/${profile.slug}`}
+            href={`/membership/verified-opinion-leaders/${profile.slug}`}
             className="inline-flex items-center gap-2 self-start rounded-lg bg-green px-4 py-2 text-sm font-semibold text-card hover:bg-green-hover"
           >
             View public profile

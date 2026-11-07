@@ -106,7 +106,7 @@ function KolCard({ kol }: { kol: PublicKolCard }) {
           ))}
         </ul>
         <Link
-          href={`/membership/kols/${kol.slug}`}
+          href={`/membership/verified-opinion-leaders/${kol.slug}`}
           className="mt-1 inline-flex items-center gap-2 self-start text-sm font-bold text-green hover:text-green-hover"
         >
           View Profile
