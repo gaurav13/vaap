@@ -29,7 +29,7 @@ import { ProposalDiscussion, type DiscussionComment } from "@/components/governa
 import { getProposal, getMemberByUserId, getMemberVote, isMemberEligible } from "@/lib/governance"
 import { getPublicProposalDetail, getPublicParticipation } from "@/lib/governance-public"
 import { hasGovernanceRight } from "@/lib/voting-rights"
-import { isHtml, sanitizeRichText } from "@/lib/sanitize"
+import { RichContent } from "@/components/rich-content"
 import { StatusPill } from "@/components/governance/status-pill"
 import { explorerUrl } from "@/lib/xrpl-network"
 import { VoteCountdown } from "@/components/governance/vote-countdown"
@@ -448,15 +448,7 @@ export default async function PublicProposalDetailPage({ params }: { params: Pro
 }
 
 function RichText({ value }: { value: string }) {
-  if (isHtml(value)) {
-    return (
-      <div
-        className="leading-relaxed text-muted-2 [&_a]:text-green [&_a]:underline [&_blockquote]:border-l-4 [&_blockquote]:border-green-border [&_blockquote]:pl-4 [&_h2]:mt-4 [&_h2]:text-lg [&_h2]:font-bold [&_h2]:text-heading [&_h3]:mt-3 [&_h3]:font-bold [&_h3]:text-heading [&_img]:my-3 [&_img]:rounded-xl [&_li]:mt-1 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:mt-2 [&_strong]:text-heading [&_ul]:list-disc [&_ul]:pl-6"
-        dangerouslySetInnerHTML={{ __html: sanitizeRichText(value) }}
-      />
-    )
-  }
-  return <p className="whitespace-pre-line leading-relaxed text-muted-2">{value}</p>
+  return <RichContent value={value} className="text-muted-2 [&_h2]:text-lg [&_h3]:text-base" />
 }
 
 function HeroMeta({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {

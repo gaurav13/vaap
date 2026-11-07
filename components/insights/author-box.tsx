@@ -1,3 +1,4 @@
+import { richTextToPlain } from "@/lib/rich-text-plain"
 import Image from "next/image"
 import { Landmark } from "lucide-react"
 import { eq } from "drizzle-orm"
@@ -93,7 +94,7 @@ export async function AuthorBox({
             <span className="truncate">{role}</span>
           </span>
         </div>
-        <p className="text-sm leading-relaxed text-body text-pretty sm:text-base">{bio}</p>
+        <p className="text-sm leading-relaxed text-body text-pretty sm:text-base">{richTextToPlain(bio)}</p>
       </div>
     </aside>
   )

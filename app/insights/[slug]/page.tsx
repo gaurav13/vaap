@@ -8,8 +8,7 @@ import { SiteFooter } from "@/components/site-footer"
 import { AuthorBox } from "@/components/insights/author-box"
 import { getPublishedArticleBySlug } from "@/app/actions/articles"
 import { getHeaderUser } from "@/lib/header-user"
-import { sanitizeRichHtml } from "@/lib/html"
-import { isHtml } from "@/lib/sanitize"
+import { RichContent } from "@/components/rich-content"
 import { getSiteSettings } from "@/lib/site-settings"
 import { FollowVaap } from "@/components/follow-vaap"
 import { seoMetadata } from "@/lib/seo"
@@ -121,14 +120,7 @@ export default async function InsightDetailPage({ params }: { params: Promise<{ 
         </header>
 
         <article className="mx-auto max-w-3xl px-5 pb-14 pt-12 lg:px-8 lg:pb-20">
-          {isHtml(article.content || "") ? (
-            <div
-              className="mt-6 text-base leading-relaxed text-body text-pretty [&_a]:text-green [&_a]:underline [&_blockquote]:my-6 [&_blockquote]:border-l-2 [&_blockquote]:border-green [&_blockquote]:pl-4 [&_blockquote]:italic [&_h2]:mb-3 [&_h2]:mt-10 [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:leading-snug [&_h2]:text-heading [&_h3]:mb-2 [&_h3]:mt-8 [&_h3]:text-xl [&_h3]:font-semibold [&_h3]:text-heading [&_h4]:mb-2 [&_h4]:mt-6 [&_h4]:font-semibold [&_h4]:text-heading [&_img]:my-6 [&_img]:w-full [&_img]:rounded-xl [&_li]:mb-1 [&_ol]:mb-5 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:mb-5 [&_strong]:font-semibold [&_strong]:text-heading [&_ul]:mb-5 [&_ul]:list-disc [&_ul]:pl-6 [&>*:first-child]:mt-0"
-              dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(article.content) }}
-            />
-          ) : (
-            <div className="mt-6 whitespace-pre-wrap text-base leading-relaxed text-body">{article.content}</div>
-          )}
+          <RichContent value={article.content} className="mt-6 [&_h2]:mt-10 [&_h3]:mt-8 [&_p]:mb-5" />
 
           {tags.length > 0 && (
             <div className="mt-10 flex flex-wrap gap-2 border-t border-line pt-6">

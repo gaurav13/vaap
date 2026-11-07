@@ -19,7 +19,9 @@ import {
   Redo2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { marked } from "marked"
 import { cleanPastedHtml, plainTextToHtml } from "@/lib/paste-clean"
+import { looksLikeMarkdown } from "@/lib/rich-text-plain"
 import { uploadPageImageFile } from "@/components/admin/upload-image"
 
 type Props = {
@@ -181,9 +183,20 @@ function insertCleanPaste(e: React.ClipboardEvent<HTMLDivElement>) {
   const text = e.clipboardData.getData("text/plain")
   if (!html && !text) return false
   e.preventDefault()
-  const clean = html ? cleanPastedHtml(html) : plainTextToHtml(text)
+  const clean = pasteToHtml(html, text)
   if (clean) document.execCommand("insertHTML", false, clean)
   return true
+}
+
+// ChatGPT's copy button, Notion and many chat apps put only Markdown on the
+// clipboard; some apps also add an HTML version that is just the raw Markdown
+// wrapped in <p>/<pre>, which would leave the ** and # symbols visible.
+function pasteToHtml(html: string, text: string) {
+  const htmlHasStructure = /<(h[1-6]|ul|ol|li|strong|b|em|i|a|table|blockquote)\b/i.test(html)
+  if (text && looksLikeMarkdown(text) && !htmlHasStructure) {
+    return cleanPastedHtml(marked.parse(text, { async: false, gfm: true, breaks: true }))
+  }
+  return html ? cleanPastedHtml(html) : plainTextToHtml(text)
 }
 
 function firstImageFile(list: DataTransfer | null) {
@@ -436,8 +449,8 @@ export function RichTextField({
       )}
       {!disabled && (
         <p className="mt-2 text-xs leading-relaxed text-muted-2">
-          Paste straight from Word or Google Docs: headings, bold, lists and links are kept, and fonts and colours are tidied
-          up.{onUploadImage ? " To add a picture, use the image button or drag one into the text." : ""}
+          Paste straight from ChatGPT, Word or Google Docs: headings, bold, lists and links are kept, Markdown symbols like ** and
+          # are converted, and fonts and colours are tidied up.{onUploadImage ? " To add a picture, use the image button or drag one into the text." : ""}
         </p>
       )}
     </div>
