@@ -24,47 +24,51 @@ export async function ensureKolReferralCode(memberId: number) {
     .where(eq(members.id, memberId))
     .limit(1)
   if (!member?.userId) return null
+  const userId = member.userId
 
-  const [existing] = await db
-    .select()
-    .from(referralCodes)
-    .where(eq(referralCodes.ownerUserId, member.userId))
-    .limit(1)
-  if (existing) {
-    if (!existing.active) {
-      await db.update(referralCodes).set({ active: true }).where(eq(referralCodes.id, existing.id))
-    }
-    return existing.code
-  }
+  // Admin page loads and the member dashboard can call this at the same moment. Without a
+  // lock each request saw "no code yet" and inserted its own, producing duplicate rows.
+  // The transaction-scoped advisory lock makes concurrent callers wait, then reuse the new code.
+  return db.transaction(async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext('vaap:referral-code-issue'))`)
 
-  const [profile] = await db
-    .select({ professionalName: kolProfiles.professionalName, fullName: kolProfiles.fullName })
-    .from(kolProfiles)
-    .where(eq(kolProfiles.memberId, memberId))
-    .limit(1)
-  const name = profile?.professionalName || profile?.fullName || member.name || "KOL"
-  const [{ count }] = await db.select({ count: sql<number>`count(*)::int` }).from(referralCodes)
-
-  for (let i = 0; i < 10; i++) {
-    const code = buildReferralCode(name, (count ?? 0) + 1 + i, "KOL")
-    // The live table has no unique constraint on `code`, so ON CONFLICT can't be used; check first instead.
-    const [taken] = await db
-      .select({ id: referralCodes.id })
+    const [existing] = await tx
+      .select()
       .from(referralCodes)
-      .where(eq(referralCodes.code, code))
+      .where(eq(referralCodes.ownerUserId, userId))
+      .orderBy(referralCodes.id)
       .limit(1)
-    if (taken) continue
-    try {
-      const [row] = await db
+    if (existing) {
+      if (!existing.active) {
+        await tx.update(referralCodes).set({ active: true }).where(eq(referralCodes.id, existing.id))
+      }
+      return existing.code
+    }
+
+    const [profile] = await tx
+      .select({ professionalName: kolProfiles.professionalName, fullName: kolProfiles.fullName })
+      .from(kolProfiles)
+      .where(eq(kolProfiles.memberId, memberId))
+      .limit(1)
+    const name = profile?.professionalName || profile?.fullName || member.name || "KOL"
+    const [{ count }] = await tx.select({ count: sql<number>`count(*)::int` }).from(referralCodes)
+
+    for (let i = 0; i < 10; i++) {
+      const code = buildReferralCode(name, (count ?? 0) + 1 + i, "KOL")
+      const [taken] = await tx
+        .select({ id: referralCodes.id })
+        .from(referralCodes)
+        .where(eq(referralCodes.code, code))
+        .limit(1)
+      if (taken) continue
+      const [row] = await tx
         .insert(referralCodes)
-        .values({ code, ownerUserId: member.userId, label: KOL_CODE_LABEL })
+        .values({ code, ownerUserId: userId, label: KOL_CODE_LABEL })
         .returning({ code: referralCodes.code })
       if (row) return row.code
-    } catch (error) {
-      if ((error as { cause?: { code?: string } }).cause?.code !== "23505") throw error
     }
-  }
-  return null
+    return null
+  })
 }
 
 /** Pauses a KOL-issued code when verification ends; staff-owned codes are left alone. */
