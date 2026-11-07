@@ -159,7 +159,7 @@ export function MemberShell({
       {/* Desktop sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-40 hidden flex-col border-r border-line bg-card transition-[width] duration-200 lg:flex",
+          "fixed inset-y-0 left-0 z-40 hidden flex-col bg-navy text-primary-foreground transition-[width] duration-200 lg:flex",
           collapsed ? "w-20" : "w-64",
         )}
       >
@@ -175,14 +175,14 @@ export function MemberShell({
       {drawerOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-navy/40" onClick={() => setDrawerOpen(false)} aria-hidden />
-          <aside className="absolute inset-y-0 left-0 flex w-72 max-w-[82%] flex-col bg-card shadow-xl">
-            <div className="flex items-center justify-between border-b border-line px-4 py-3">
-              <VaapLogo height={40} />
+          <aside className="absolute inset-y-0 left-0 flex w-72 max-w-[82%] flex-col bg-navy text-primary-foreground shadow-xl">
+            <div className="flex items-center justify-between border-b border-primary-foreground/10 px-4 py-3">
+              <VaapLogo height={36} onDark />
               <button
                 type="button"
                 aria-label="Close menu"
                 onClick={() => setDrawerOpen(false)}
-                className="flex size-9 items-center justify-center rounded-md text-navy hover:bg-mint"
+                className="flex size-9 items-center justify-center rounded-md text-primary-foreground hover:bg-primary-foreground/10"
               >
                 <X className="size-5" />
               </button>
@@ -239,13 +239,13 @@ function SidebarContent({
       {!hideHeader && (
         <div
           className={cn(
-            "flex h-[73px] shrink-0 items-center border-b border-line",
-            collapsed ? "justify-center px-2" : "justify-between gap-2 pl-6 pr-3",
+            "flex h-[73px] shrink-0 items-center border-b border-primary-foreground/10",
+            collapsed ? "justify-center px-2" : "justify-between gap-2 pl-4 pr-3",
           )}
         >
           {!collapsed && (
             <Link href="/dashboard" className="min-w-0">
-              <VaapLogo height={44} />
+              <VaapLogo height={34} onDark />
               <span className="sr-only">VAAP member dashboard</span>
             </Link>
           )}
@@ -255,7 +255,7 @@ function SidebarContent({
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             aria-expanded={!collapsed}
             title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            className="flex size-9 shrink-0 items-center justify-center rounded-md text-muted-2 transition-colors hover:bg-mint hover:text-navy"
+            className="flex size-9 shrink-0 items-center justify-center rounded-md text-primary-foreground/60 transition-colors hover:bg-primary-foreground/10 hover:text-primary-foreground"
           >
             {collapsed ? <PanelLeftOpen className="size-5" /> : <PanelLeftClose className="size-5" />}
           </button>
@@ -273,13 +273,12 @@ function SidebarContent({
               )
             }
 
-            const GroupIcon = entry.icon
             const groupActive = entry.items.some((item) => isActive(pathname, item.href))
             const open = collapsed || !closedGroups[entry.id]
             const panelId = `member-nav-${entry.id}`
 
             return (
-              <li key={entry.id} className={cn(collapsed ? "mt-2 border-t border-line pt-2" : "mt-1")}>
+              <li key={entry.id} className={cn(collapsed ? "mt-2 border-t border-primary-foreground/10 pt-2" : "mt-4")}>
                 {!collapsed && (
                   <button
                     type="button"
@@ -287,24 +286,21 @@ function SidebarContent({
                     aria-expanded={open}
                     aria-controls={panelId}
                     className={cn(
-                      "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors hover:bg-mint hover:text-navy",
-                      groupActive ? "text-navy" : "text-body",
+                      "flex w-full items-center gap-3 rounded-md px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] transition-colors hover:text-primary-foreground",
+                      groupActive ? "text-primary-foreground" : "text-primary-foreground/60",
                     )}
                   >
-                    <GroupIcon className={cn("size-[18px] shrink-0", groupActive ? "text-green" : "text-muted-2")} />
-                    <span className="flex-1 truncate text-left">{entry.label}</span>
+                    <span className="shrink-0 text-left">{entry.label}</span>
+                    <span className="h-px flex-1 bg-primary-foreground/15" aria-hidden />
                     <ChevronDown
-                      className={cn("size-4 shrink-0 text-muted-2 transition-transform", open ? "rotate-0" : "-rotate-90")}
+                      className={cn("size-3.5 shrink-0 transition-transform", open ? "rotate-0" : "-rotate-90")}
                     />
                   </button>
                 )}
                 {collapsed && <span className="sr-only">{entry.label}</span>}
 
                 {open && (
-                  <ul
-                    id={panelId}
-                    className={cn("flex flex-col gap-0.5", !collapsed && "ml-[21px] mt-0.5 border-l border-line pl-2")}
-                  >
+                  <ul id={panelId} className={cn("flex flex-col gap-0.5", !collapsed && "mt-1")}>
                     {entry.items.map((item) => (
                       <li key={item.href}>
                         <SidebarLink item={item} active={isActive(pathname, item.href)} collapsed={collapsed} nested />
@@ -317,13 +313,13 @@ function SidebarContent({
           })}
         </ul>
 
-        <div className="my-4 border-t border-line" />
+        <div className="my-4 border-t border-primary-foreground/10" />
         <button
           type="button"
           onClick={signOut}
           title={collapsed ? "Logout" : undefined}
           className={cn(
-            "flex w-full items-center gap-3 rounded-lg py-2.5 text-sm font-medium text-body transition-colors hover:bg-destructive/10 hover:text-destructive",
+            "flex w-full items-center gap-3 rounded-lg py-2.5 text-sm font-medium text-primary-foreground/80 transition-colors hover:bg-primary-foreground/10 hover:text-primary-foreground",
             collapsed ? "justify-center px-0" : "px-3",
           )}
         >
@@ -333,16 +329,16 @@ function SidebarContent({
       </nav>
 
       {!collapsed && (
-        <div className="border-t border-line px-6 py-5">
-          <p className="text-xs font-bold leading-5 tracking-wide text-heading">
+        <div className="relative overflow-hidden border-t border-primary-foreground/10 px-6 py-5">
+          <p className="text-xs font-bold leading-5 tracking-wide text-primary-foreground">
             PEOPLE.
             <br />
             INDUSTRY.
             <br />
             INNOVATION.
           </p>
-          <p className="mt-2 text-xs font-semibold text-green">A STRONGER DIGITAL PAKISTAN.</p>
-          <span className="mt-3 block h-1 w-10 rounded-full bg-green/40" />
+          <p className="mt-2 text-xs font-semibold text-gold">A STRONGER DIGITAL PAKISTAN.</p>
+          <span className="mt-3 block h-1 w-10 rounded-full bg-gold" />
         </div>
       )}
     </div>
@@ -369,10 +365,12 @@ function SidebarLink({
       className={cn(
         "flex items-center gap-3 rounded-lg text-sm font-medium transition-colors",
         collapsed ? "justify-center px-0 py-2.5" : nested ? "px-3 py-2" : "px-3 py-2.5",
-        active ? "bg-green text-white shadow-sm" : "text-body hover:bg-mint hover:text-navy",
+        active
+          ? "bg-green text-primary-foreground shadow-sm"
+          : "text-primary-foreground/85 hover:bg-primary-foreground/10 hover:text-primary-foreground",
       )}
     >
-      <Icon className={cn("size-[18px] shrink-0", active ? "text-white" : "text-muted-2")} />
+      <Icon className={cn("size-[18px] shrink-0", active ? "text-primary-foreground" : "text-primary-foreground/65")} />
       <span className={cn("truncate", collapsed && "sr-only")}>{item.label}</span>
     </Link>
   )
