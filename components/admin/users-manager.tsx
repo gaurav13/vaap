@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { setUserRole, setUserPassword } from "@/app/actions/admin"
+import { setUserRole, setUserPassword, deleteUser } from "@/app/actions/admin"
 
 type UserRow = {
   id: string
@@ -177,6 +177,19 @@ export function UsersManager({ items, currentUserId }: { items: UserRow[]; curre
     })
   }
 
+  function remove(u: UserRow) {
+    if (!confirm(`Permanently delete the account for ${u.name} (${u.email})? They will no longer be able to sign in.`)) return
+    setError(null)
+    startTransition(async () => {
+      const res = await deleteUser(u.id)
+      if (res && !res.ok) {
+        setError(res.error ?? "Could not delete user.")
+        return
+      }
+      router.refresh()
+    })
+  }
+
   const visible = items.filter(
     (u) => u.name.toLowerCase().includes(query.toLowerCase()) || u.email.toLowerCase().includes(query.toLowerCase()),
   )
@@ -197,7 +210,7 @@ export function UsersManager({ items, currentUserId }: { items: UserRow[]; curre
           <span>User</span>
           <span>Joined</span>
           <span>Role</span>
-          <span>Password</span>
+          <span>Actions</span>
         </div>
         <ul className="divide-y divide-line">
           {visible.map((u) => (
@@ -228,13 +241,23 @@ export function UsersManager({ items, currentUserId }: { items: UserRow[]; curre
                   </button>
                 ))}
               </div>
-              <button
-                type="button"
-                onClick={() => setPwUser(u)}
-                className="justify-self-start rounded-lg border border-line px-3 py-1.5 text-xs font-semibold text-navy transition-colors hover:bg-mint sm:justify-self-auto"
-              >
-                Set password
-              </button>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPwUser(u)}
+                  className="rounded-lg border border-line px-3 py-1.5 text-xs font-semibold text-navy transition-colors hover:bg-mint"
+                >
+                  Set password
+                </button>
+                <button
+                  type="button"
+                  onClick={() => remove(u)}
+                  disabled={pending || u.id === currentUserId}
+                  className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Delete
+                </button>
+              </div>
             </li>
           ))}
           {visible.length === 0 && <li className="p-8 text-center text-sm text-muted-2">No users found.</li>}

@@ -12,9 +12,10 @@ import {
   Globe,
   EyeOff,
   Plus,
+  Trash2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { reviewArticle, publishArticle, unpublishArticle, createAdminArticle } from "@/app/actions/articles"
+import { reviewArticle, publishArticle, unpublishArticle, createAdminArticle, deleteArticle } from "@/app/actions/articles"
 import { FileUpload } from "@/components/admin/file-upload"
 
 type Article = {
@@ -143,6 +144,20 @@ export function ArticleReview({ initial }: { initial: Article[] }) {
       setTab(res.article.status === "published" ? "published" : "approved")
       setCreating(false)
       setUploading(false)
+    })
+  }
+
+  function doDelete(target: Article) {
+    if (!confirm(`Permanently delete "${target.title}"? This cannot be undone.`)) return
+    setError(null)
+    startTransition(async () => {
+      const res = await deleteArticle(target.id)
+      if (!res.ok) {
+        setError(res.error)
+        return
+      }
+      setArticles((prev) => prev.filter((a) => a.id !== target.id))
+      setActive((cur) => (cur?.id === target.id ? null : cur))
     })
   }
 
@@ -374,6 +389,13 @@ export function ArticleReview({ initial }: { initial: Article[] }) {
                   <Globe className="size-4" /> View live
                 </a>
               )}
+              <button
+                onClick={() => doDelete(active)}
+                disabled={pending}
+                className="ml-auto inline-flex items-center gap-2 rounded-lg border border-red-200 bg-card px-4 py-2.5 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
+              >
+                <Trash2 className="size-4" /> Delete
+              </button>
             </div>
           </div>
         </div>
@@ -424,20 +446,26 @@ export function ArticleReview({ initial }: { initial: Article[] }) {
         ))}
       </div>
 
+      {error && (
+        <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
+          {error}
+        </p>
+      )}
+
       <div className="mt-6 overflow-hidden rounded-2xl border border-line bg-card">
         {filtered.length === 0 ? (
           <div className="p-10 text-center text-sm text-muted-2">No articles in this stage.</div>
         ) : (
           <ul className="divide-y divide-line">
             {filtered.map((a) => (
-              <li key={a.id}>
+              <li key={a.id} className="flex items-center gap-2 pr-3 transition-colors hover:bg-muted/50">
                 <button
                   onClick={() => {
                     setActive(a)
                     setError(null)
                     setNote("")
                   }}
-                  className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition-colors hover:bg-muted/50"
+                  className="flex min-w-0 flex-1 items-center justify-between gap-4 px-5 py-4 text-left"
                 >
                   <div className="min-w-0">
                     <p className="truncate font-semibold text-heading">{a.title}</p>
@@ -451,6 +479,15 @@ export function ArticleReview({ initial }: { initial: Article[] }) {
                     </p>
                   </div>
                   <StatusBadge status={a.status} />
+                </button>
+                <button
+                  onClick={() => doDelete(a)}
+                  disabled={pending}
+                  aria-label={`Delete ${a.title}`}
+                  title="Delete article"
+                  className="shrink-0 rounded-lg p-2 text-muted-2 transition-colors hover:bg-red-50 hover:text-red-700 disabled:opacity-50"
+                >
+                  <Trash2 className="size-4" />
                 </button>
               </li>
             ))}
