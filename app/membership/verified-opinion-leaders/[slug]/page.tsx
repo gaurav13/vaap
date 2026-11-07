@@ -137,7 +137,7 @@ export default async function KolProfilePage({ params }: Props) {
                       Verified Opinion Leader
                     </p>
                     <h1 className="flex items-center gap-2 font-sans text-2xl font-bold leading-tight tracking-tight text-heading sm:gap-3 sm:text-4xl lg:text-5xl xl:text-[2.5rem] 2xl:text-5xl">
-                      <span className="min-w-0 text-balance">{name}</span>
+                      <span className="min-w-0 text-balance text-[30px]">{name}</span>
                       <ScallopedCheck className="size-7 shrink-0 sm:size-10" />
                       <span className="sr-only">(verified)</span>
                     </h1>
