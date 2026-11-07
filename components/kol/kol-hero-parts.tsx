@@ -1,4 +1,4 @@
-import { Bitcoin, Boxes, ChartNoAxesCombined, Coins, Layers, Megaphone, Scale, ShieldCheck, Sparkles, Star, type LucideIcon } from "lucide-react"
+import { Bitcoin, Boxes, ChartNoAxesCombined, Coins, Crown, Layers, Megaphone, Scale, ShieldCheck, Sparkles, type LucideIcon } from "lucide-react"
 
 const TOPIC_ICONS: [RegExp, LucideIcon][] = [
   [/fintech|trading|market|analy/i, ChartNoAxesCombined],
@@ -18,15 +18,15 @@ function topicIcon(topic: string): LucideIcon {
 export function ExpertiseChips({ topics }: { topics: string[] }) {
   if (topics.length === 0) return null
   return (
-    <ul className="flex flex-wrap gap-2" aria-label="Areas of expertise">
+    <ul className="flex flex-wrap gap-2 sm:gap-3" aria-label="Areas of expertise">
       {topics.slice(0, 5).map((topic) => {
         const Icon = topicIcon(topic)
         return (
           <li
             key={topic}
-            className="inline-flex items-center gap-1.5 rounded-full border border-line-light bg-card/80 px-3 py-1.5 text-xs font-medium text-heading shadow-sm backdrop-blur"
+            className="inline-flex items-center gap-2 rounded-full border border-line-light bg-card px-3 py-1.5 text-xs font-semibold text-heading shadow-sm shadow-heading/5 sm:px-4 sm:py-2 sm:text-sm"
           >
-            <Icon className="size-3.5 text-green" strokeWidth={2} aria-hidden="true" />
+            <Icon className="size-4 text-green" strokeWidth={2.25} aria-hidden="true" />
             {topic}
           </li>
         )
@@ -83,16 +83,14 @@ export function KolVerifiedSeal({ className = "" }: { className?: string }) {
         <LaurelBranch />
         <LaurelBranch mirrored />
       </svg>
+      <Crown className="absolute top-1 size-5 fill-gold text-gold" aria-hidden="true" />
       <div className="relative flex flex-col items-center leading-none">
-        <span className="text-xs font-bold tracking-widest text-heading">VAAP</span>
-        <span className="mt-1 text-4xl font-black tracking-tight text-green">KOL</span>
-        <span className="mt-1 text-xs font-bold uppercase tracking-widest text-gold">Verified</span>
-        <span className="mt-1.5 flex gap-0.5" aria-hidden="true">
-          {[0, 1, 2].map((i) => (
-            <Star key={i} className="size-2.5 fill-gold text-gold" />
-          ))}
-        </span>
+        <span className="text-4xl font-black tracking-tight text-green">KOL</span>
+        <span className="mt-1 text-xs font-bold uppercase tracking-[0.2em] text-green">Verified</span>
       </div>
+      <span className="absolute bottom-1 flex size-6 items-center justify-center rounded-full bg-green text-card shadow-md ring-2 ring-card">
+        <ShieldCheck className="size-3.5" aria-hidden="true" />
+      </span>
     </div>
   )
 }

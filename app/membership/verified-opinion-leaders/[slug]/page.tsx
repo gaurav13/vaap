@@ -56,12 +56,12 @@ export default async function KolProfilePage({ params }: Props) {
         <section className="relative isolate overflow-hidden border-b border-line-light bg-surface">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/images/kol-hero-light.png"
+            src="/images/kol-profile-hero-bg.png"
             alt=""
-            className="absolute inset-0 -z-10 size-full object-cover object-right opacity-25 lg:opacity-70"
+            className="absolute inset-0 -z-10 size-full object-cover object-right-bottom opacity-40 lg:opacity-100"
           />
           <div
-            className="absolute inset-0 -z-10 bg-gradient-to-r from-surface via-surface/90 to-surface/30"
+            className="absolute inset-0 -z-10 bg-gradient-to-r from-surface via-surface/85 to-transparent lg:via-surface/60"
             aria-hidden="true"
           />
           <div className="vaap-container relative flex flex-col gap-6 py-6 sm:gap-8 sm:py-10 lg:py-14">
@@ -74,9 +74,9 @@ export default async function KolProfilePage({ params }: Props) {
             </Link>
 
             <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:gap-10">
-              <div className="flex min-w-0 flex-1 flex-col gap-5">
+              <div className="flex min-w-0 flex-1 flex-col gap-6 sm:gap-7">
                 <div className="flex items-start gap-4 sm:items-center sm:gap-6">
-                  <div className="size-20 shrink-0 rounded-2xl bg-card p-1 shadow-lg ring-1 ring-line-light sm:size-32 sm:rounded-3xl sm:p-1.5 lg:size-36">
+                  <div className="size-20 shrink-0 rounded-2xl bg-card p-1 shadow-xl shadow-heading/10 ring-1 ring-line-light sm:size-32 sm:rounded-3xl sm:p-1.5 lg:size-36">
                     <div className="size-full overflow-hidden rounded-xl bg-mint sm:rounded-[1.25rem]">
                       {kol.photo ? (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -89,17 +89,19 @@ export default async function KolProfilePage({ params }: Props) {
                     </div>
                   </div>
 
-                  <div className="flex min-w-0 flex-1 flex-col gap-1.5 sm:gap-3">
-                    <p className="flex items-center gap-3 text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-heading sm:text-xs">
-                      <span className="text-green">Verified</span> Opinion Leader
-                      <span className="hidden h-px w-12 bg-green sm:block" aria-hidden="true" />
+                  <div className="flex min-w-0 flex-1 flex-col gap-2 sm:gap-3">
+                    <p className="inline-flex items-center gap-1.5 self-start rounded-full bg-mint px-2.5 py-1 text-xs font-semibold text-green shadow-sm ring-1 ring-green/15 sm:gap-2 sm:px-3.5 sm:py-1.5 sm:text-sm">
+                      <span className="flex size-4 items-center justify-center rounded-full bg-green text-card sm:size-5">
+                        <Check className="size-2.5 sm:size-3" strokeWidth={3.5} aria-hidden="true" />
+                      </span>
+                      Verified Opinion Leader
                     </p>
-                    <h1 className="flex flex-wrap items-center gap-2 font-serif text-2xl font-bold leading-tight tracking-tight text-heading text-balance sm:text-4xl lg:text-5xl">
+                    <h1 className="flex flex-wrap items-center gap-2 font-serif text-2xl font-bold leading-tight tracking-tight text-heading text-balance sm:text-4xl lg:text-[2.5rem] 2xl:text-5xl">
                       {name}
                       <VerifiedBadge className="[&_svg]:size-6 sm:[&_svg]:size-9" />
                     </h1>
                     {(kol.title || kol.organization) && (
-                      <p className="text-sm leading-relaxed text-body sm:border-l-2 sm:border-green sm:pl-4 sm:text-lg">
+                      <p className="border-l-2 border-green/60 pl-3 text-sm leading-relaxed text-heading/80 sm:border-l-[3px] sm:pl-4 sm:text-lg">
                         {[kol.title, kol.organization].filter(Boolean).join(", ")}
                       </p>
                     )}
@@ -111,14 +113,17 @@ export default async function KolProfilePage({ params }: Props) {
                     )}
                   </div>
 
-                  <KolVerifiedSeal className="hidden xl:flex" />
+                  <div className="hidden shrink-0 items-center gap-5 xl:flex">
+                    <span className="h-24 w-px bg-line-light" aria-hidden="true" />
+                    <KolVerifiedSeal className="size-28 2xl:size-36" />
+                  </div>
                 </div>
 
                 <ExpertiseChips topics={kol.expertise} />
               </div>
 
               {referralCode && (
-                <div className="w-full shrink-0 lg:w-[25rem]">
+                <div className="w-full shrink-0 lg:w-[26rem]">
                   <KolReferralCard code={referralCode} url={referralUrl(referralCode)} firstName={name} />
                 </div>
               )}
