@@ -3,95 +3,99 @@ import Link from "next/link"
 import { ArrowRight, BarChart3, Network, QrCode, ShieldCheck, Users } from "lucide-react"
 
 const features = [
-  { icon: Users, label: ["Industry", "Representation"] },
-  { icon: ShieldCheck, label: ["Verified", "Membership"] },
-  { icon: Network, label: ["Governance", "& Committees"] },
-  { icon: BarChart3, label: ["Policy, Research", "& Advocacy"] },
+  { icon: Users, title: "Industry", subtitle: "Representation" },
+  { icon: ShieldCheck, title: "Verified", subtitle: "Membership" },
+  { icon: Network, title: "Governance", subtitle: "& Committees" },
+  { icon: BarChart3, title: "Policy & Research", subtitle: "Advocacy" },
 ]
 
 const taglines = ["Unifying Industry", "Representing Stakeholders", "Driving Responsible Growth"]
 
 export function MembershipHero() {
   return (
-    <section className="relative overflow-hidden bg-white">
-      {/* Desktop photo with curved left edge and green swoosh */}
-      <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[56%] lg:block" aria-hidden>
-        <Image src="/images/hero-islamabad.png" alt="" fill priority className="object-cover object-center" />
-        <div className="absolute inset-0 bg-gradient-to-r from-white via-white/40 via-20% to-transparent" />
-        <svg
-          className="absolute inset-0 h-full w-full"
-          viewBox="0 0 100 100"
-          preserveAspectRatio="none"
-          fill="none"
-        >
-          <path d="M0 0 H14 C4 30 6 70 30 100 H0 Z" className="fill-white" />
-          <path d="M18 100 C55 96 85 70 100 30 V100 Z" className="fill-white" />
-          <path d="M22 100 C58 95 86 68 100 26" stroke="#1b4332" vectorEffect="non-scaling-stroke" style={{ strokeWidth: 10 }} />
-          <path d="M30 100 C62 94 88 72 100 40" stroke="#2d6a4f" strokeOpacity="0.5" vectorEffect="non-scaling-stroke" style={{ strokeWidth: 3 }} />
-        </svg>
-      </div>
+    <section className="bg-white">
+      <div className="relative overflow-hidden">
+        {/* Desktop photo with curved left edge and green swoosh */}
+        <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[52%] lg:block" aria-hidden>
+          <Image src="/images/hero-islamabad.png" alt="" fill priority className="object-cover object-center" />
+          <div className="absolute inset-0 bg-gradient-to-r from-white via-white/40 via-20% to-transparent" />
+          <svg
+            className="absolute inset-0 h-full w-full"
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+            fill="none"
+          >
+            <path d="M0 0 H14 C4 30 6 70 30 100 H0 Z" className="fill-white" />
+            <path d="M18 100 C55 96 85 70 100 30 V100 Z" className="fill-white" />
+            <path d="M22 100 C58 95 86 68 100 26" stroke="#1b4332" vectorEffect="non-scaling-stroke" style={{ strokeWidth: 10 }} />
+            <path d="M30 100 C62 94 88 72 100 40" stroke="#2d6a4f" strokeOpacity="0.5" vectorEffect="non-scaling-stroke" style={{ strokeWidth: 3 }} />
+          </svg>
+        </div>
 
-      <div className="relative mx-auto max-w-7xl px-5 pb-10 pt-12 sm:px-6 lg:px-8 lg:pb-12 lg:pt-16">
-        <div className="lg:max-w-[46%]">
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-heading sm:text-sm">
-            VAAP Membership Platform For
-          </p>
+        <div className="relative mx-auto max-w-7xl px-5 pb-12 pt-12 sm:px-6 lg:px-8 lg:pb-20 lg:pt-20">
+          <div className="lg:max-w-[48%]">
+            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-green">
+              VAAP Membership Platform For
+            </p>
 
-          <h1 className="mt-4 text-balance font-serif text-4xl font-bold leading-[1.05] text-[#1b4332] sm:text-5xl xl:text-6xl">
-            Virtual Assets, Blockchain &amp; Digital Economy
-          </h1>
+            <h1 className="mt-4 text-balance font-serif text-4xl font-bold leading-[1.08] text-[#1b4332] sm:text-5xl xl:text-6xl">
+              Virtual Assets, Blockchain &amp; Digital Economy
+            </h1>
 
-          <p className="mt-5 text-pretty text-base leading-relaxed text-heading sm:text-lg">
-            {taglines[0]}
-            <span className="mx-3 text-line" aria-hidden>
-              |
-            </span>
-            {taglines[1]}
-            <br />
-            {taglines[2]}
-          </p>
+            <ul className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-2 text-base text-heading sm:text-lg">
+              {taglines.map((tagline, index) => (
+                <li key={tagline} className="flex items-center gap-3">
+                  {index > 0 && <span className="size-1.5 rounded-full bg-gold" aria-hidden />}
+                  {tagline}
+                </li>
+              ))}
+            </ul>
 
-          <div className="mt-8 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
-            <Link
-              href="/membership/apply"
-              className="inline-flex items-center gap-2.5 rounded-lg bg-[#1b4332] px-7 py-3.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#143728]"
-            >
-              Become a Member
-              <ArrowRight className="size-4" aria-hidden />
-            </Link>
-            <Link
-              href="/membership/verify"
-              className="inline-flex items-center gap-2.5 rounded-lg border-2 border-[#1b4332] bg-white px-6 py-3 text-sm font-semibold text-[#1b4332] transition-colors hover:bg-[#1b4332]/5"
-            >
-              <QrCode className="size-5" aria-hidden />
-              Verify Membership
-            </Link>
+            <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <Link
+                href="/membership/apply"
+                className="inline-flex h-12 items-center justify-center gap-2.5 rounded-lg bg-[#1b4332] px-7 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#143728]"
+              >
+                Become a Member
+                <ArrowRight className="size-4" aria-hidden />
+              </Link>
+              <Link
+                href="/membership/verify"
+                className="inline-flex h-12 items-center justify-center gap-2.5 rounded-lg border-2 border-[#1b4332] bg-white px-7 text-sm font-semibold text-[#1b4332] transition-colors hover:bg-[#1b4332]/5"
+              >
+                <QrCode className="size-4" aria-hidden />
+                Verify Membership
+              </Link>
+            </div>
+          </div>
+
+          {/* Mobile / tablet photo */}
+          <div className="relative mt-10 aspect-[16/9] overflow-hidden rounded-2xl border border-line lg:hidden">
+            <Image
+              src="/images/hero-islamabad.png"
+              alt="Faisal Mosque framed by the Margalla Hills in Islamabad, Pakistan"
+              fill
+              className="object-cover"
+            />
           </div>
         </div>
+      </div>
 
-        {/* Mobile / tablet photo */}
-        <div className="relative mt-10 aspect-[16/9] overflow-hidden rounded-2xl border border-line lg:hidden">
-          <Image
-            src="/images/hero-islamabad.png"
-            alt="Faisal Mosque framed by the Margalla Hills in Islamabad, Pakistan"
-            fill
-            className="object-cover"
-          />
-        </div>
-
-        <ul className="mt-10 grid grid-cols-2 gap-6 sm:grid-cols-4 sm:gap-0 lg:mt-14 lg:max-w-[64%]">
+      <div className="relative border-y border-line bg-white">
+        <ul className="mx-auto grid max-w-7xl grid-cols-2 px-5 sm:px-6 lg:grid-cols-4 lg:px-8">
           {features.map((feature, index) => {
             const Icon = feature.icon
             return (
               <li
-                key={feature.label.join(" ")}
-                className={`flex items-center gap-3 sm:px-5 ${index === 0 ? "sm:pl-0" : "sm:border-l sm:border-line"}`}
+                key={feature.title}
+                className={`flex items-center gap-4 py-6 lg:py-7 ${index % 2 === 1 ? "pl-5 border-l border-line" : "pr-5"} ${index > 1 ? "border-t border-line lg:border-t-0" : ""} lg:px-6 ${index === 0 ? "lg:pl-0" : "lg:border-l lg:border-line"}`}
               >
-                <Icon className="size-9 shrink-0 text-[#1b4332]" strokeWidth={1.5} aria-hidden />
-                <span className="text-sm font-medium leading-snug text-heading">
-                  {feature.label[0]}
-                  <br />
-                  {feature.label[1]}
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-mint text-[#1b4332]">
+                  <Icon className="size-5" strokeWidth={1.75} aria-hidden />
+                </span>
+                <span className="flex flex-col leading-snug">
+                  <span className="text-sm font-semibold text-heading">{feature.title}</span>
+                  <span className="text-sm text-muted-foreground">{feature.subtitle}</span>
                 </span>
               </li>
             )
