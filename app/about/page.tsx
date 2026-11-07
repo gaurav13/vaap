@@ -5,16 +5,19 @@ import { MissionVision } from "@/components/about/mission-vision"
 import { Leadership } from "@/components/about/leadership"
 import { getHeaderUser } from "@/lib/header-user"
 import { getLeadership } from "@/app/actions/cms"
+import { seoMetadata } from "@/lib/seo"
+import { staticSubjectByPath } from "@/lib/seo/subjects"
+import { SeoJsonLd } from "@/components/seo/json-ld"
 
-export const metadata = {
-  title: "About | VAAP",
-  description:
-    "The Virtual Asset Industry Alliance of Pakistan (VAAP) is a collective voice for Pakistan's virtual asset industry, supporting responsible growth, collaboration, education, and innovation.",
+export function generateMetadata() {
+  return seoMetadata(staticSubjectByPath('/about'))
 }
 
 export default async function AboutPage() {
   const [user, profiles] = await Promise.all([getHeaderUser(), getLeadership()])
   return (
+    <>
+      <SeoJsonLd subject={staticSubjectByPath('/about')} />
     <>
       <SiteHeaderServer active="About" user={user} />
       <main>
@@ -23,6 +26,7 @@ export default async function AboutPage() {
         <Leadership profiles={profiles} />
       </main>
       <SiteFooter />
+    </>
     </>
   )
 }

@@ -8,6 +8,8 @@ import { getSession } from '@/lib/session'
 import { isElevated } from '@/lib/permissions'
 import { isLaunchExempt } from '@/lib/launch-gate'
 import { SiteGate } from '@/components/site-gate'
+import { getSeoGlobals } from '@/lib/seo/config'
+import { absoluteUrl } from '@/lib/seo/resolve'
 import './globals.css'
 
 // While the site is in "Coming Soon" mode the public can only reach the launch
@@ -29,11 +31,27 @@ const miranda = Miranda_Sans({
   style: ['normal', 'italic'],
 })
 
-export const metadata: Metadata = {
-  title: 'VAAP — Virtual Asset Industry Alliance of Pakistan',
-  description:
-    'Building a responsible, innovative and connected virtual asset ecosystem for Pakistan. People. Innovation. Collaboration.',
-  generator: 'v0.app',
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getSeoGlobals()
+  const image = absoluteUrl(seo.defaultOgImage, seo.siteUrl)
+  return {
+    metadataBase: new URL(seo.siteUrl),
+    title: { default: `${seo.siteName} — ${seo.legalName}`, template: `%s${seo.titleSuffix}` },
+    description: seo.defaultDescription,
+    applicationName: seo.siteName,
+    generator: 'v0.app',
+    openGraph: {
+      type: 'website',
+      siteName: seo.siteName,
+      locale: seo.locale,
+      images: image ? [{ url: image, alt: seo.legalName }] : undefined,
+    },
+    twitter: { card: 'summary_large_image', images: image ? [image] : undefined, site: seo.twitterHandle || undefined },
+    verification: {
+      google: seo.googleVerification || undefined,
+      other: seo.bingVerification ? { 'msvalidate.01': seo.bingVerification } : undefined,
+    },
+  }
 }
 
 export const viewport: Viewport = {

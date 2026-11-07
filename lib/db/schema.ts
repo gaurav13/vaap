@@ -10,6 +10,27 @@ export const settings = pgTable("settings", {
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 })
 
+// Optional SEO overrides keyed by "<kind>:<id>"; empty fields fall back to the content itself.
+export const seoEntries = pgTable("seo_entries", {
+  key: text("key").primaryKey(),
+  seoTitle: text("seoTitle").notNull().default(""),
+  metaDescription: text("metaDescription").notNull().default(""),
+  keywords: text("keywords").notNull().default(""),
+  canonicalUrl: text("canonicalUrl").notNull().default(""),
+  noindex: boolean("noindex").notNull().default(false),
+  ogTitle: text("ogTitle").notNull().default(""),
+  ogDescription: text("ogDescription").notNull().default(""),
+  ogImage: text("ogImage").notNull().default(""),
+  twitterTitle: text("twitterTitle").notNull().default(""),
+  twitterDescription: text("twitterDescription").notNull().default(""),
+  twitterImage: text("twitterImage").notNull().default(""),
+  customSchema: text("customSchema").notNull().default(""),
+  extra: jsonb("extra").$type<Record<string, string>>().notNull().default({}),
+  published: boolean("published").notNull().default(true),
+  updatedBy: text("updatedBy"),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+})
+
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),

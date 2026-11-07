@@ -3,11 +3,12 @@ import { SiteFooter } from "@/components/site-footer"
 import { getHeaderUser } from "@/lib/header-user"
 import { getLeadership } from "@/app/actions/cms"
 import { Leadership } from "@/components/about/leadership"
+import { seoMetadata } from "@/lib/seo"
+import { staticSubjectByPath } from "@/lib/seo/subjects"
+import { SeoJsonLd } from "@/components/seo/json-ld"
 
-export const metadata = {
-  title: "Team | VAAP",
-  description:
-    "Meet the VAAP team — the Chairman and Executive Committee driving the growth, development and responsible adoption of virtual assets in Pakistan.",
+export function generateMetadata() {
+  return seoMetadata(staticSubjectByPath('/team'))
 }
 
 export default async function TeamPage() {
@@ -25,6 +26,8 @@ export default async function TeamPage() {
   }))
 
   return (
+    <>
+      <SeoJsonLd subject={staticSubjectByPath("/team", { people: leadership })} />
     <>
       <SiteHeaderServer active="Team" user={user} />
       <main>
@@ -48,6 +51,7 @@ export default async function TeamPage() {
         <Leadership profiles={profiles} />
       </main>
       <SiteFooter />
+    </>
     </>
   )
 }

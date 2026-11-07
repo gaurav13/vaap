@@ -3,10 +3,12 @@ import { SiteHeaderServer } from "@/components/site-header-server"
 import { SiteFooter } from "@/components/site-footer"
 import { PageHero } from "@/components/page-hero"
 import { getHeaderUser } from "@/lib/header-user"
+import { seoMetadata } from "@/lib/seo"
+import { staticSubjectByPath } from "@/lib/seo/subjects"
+import { SeoJsonLd } from "@/components/seo/json-ld"
 
-export const metadata = {
-  title: "Ecosystem | VAAP",
-  description: "Explore the virtual asset ecosystem VAAP represents and connects.",
+export function generateMetadata() {
+  return seoMetadata(staticSubjectByPath('/ecosystem'))
 }
 
 const SEGMENTS = [
@@ -21,6 +23,8 @@ const SEGMENTS = [
 export default async function EcosystemPage() {
   const user = await getHeaderUser()
   return (
+    <>
+      <SeoJsonLd subject={staticSubjectByPath('/ecosystem')} />
     <>
         <SiteHeaderServer active="Ecosystem" user={user} />
       <main>
@@ -44,6 +48,7 @@ export default async function EcosystemPage() {
         </section>
       </main>
       <SiteFooter />
+    </>
     </>
   )
 }

@@ -1,37 +1,35 @@
 import type { MetadataRoute } from "next"
 import { and, eq } from "drizzle-orm"
 import { db } from "@/lib/db"
-import { pages, news, events } from "@/lib/db/schema"
+import { pages, news, events, articles, leadership } from "@/lib/db/schema"
 import { getMenuItems } from "@/lib/site-settings"
 import { getCoreRouteState } from "@/lib/core-routes"
+import { getPublicKols } from "@/lib/kol"
+import { getAllSeoOverrides, getSeoGlobals } from "@/lib/seo/config"
 
 // Regenerate on every request so newly created pages, menu items, or CMS pages
 // appear in the sitemap immediately — no manual editing or redeploy needed.
 export const dynamic = "force-dynamic"
 
 
-function resolveBaseUrl() {
-  const candidate =
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    process.env.VERCEL_PROJECT_PRODUCTION_URL ||
-    process.env.VERCEL_URL
-  if (candidate) return candidate.startsWith("http") ? candidate : `https://${candidate}`
-  return "http://localhost:3000"
-}
-
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const base = resolveBaseUrl()
+  const [{ siteUrl: base }, overrides] = await Promise.all([getSeoGlobals(), getAllSeoOverrides()])
   const now = new Date()
+  // Paths an admin marked noindex in the SEO dashboard stay out of the sitemap.
+  const noindexPaths = new Set<string>()
+  const noindexKeys = new Set([...overrides.values()].filter((o) => o.published && o.noindex).map((o) => o.key))
+  for (const key of noindexKeys) if (key.startsWith("page:") || key.startsWith("cms:")) noindexPaths.add(key.split(":")[1])
 
   // De-duplicate by clean path; later writes win so CMS lastModified beats "now".
   const entries = new Map<string, { url: string; lastModified: Date }>()
 
   const { visible, hiddenSet } = await getCoreRouteState()
 
-  const add = (rawPath: string, lastModified: Date = now) => {
-    if (!rawPath || /^(https?:)?\/\//.test(rawPath) || /^(mailto:|tel:)/.test(rawPath)) return
+  const add = (rawPath: string, lastModified: Date = now, key?: string) => {
+    if (!rawPath || /^(https?:)?\/\//.test(rawPath) || /^(mailto:|tel:|#)/.test(rawPath)) return
     const path = rawPath.startsWith("/") ? rawPath : `/${rawPath}`
-    if (hiddenSet.has(path)) return
+    if (hiddenSet.has(path) || noindexPaths.has(path) || (key && noindexKeys.has(key))) return
+    if (/^\/(admin|dashboard|api|sign-in|sign-up|login)(\/|$)/.test(path)) return
     entries.set(path, { url: `${base}${path === "/" ? "" : path}`, lastModified })
   }
 
@@ -63,7 +61,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     const publishedNews = await db.select().from(news).where(eq(news.published, true))
     for (const post of publishedNews) {
-      add(`/news/${post.id}`, post.createdAt ?? now)
+      add(`/news/${post.id}`, post.createdAt ?? now, `news:${post.id}`)
     }
   } catch {
     // Ignore DB errors so the sitemap still returns the rest of the routes.
@@ -76,10 +74,34 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .from(events)
       .where(and(eq(events.published, true), eq(events.status, "approved")))
     for (const ev of publicEvents) {
-      add(`/events/${ev.slug || ev.id}`, ev.createdAt ?? now)
+      add(`/events/${ev.slug || ev.id}`, ev.createdAt ?? now, `event:${ev.id}`)
     }
   } catch {
     // Ignore DB errors so the sitemap still returns the rest of the routes.
+  }
+
+  try {
+    const published = await db
+      .select({ slug: articles.slug, publishedAt: articles.publishedAt, updatedAt: articles.updatedAt })
+      .from(articles)
+      .where(eq(articles.status, "published"))
+    for (const a of published) add(`/insights/${a.slug}`, a.updatedAt ?? a.publishedAt ?? now, `article:${a.slug}`)
+  } catch {
+    // Best-effort.
+  }
+
+  try {
+    const people = await db.select({ id: leadership.id, createdAt: leadership.createdAt }).from(leadership).where(eq(leadership.published, true))
+    for (const p of people) add(`/team/${p.id}`, p.createdAt ?? now, `team:${p.id}`)
+  } catch {
+    // Best-effort.
+  }
+
+  try {
+    const kols = await getPublicKols()
+    for (const k of kols) add(`/membership/verified-opinion-leaders/${k.slug}`, k.updatedAt ?? now, `kol:${k.slug}`)
+  } catch {
+    // Best-effort.
   }
 
   return [...entries.values()]

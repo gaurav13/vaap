@@ -6,16 +6,20 @@ import { SiteFooter } from "@/components/site-footer"
 import { PageHero } from "@/components/page-hero"
 import { getPublishedNews } from "@/app/actions/public"
 import { getHeaderUser } from "@/lib/header-user"
+import { seoMetadata } from "@/lib/seo"
+import { staticSubjectByPath } from "@/lib/seo/subjects"
+import { SeoJsonLd } from "@/components/seo/json-ld"
 
-export const metadata = {
-  title: "News | VAAP",
-  description: "The latest news and announcements from the Virtual Asset Industry Alliance of Pakistan.",
+export function generateMetadata() {
+  return seoMetadata(staticSubjectByPath('/news'))
 }
 
 export default async function NewsPage() {
   const [posts, user] = await Promise.all([getPublishedNews(), getHeaderUser()])
 
   return (
+    <>
+      <SeoJsonLd subject={staticSubjectByPath('/news')} />
     <>
         <SiteHeaderServer active="Knowledge" user={user} />
       <main>
@@ -68,6 +72,7 @@ export default async function NewsPage() {
         </section>
       </main>
       <SiteFooter />
+    </>
     </>
   )
 }

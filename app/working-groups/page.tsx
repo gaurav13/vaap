@@ -7,11 +7,12 @@ import { CommitteesHero } from "@/components/committees/committees-hero"
 import { CommitteesGrid } from "@/components/committees/committees-grid"
 import { CommitteeUpdates } from "@/components/committees/committee-updates"
 import { CommitteeCta } from "@/components/committees/committee-cta"
+import { seoMetadata } from "@/lib/seo"
+import { staticSubjectByPath } from "@/lib/seo/subjects"
+import { SeoJsonLd } from "@/components/seo/json-ld"
 
-export const metadata = {
-  title: "Working Groups | VAAP",
-  description:
-    "VAAP working groups bring together industry experts, professionals and stakeholders to drive the growth, development and responsible adoption of virtual assets in Pakistan.",
+export function generateMetadata() {
+  return seoMetadata(staticSubjectByPath('/working-groups'))
 }
 
 export default async function CommitteesPage() {
@@ -33,6 +34,8 @@ export default async function CommitteesPage() {
 
   return (
     <>
+      <SeoJsonLd subject={staticSubjectByPath('/working-groups')} />
+    <>
       <SiteHeaderServer active="Working Groups" user={user} />
       <main>
         <CommitteesHero />
@@ -50,6 +53,7 @@ export default async function CommitteesPage() {
         <CommitteeCta />
       </main>
       <SiteFooter />
+    </>
     </>
   )
 }

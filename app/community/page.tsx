@@ -5,10 +5,12 @@ import { SiteFooter } from "@/components/site-footer"
 import { PageHero } from "@/components/page-hero"
 import { Button } from "@/components/ui/button"
 import { getHeaderUser } from "@/lib/header-user"
+import { seoMetadata } from "@/lib/seo"
+import { staticSubjectByPath } from "@/lib/seo/subjects"
+import { SeoJsonLd } from "@/components/seo/json-ld"
 
-export const metadata = {
-  title: "Community | VAAP",
-  description: "Join a growing community building Pakistan's virtual asset ecosystem.",
+export function generateMetadata() {
+  return seoMetadata(staticSubjectByPath('/community'))
 }
 
 const BENEFITS = [
@@ -21,6 +23,8 @@ const BENEFITS = [
 export default async function CommunityPage() {
   const user = await getHeaderUser()
   return (
+    <>
+      <SeoJsonLd subject={staticSubjectByPath('/community')} />
     <>
         <SiteHeaderServer active="Community" user={user} />
       <main>
@@ -53,6 +57,7 @@ export default async function CommunityPage() {
         </section>
       </main>
       <SiteFooter />
+    </>
     </>
   )
 }

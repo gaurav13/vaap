@@ -7,16 +7,19 @@ import { ComplaintForm } from "@/components/support/complaint-form"
 import { CaseHandling } from "@/components/support/case-handling"
 import { HelpfulResources } from "@/components/support/helpful-resources"
 import { SupportFaq } from "@/components/support/support-faq"
+import { seoMetadata } from "@/lib/seo"
+import { staticSubjectByPath } from "@/lib/seo/subjects"
+import { SeoJsonLd } from "@/components/seo/json-ld"
 
-export const metadata = {
-  title: "Support | VAAP",
-  description:
-    "The VAAP Member Support & Grievance Centre — submit a complaint, track your case, and access scam awareness and AML/CFT guidance for a safer digital Pakistan.",
+export function generateMetadata() {
+  return seoMetadata(staticSubjectByPath('/support'))
 }
 
 export default async function SupportPage() {
   const user = await getHeaderUser()
   return (
+    <>
+      <SeoJsonLd subject={staticSubjectByPath('/support')} />
     <>
       <SiteHeaderServer active="Support" user={user} />
       <main>
@@ -34,6 +37,7 @@ export default async function SupportPage() {
         <SupportFaq />
       </main>
       <SiteFooter />
+    </>
     </>
   )
 }

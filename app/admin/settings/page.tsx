@@ -3,15 +3,19 @@ import { pages } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
 import { getSiteSettings, type MenuItem } from "@/lib/site-settings"
 import { getSession } from "@/lib/session"
+import { getCoreRouteState } from "@/lib/core-routes"
 import { SettingsAdmin } from "@/components/admin/settings-admin"
 import { DeployPanel } from "@/components/admin/deploy-panel"
 
 export default async function AdminSettingsPage() {
-  const [settings, publishedPages, session] = await Promise.all([
+  const [settings, publishedPages, session, coreState] = await Promise.all([
     getSiteSettings(),
     db.select().from(pages).where(eq(pages.status, "published")),
     getSession(),
+    getCoreRouteState(),
   ])
+
+  const corePages: MenuItem[] = coreState.visible.map((r) => ({ label: r.label, href: r.href }))
 
   const canManageStatus = session?.user?.role === "admin"
 
@@ -39,6 +43,7 @@ export default async function AdminSettingsPage() {
         siteStatus={settings.siteStatus}
         canManageStatus={canManageStatus}
         pageOptions={pageOptions}
+        corePages={corePages}
       />
     </div>
   )

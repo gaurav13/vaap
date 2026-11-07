@@ -11,6 +11,9 @@ import { getEventById, getEventBySlug, getEventRsvps } from "@/app/actions/publi
 import { getHeaderUser } from "@/lib/header-user"
 import { eventPath } from "@/lib/event-slug"
 import { getSiteSettings } from "@/lib/site-settings"
+import { seoMetadata } from "@/lib/seo"
+import { eventSubject } from "@/lib/seo/subjects"
+import { SeoJsonLd } from "@/components/seo/json-ld"
 import { FollowVaap } from "@/components/follow-vaap"
 
 // Old links used numeric ids (/events/3); those resolve by id and then redirect to the slug URL.
@@ -20,35 +23,11 @@ const resolveEvent = cache(async (param: string) => {
   return getEventBySlug(decoded)
 })
 
-function plainExcerpt(text: string | null | undefined, max = 155) {
-  const clean = (text ?? "").replace(/\s+/g, " ").trim()
-  return clean.length > max ? `${clean.slice(0, max - 1).trimEnd()}…` : clean
-}
-
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
   const event = await resolveEvent(slug)
-  if (!event) return { title: "Event | VAAP" }
-  const description = plainExcerpt(event.description) || "Join this VAAP event."
-  const path = eventPath(event)
-  return {
-    title: `${event.title} | VAAP Events`,
-    description,
-    alternates: { canonical: path },
-    openGraph: {
-      type: "website",
-      url: path,
-      title: event.title,
-      description,
-      images: event.coverImage ? [{ url: event.coverImage, alt: event.title }] : undefined,
-    },
-    twitter: {
-      card: event.coverImage ? "summary_large_image" : "summary",
-      title: event.title,
-      description,
-      images: event.coverImage ? [event.coverImage] : undefined,
-    },
-  }
+  if (!event) return { title: "Event" }
+  return seoMetadata(eventSubject(event, eventPath(event)))
 }
 
 function initials(name: string) {
@@ -68,27 +47,6 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
 
   const [rsvps, { social }] = await Promise.all([getEventRsvps(event.id), getSiteSettings()])
   const d = new Date(event.startsAt)
-  const isOnline = /online|virtual/i.test(`${event.format} ${event.location}`)
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Event",
-    name: event.title,
-    description: plainExcerpt(event.description, 500),
-    startDate: d.toISOString(),
-    eventStatus: "https://schema.org/EventScheduled",
-    eventAttendanceMode: isOnline
-      ? "https://schema.org/OnlineEventAttendanceMode"
-      : "https://schema.org/OfflineEventAttendanceMode",
-    location: isOnline
-      ? { "@type": "VirtualLocation", url: eventPath(event) }
-      : {
-          "@type": "Place",
-          name: event.location || event.city || "Pakistan",
-          address: [event.location, event.city, "Pakistan"].filter(Boolean).join(", "),
-        },
-    image: event.coverImage ? [event.coverImage] : undefined,
-    organizer: { "@type": "Organization", name: event.hostName || "VAAP" },
-  }
   const dateLong = d.toLocaleDateString("en-US", {
     weekday: "long",
     month: "long",
@@ -100,10 +58,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
     <>
       <SiteHeaderServer active="Media & Events" user={user} />
       <main className="mx-auto max-w-5xl px-5 py-12 lg:px-8 lg:py-16">
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
-        />
+        <SeoJsonLd subject={eventSubject(event, eventPath(event))} />
         <Link
           href="/events"
           className="inline-flex items-center gap-1.5 text-sm font-semibold text-green transition hover:opacity-80"

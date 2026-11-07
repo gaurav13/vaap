@@ -12,18 +12,32 @@ import { getHeaderUser } from "@/lib/header-user"
 import { getSiteSettings } from "@/lib/site-settings"
 import { FollowVaap } from "@/components/follow-vaap"
 import { PublisherCredit, PublisherInfo } from "@/components/news/publisher-info"
+import { cache } from "react"
+import { seoMetadata } from "@/lib/seo"
+import { newsSubject } from "@/lib/seo/subjects"
+import { SeoJsonLd } from "@/components/seo/json-ld"
 
-export default async function NewsDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
+const getPost = cache(async (id: string) => {
   const numericId = Number(id)
-  if (!Number.isInteger(numericId)) notFound()
-
+  if (!Number.isInteger(numericId)) return null
   const [post] = await db
     .select()
     .from(news)
     .where(and(eq(news.id, numericId), eq(news.published, true)))
     .limit(1)
+  return post ?? null
+})
 
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const post = await getPost(id)
+  if (!post) return { title: "News" }
+  return seoMetadata(newsSubject(post))
+}
+
+export default async function NewsDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const post = await getPost(id)
   if (!post) notFound()
 
   const [user, { social }] = await Promise.all([getHeaderUser(), getSiteSettings()])

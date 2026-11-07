@@ -7,6 +7,9 @@ import { PlatformIcon, VerifiedBadge } from "@/components/kol/kol-ui"
 import { CollaborationForm } from "@/components/kol/collaboration-form"
 import { getPublicKolBySlug, totalFollowers } from "@/lib/kol"
 import { formatCount, formatDate, platformLabel } from "@/lib/kol-shared"
+import { seoMetadata } from "@/lib/seo"
+import { kolSubject } from "@/lib/seo/subjects"
+import { SeoJsonLd } from "@/components/seo/json-ld"
 
 export const dynamic = "force-dynamic"
 
@@ -15,12 +18,8 @@ type Props = { params: Promise<{ slug: string }> }
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params
   const kol = await getPublicKolBySlug(slug)
-  if (!kol) return { title: "Opinion Leader | VAAP" }
-  const name = kol.professionalName || kol.fullName
-  return {
-    title: `${name} — Verified Opinion Leader | VAAP`,
-    description: kol.bio.slice(0, 160) || `${name}, a VAAP Verified Opinion Leader.`,
-  }
+  if (!kol) return { title: "Opinion Leader" }
+  return seoMetadata(kolSubject(kol))
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -56,6 +55,7 @@ export default async function KolProfilePage({ params }: Props) {
 
   return (
     <>
+      <SeoJsonLd subject={kolSubject(kol)} />
       <SiteHeaderServer />
       <main className="bg-surface">
         <section className="bg-navy-dark">

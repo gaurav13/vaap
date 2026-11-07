@@ -5,10 +5,12 @@ import { SiteFooter } from "@/components/site-footer"
 import { PageHero } from "@/components/page-hero"
 import { getHeaderUser } from "@/lib/header-user"
 import { getPublications, getDocuments } from "@/app/actions/cms"
+import { seoMetadata } from "@/lib/seo"
+import { staticSubjectByPath } from "@/lib/seo/subjects"
+import { SeoJsonLd } from "@/components/seo/json-ld"
 
-export const metadata = {
-  title: "Knowledge | VAAP",
-  description: "Research, guides, and educational resources on virtual assets in Pakistan.",
+export function generateMetadata() {
+  return seoMetadata(staticSubjectByPath('/knowledge'))
 }
 
 export default async function KnowledgePage() {
@@ -19,6 +21,8 @@ export default async function KnowledgePage() {
   ])
 
   return (
+    <>
+      <SeoJsonLd subject={staticSubjectByPath('/knowledge')} />
     <>
         <SiteHeaderServer active="Knowledge" user={user} />
       <main>
@@ -118,6 +122,7 @@ export default async function KnowledgePage() {
         </section>
       </main>
       <SiteFooter />
+    </>
     </>
   )
 }

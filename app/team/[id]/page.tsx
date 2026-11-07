@@ -10,6 +10,9 @@ import { SiteFooter } from "@/components/site-footer"
 import { getHeaderUser } from "@/lib/header-user"
 import { ProfileSocials } from "@/components/profiles/profile-socials"
 import { plainTextToHtml, sanitizeRichHtml } from "@/lib/html"
+import { seoMetadata } from "@/lib/seo"
+import { teamSubject } from "@/lib/seo/subjects"
+import { SeoJsonLd } from "@/components/seo/json-ld"
 
 async function getProfile(id: number) {
   const rows = await db.select().from(leadership).where(eq(leadership.id, id)).limit(1)
@@ -21,11 +24,8 @@ async function getProfile(id: number) {
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const profile = await getProfile(Number(id))
-  if (!profile) return { title: "Profile | VAAP" }
-  return {
-    title: `${profile.name}${profile.position ? ` — ${profile.position}` : ""} | VAAP`,
-    description: profile.position || `${profile.name} at VAAP`,
-  }
+  if (!profile) return { title: "Profile" }
+  return seoMetadata(teamSubject(profile))
 }
 
 function RichBio({ html }: { html: string }) {
@@ -51,6 +51,7 @@ export default async function TeamProfilePage({ params }: { params: Promise<{ id
 
   return (
     <>
+      <SeoJsonLd subject={teamSubject(profile)} />
       <SiteHeaderServer active="About" user={user} />
       <main>
         <div className="vaap-container py-12 lg:py-16">

@@ -5,19 +5,22 @@ import { getGovernanceStats, getPublicProposalGroups } from "@/lib/governance-pu
 import { VotingHero } from "@/components/governance/voting-hero"
 import { VotingStats } from "@/components/governance/voting-stats"
 import { VotingBoard } from "@/components/governance/voting-board"
+import { seoMetadata } from "@/lib/seo"
+import { staticSubjectByPath } from "@/lib/seo/subjects"
+import { SeoJsonLd } from "@/components/seo/json-ld"
 
 export const dynamic = "force-dynamic"
 
-export const metadata = {
-  title: "Voting | VAAP",
-  description:
-    "Transparent, member-led, blockchain-verified governance. View active votes, upcoming proposals and completed results anchored to the XRP Ledger.",
+export function generateMetadata() {
+  return seoMetadata(staticSubjectByPath('/voting'))
 }
 
 export default async function VotingHubPage() {
   const [user, stats, groups] = await Promise.all([getHeaderUser(), getGovernanceStats(), getPublicProposalGroups()])
 
   return (
+    <>
+      <SeoJsonLd subject={staticSubjectByPath('/voting')} />
     <>
       <SiteHeaderServer active="Voting" user={user} />
       <main className="bg-mint-2/50">
@@ -28,6 +31,7 @@ export default async function VotingHubPage() {
         </div>
       </main>
       <SiteFooter />
+    </>
     </>
   )
 }
