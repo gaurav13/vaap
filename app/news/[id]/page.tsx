@@ -74,15 +74,15 @@ export default async function NewsDetailPage({ params }: { params: Promise<{ id:
             </div>
 
             {post.image && (
-              <figure className="overflow-hidden rounded-3xl bg-card p-2 shadow-[0_30px_60px_-30px_rgba(16,40,32,0.35)] ring-1 ring-line">
+              <figure className="w-full max-w-3xl overflow-hidden rounded-2xl bg-card p-1.5 shadow-[0_20px_40px_-28px_rgba(16,40,32,0.3)] ring-1 ring-line">
                 <Image
                   src={post.image || "/placeholder.svg"}
                   alt={post.title}
                   width={1600}
                   height={900}
                   priority
-                  sizes="(min-width: 1152px) 1088px, 100vw"
-                  className="block h-auto w-full rounded-2xl"
+                  sizes="(min-width: 768px) 768px, 100vw"
+                  className="block h-auto max-h-[440px] w-full rounded-xl object-contain"
                 />
               </figure>
             )}
