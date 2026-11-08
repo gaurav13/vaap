@@ -13,6 +13,7 @@ import { CONTACT_EMAIL } from "@/lib/contact"
 import { getCryptoPayment } from "@/lib/site-settings"
 import { formatAlertDate, sendAdminAlert } from "@/lib/admin-alerts"
 import { redirect } from "next/navigation"
+import { accessForCategory, checkInvitationCode, redeemInvitationCode } from "@/app/actions/invitations"
 import {
   consumeToken,
   isValidEmail,
@@ -488,6 +489,8 @@ export type ApplicationInput = {
   totalAmount?: string
   // Referral code captured from a /join?ref= link (or the vaap_ref cookie).
   refCode?: string
+  // Required for invite-only categories (Academic & Research).
+  invitationCode?: string
 }
 
 export type IncompleteInput = {
@@ -562,6 +565,7 @@ export async function saveIncompleteApplication(input: IncompleteInput) {
   const category = clean(input.category) || "Corporate Membership"
 
   if (!name || !email) return { ok: false as const }
+  if ((await accessForCategory(category)) === "admin") return { ok: false as const }
 
   const values = {
     name,
@@ -630,7 +634,21 @@ export async function submitFullApplication(input: ApplicationInput) {
     return { ok: false as const, error: "Please enter a valid email address." }
   }
 
-  const paymentMethod = clean(input.paymentMethod)
+  const access = await accessForCategory(category)
+  if (access === "admin") {
+    return {
+      ok: false as const,
+      error: "Government & Public Institution memberships are enrolled by the VAAP team. Please contact us.",
+    }
+  }
+  if (access === "invite") {
+    const check = await checkInvitationCode(clean(input.invitationCode))
+    if (!check.ok) return { ok: false as const, error: check.error }
+  }
+
+  // Invite-only memberships carry no payment; ignore any payment fields sent by the client.
+  const paymentRequired = access === "open"
+  const paymentMethod = paymentRequired ? clean(input.paymentMethod) : ""
   const requestedCoin = clean(input.cryptoCoin)
   // The wallet address is resolved server-side so a tampered client cannot change what is recorded.
   const cryptoCoin = paymentMethod === "crypto" && isCryptoCoinId(requestedCoin) ? requestedCoin : null
@@ -648,18 +666,29 @@ export async function submitFullApplication(input: ApplicationInput) {
     phone: clean(input.phone) || null,
     cnic: clean(input.cnic) || null,
     paymentMethod: paymentMethod || null,
-    txid: clean(input.txid) || null,
+    txid: paymentRequired ? clean(input.txid) || null : null,
     cryptoCoin,
     cryptoAddress,
     admissionFee: clean(input.admissionFee) || null,
     annualFee: clean(input.annualFee) || null,
-    totalAmount: clean(input.totalAmount) || null,
-    message: `Application for ${category}.`,
+    totalAmount: paymentRequired ? clean(input.totalAmount) || null : "No payment required",
+    message: paymentRequired ? `Application for ${category}.` : `Invited application for ${category} — no payment required.`,
     completed: true,
   }
 
   try {
     let reference: string | null = null
+
+    // Consume one use of the code right before persisting so concurrent
+    // submissions cannot exceed the code's usage limit.
+    let invitationCode: string | null = null
+    if (access === "invite") {
+      invitationCode = await redeemInvitationCode(clean(input.invitationCode))
+      if (!invitationCode) {
+        return { ok: false as const, error: "This invitation code is invalid, expired, or has already been used." }
+      }
+    }
+    Object.assign(values, { invitationCode })
 
     if (input.applicationId) {
       if (!(await canUpdateApplication(input.applicationId, email))) {
@@ -749,14 +778,14 @@ export async function submitFullApplication(input: ApplicationInput) {
     await notify({
       role: "staff",
       type: "application",
-      title: "New paid membership application",
+      title: paymentRequired ? "New paid membership application" : "New invited membership application",
       body: `${name} applied for ${category}${reference ? ` (ref ${reference})` : ""}${paymentSummary}.${values.txid ? ` TXID: ${values.txid}` : ""}`,
       link: "/admin/applications",
     })
     await notify({
       role: "admin",
       type: "application",
-      title: "New paid membership application",
+      title: paymentRequired ? "New paid membership application" : "New invited membership application",
       body: `${name} applied for ${category}${reference ? ` (ref ${reference})` : ""}${paymentSummary}.${values.txid ? ` TXID: ${values.txid}` : ""}`,
       link: "/admin/applications",
     })

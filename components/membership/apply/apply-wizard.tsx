@@ -46,6 +46,8 @@ import {
   type CryptoConfig,
   type CryptoCoinId,
 } from "@/app/actions/public"
+import { checkInvitationCode } from "@/app/actions/invitations"
+import { planAccess } from "@/lib/membership-access"
 import { MembershipCardPayment } from "@/components/membership/apply/card-payment"
 import { cardProcessingFee, CARD_FEE_LABEL } from "@/lib/fees"
 import QRCode from "qrcode"
@@ -153,6 +155,7 @@ type FormState = {
   email: string
   phone: string
   cnic: string
+  invitationCode: string
   paymentMethod: "card" | "crypto"
   cardPaid: boolean
   stripeSessionId: string
@@ -172,6 +175,7 @@ const INITIAL: FormState = {
   email: "",
   phone: "",
   cnic: "",
+  invitationCode: "",
   paymentMethod: "card",
   cardPaid: false,
   stripeSessionId: "",
@@ -197,7 +201,10 @@ export function ApplyWizard({
 }) {
   // When arriving with a preselected membership type (e.g. chosen on the
   // dashboard), skip the "Select Membership" step and land on Information.
-  const preselected = initialPlanId != null && plans.some((p) => p.id === initialPlanId) ? initialPlanId : null
+  const preselected =
+    initialPlanId != null && plans.some((p) => p.id === initialPlanId && planAccess(p.icon) !== "admin")
+      ? initialPlanId
+      : null
   const [step, setStep] = useState(preselected ? 1 : 0)
   const [form, setForm] = useState<FormState>(() => ({
     ...INITIAL,
@@ -215,6 +222,9 @@ export function ApplyWizard({
     [plans, form.planId],
   )
   const individual = selectedPlan ? isIndividualPlan(selectedPlan) : false
+  const access = selectedPlan ? planAccess(selectedPlan.icon) : "open"
+  const skipPayment = access !== "open"
+  const [checkingCode, setCheckingCode] = useState(false)
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -222,7 +232,10 @@ export function ApplyWizard({
 
   function validateStep(current: number): string | null {
     if (current === 0 && !selectedPlan) return "Please select a membership type to continue."
+    if (current === 0 && access === "admin")
+      return "Government & Public Institution memberships are enrolled by the VAAP team. Please contact us."
     if (current === 1) {
+      if (access === "invite" && !form.invitationCode.trim()) return "Please enter your invitation code."
       if (!individual && !form.companyName.trim()) return "Please enter your company name."
       if (!form.fullName.trim()) return "Please enter your full name."
       if (!form.email.trim()) return "Please enter your email address."
@@ -230,6 +243,7 @@ export function ApplyWizard({
       if (!form.phone.trim()) return "Please enter your phone number."
       if (!form.cnic.trim()) return "Please enter your CNIC / NIC number."
     }
+    if (current === 2 && skipPayment) return null
     if (current === 2 && form.paymentMethod === "card") {
       if (!form.cardPaid)
         return "Please complete your card payment to continue, or choose Crypto Payment."
@@ -249,6 +263,16 @@ export function ApplyWizard({
       return
     }
     setError(null)
+
+    if (step === 1 && access === "invite") {
+      setCheckingCode(true)
+      const check = await checkInvitationCode(form.invitationCode)
+      setCheckingCode(false)
+      if (!check.ok) {
+        setError(check.error)
+        return
+      }
+    }
 
     // Leaving the Information step: persist an incomplete application so the
     // admin team can follow up if the applicant abandons the payment stage.
@@ -272,12 +296,12 @@ export function ApplyWizard({
       if (res.ok && res.applicationId) setApplicationId(res.applicationId)
     }
 
-    setStep((s) => Math.min(s + 1, STEPS.length - 1))
+    setStep((s) => Math.min(s === 1 && skipPayment ? 3 : s + 1, STEPS.length - 1))
   }
 
   function goBack() {
     setError(null)
-    setStep((s) => Math.max(s - 1, 0))
+    setStep((s) => Math.max(s === 3 && skipPayment ? 1 : s - 1, 0))
   }
 
   async function handleSubmit() {
@@ -301,9 +325,10 @@ export function ApplyWizard({
       designation: form.designation,
       phone: form.phone ? `+92 ${form.phone}`.trim() : "",
       cnic: form.cnic,
-      paymentMethod: form.paymentMethod,
-      txid: form.paymentMethod === "crypto" ? form.txid : form.stripeSessionId,
-      cryptoCoin: form.paymentMethod === "crypto" ? form.cryptoCoin : undefined,
+      invitationCode: access === "invite" ? form.invitationCode : undefined,
+      paymentMethod: skipPayment ? undefined : form.paymentMethod,
+      txid: skipPayment ? undefined : form.paymentMethod === "crypto" ? form.txid : form.stripeSessionId,
+      cryptoCoin: !skipPayment && form.paymentMethod === "crypto" ? form.cryptoCoin : undefined,
       admissionFee: selectedPlan.admissionFee,
       annualFee: selectedPlan.annualFee,
       totalAmount: totalForPlan(selectedPlan),
@@ -321,7 +346,7 @@ export function ApplyWizard({
   return (
     <div className="overflow-hidden rounded-2xl border border-line bg-card shadow-sm">
       <div className="border-b border-line px-5 py-6 lg:px-10">
-        <Stepper step={step} />
+        <Stepper step={step} skipPayment={skipPayment} />
       </div>
 
       <div className="px-5 py-8 lg:px-10 lg:py-10">
@@ -339,7 +364,7 @@ export function ApplyWizard({
           <StepInformation plan={selectedPlan} individual={individual} form={form} update={update} />
         )}
 
-        {step === 2 && selectedPlan && (
+        {step === 2 && selectedPlan && !skipPayment && (
           <StepPayment plan={selectedPlan} form={form} update={update} />
         )}
 
@@ -373,9 +398,18 @@ export function ApplyWizard({
               <button
                 type="button"
                 onClick={goNext}
-                className="inline-flex items-center gap-2 rounded-lg bg-green px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-green-hover"
+                disabled={checkingCode || (step === 0 && access === "admin")}
+                className="inline-flex items-center gap-2 rounded-lg bg-green px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-green-hover disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {step === 1 ? "Continue to Payment" : step === 2 ? "Continue to Review" : "Continue"}
+                {checkingCode
+                  ? "Verifying code…"
+                  : step === 1
+                    ? skipPayment
+                      ? "Continue to Review"
+                      : "Continue to Payment"
+                    : step === 2
+                      ? "Continue to Review"
+                      : "Continue"}
                 <ArrowRight className="size-4" />
               </button>
             ) : (
@@ -396,12 +430,15 @@ export function ApplyWizard({
   )
 }
 
-function Stepper({ step }: { step: number }) {
+function Stepper({ step, skipPayment }: { step: number; skipPayment: boolean }) {
+  const visible = STEPS.map((label, index) => ({ label, index })).filter(
+    (s) => !(skipPayment && s.label === "Payment"),
+  )
   return (
     <ol className="flex items-center">
-      {STEPS.map((label, i) => {
-        const done = i < step
-        const current = i === step
+      {visible.map(({ label, index: stepIndex }, i) => {
+        const done = stepIndex < step
+        const current = stepIndex === step
         return (
           <li key={label} className="flex flex-1 items-center last:flex-none">
             <div className="flex flex-col items-center gap-1.5">
@@ -423,9 +460,9 @@ function Stepper({ step }: { step: number }) {
                 {label}
               </span>
             </div>
-            {i < STEPS.length - 1 && (
+            {i < visible.length - 1 && (
               <span
-                className={["mx-2 h-px flex-1 transition-colors sm:mx-3", i < step ? "bg-green" : "bg-line"].join(" ")}
+                className={["mx-2 h-px flex-1 transition-colors sm:mx-3", stepIndex < step ? "bg-green" : "bg-line"].join(" ")}
                 aria-hidden
               />
             )}
@@ -675,6 +712,7 @@ function PlanDetailPanel({
 }) {
   const Icon = iconFor(plan.icon)
   const benefits = plan.benefits.length > 0 ? plan.benefits : featuresFor(plan.icon)
+  const access = planAccess(plan.icon)
 
   const fees: { label: string; value: string; note?: string; icon: LucideIcon }[] = []
   if (plan.annualFee)
@@ -768,6 +806,33 @@ function PlanDetailPanel({
       </div>
 
       <div className="mt-8 border-t border-line pt-6">
+        {access === "invite" && (
+          <p className="mb-4 flex items-start gap-2.5 rounded-lg border border-green/20 bg-mint/40 px-4 py-3 text-sm leading-relaxed text-body">
+            <KeyRound className="mt-0.5 size-4 shrink-0 text-green" aria-hidden />
+            <span>
+              <span className="font-semibold text-heading">By invitation only.</span> You&apos;ll need the invitation
+              code issued to your institution by VAAP to complete this application.
+            </span>
+          </p>
+        )}
+        {access === "admin" ? (
+          <div className="flex flex-col gap-4 rounded-lg border border-line bg-muted/40 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="flex items-start gap-2.5 text-sm leading-relaxed text-body">
+              <Lock className="mt-0.5 size-4 shrink-0 text-green" aria-hidden />
+              <span>
+                <span className="font-semibold text-heading">Enrolled by VAAP.</span> Government and public institution
+                memberships are registered directly by the VAAP team and cannot be applied for online.
+              </span>
+            </p>
+            <Link
+              href="/contact"
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-green px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-green-hover"
+            >
+              Contact VAAP
+              <ArrowRight className="size-4" />
+            </Link>
+          </div>
+        ) : (
         <button
           type="button"
           onClick={onChoose}
@@ -791,6 +856,7 @@ function PlanDetailPanel({
             </>
           )}
         </button>
+        )}
       </div>
     </div>
   )
@@ -844,6 +910,27 @@ function StepInformation({
           {plan.title}
         </span>
       </div>
+
+      {planAccess(plan.icon) === "invite" && (
+        <div className="mb-8 rounded-xl border border-green/20 bg-mint/40 p-5">
+          <Field label="Invitation Code" required>
+            <div className="relative">
+              <KeyRound className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-green" aria-hidden />
+              <input
+                className={`${INPUT_CLASS} pl-10 font-mono uppercase tracking-wider`}
+                placeholder="e.g. ACAD-1A2B3C4D"
+                autoComplete="off"
+                spellCheck={false}
+                value={form.invitationCode}
+                onChange={(e) => update("invitationCode", e.target.value.toUpperCase())}
+              />
+            </div>
+          </Field>
+          <p className="mt-2 text-xs leading-relaxed text-muted-2">
+            Academic &amp; Research membership is by invitation. Enter the code VAAP shared with your institution.
+          </p>
+        </div>
+      )}
 
       {!individual && (
         <>
@@ -1676,6 +1763,11 @@ function StepReview({
                 <p className="text-xs text-muted-2">{plan.subtitle}</p>
               </div>
             </div>
+            {planAccess(plan.icon) === "invite" && (
+              <div className="mt-3">
+                <ReviewRow label="Invitation Code" value={form.invitationCode} />
+              </div>
+            )}
           </ReviewSection>
 
           {!individual && (
@@ -1699,6 +1791,15 @@ function StepReview({
           </ReviewSection>
         </div>
 
+        {planAccess(plan.icon) !== "open" ? (
+          <div className="h-fit rounded-xl border border-line bg-muted/30 p-5">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-2">Payment</h3>
+            <p className="mt-3 text-sm font-semibold text-heading">No payment required</p>
+            <p className="mt-1 text-sm leading-relaxed text-muted-2">
+              This membership is by invitation. Your application will be reviewed by the VAAP team.
+            </p>
+          </div>
+        ) : (
         <div className="h-fit rounded-xl border border-line bg-muted/30 p-5">
           <h3 className="text-xs font-bold uppercase tracking-wider text-muted-2">Payment Details</h3>
           <div className="mt-3 flex flex-col gap-3">
@@ -1726,6 +1827,7 @@ function StepReview({
             })()}
           </div>
         </div>
+        )}
       </div>
 
       <label className="mt-6 flex items-start gap-3 rounded-lg border border-line bg-muted/30 p-4">
