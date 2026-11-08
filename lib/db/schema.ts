@@ -190,6 +190,22 @@ export const membershipApplications = pgTable("membership_applications", {
   // false = applicant saved their details but abandoned before final submit
   // (e.g. stopped at the payment stage). true = full application submitted.
   completed: boolean("completed").notNull().default(false),
+  // Invitation code redeemed for invite-only categories (Academic & Research).
+  invitationCode: text("invitationCode"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
+// Admin-issued codes that unlock invite-only membership categories.
+export const membershipInvitationCodes = pgTable("membership_invitation_codes", {
+  id: serial("id").primaryKey(),
+  code: text("code").notNull(),
+  label: text("label").notNull().default(""),
+  // null = unlimited uses
+  maxUses: integer("maxUses"),
+  usedCount: integer("usedCount").notNull().default(0),
+  expiresAt: timestamp("expiresAt"),
+  active: boolean("active").notNull().default(true),
+  createdBy: text("createdBy"),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 })
 

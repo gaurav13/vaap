@@ -13,6 +13,7 @@ import { CONTACT_EMAIL } from "@/lib/contact"
 import { getCryptoPayment } from "@/lib/site-settings"
 import { formatAlertDate, sendAdminAlert } from "@/lib/admin-alerts"
 import { redirect } from "next/navigation"
+import { accessForCategory, checkInvitationCode, redeemInvitationCode } from "@/app/actions/invitations"
 import {
   consumeToken,
   isValidEmail,
@@ -488,6 +489,8 @@ export type ApplicationInput = {
   totalAmount?: string
   // Referral code captured from a /join?ref= link (or the vaap_ref cookie).
   refCode?: string
+  // Required for invite-only categories (Academic & Research).
+  invitationCode?: string
 }
 
 export type IncompleteInput = {
@@ -562,6 +565,7 @@ export async function saveIncompleteApplication(input: IncompleteInput) {
   const category = clean(input.category) || "Corporate Membership"
 
   if (!name || !email) return { ok: false as const }
+  if ((await accessForCategory(category)) === "admin") return { ok: false as const }
 
   const values = {
     name,
@@ -630,6 +634,18 @@ export async function submitFullApplication(input: ApplicationInput) {
     return { ok: false as const, error: "Please enter a valid email address." }
   }
 
+  const access = await accessForCategory(category)
+  if (access === "admin") {
+    return {
+      ok: false as const,
+      error: "Government & Public Institution memberships are enrolled by the VAAP team. Please contact us.",
+    }
+  }
+  if (access === "invite") {
+    const check = await checkInvitationCode(clean(input.invitationCode))
+    if (!check.ok) return { ok: false as const, error: check.error }
+  }
+
   const paymentMethod = clean(input.paymentMethod)
   const requestedCoin = clean(input.cryptoCoin)
   // The wallet address is resolved server-side so a tampered client cannot change what is recorded.
@@ -660,6 +676,17 @@ export async function submitFullApplication(input: ApplicationInput) {
 
   try {
     let reference: string | null = null
+
+    // Consume one use of the code right before persisting so concurrent
+    // submissions cannot exceed the code's usage limit.
+    let invitationCode: string | null = null
+    if (access === "invite") {
+      invitationCode = await redeemInvitationCode(clean(input.invitationCode))
+      if (!invitationCode) {
+        return { ok: false as const, error: "This invitation code is invalid, expired, or has already been used." }
+      }
+    }
+    Object.assign(values, { invitationCode })
 
     if (input.applicationId) {
       if (!(await canUpdateApplication(input.applicationId, email))) {
