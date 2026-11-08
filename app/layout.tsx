@@ -82,6 +82,16 @@ export default async function RootLayout({
   }
   return (
     <html lang="en" className={`${miranda.variable} bg-background`}>
+      <head>
+        <script async src="https://www.googletagmanager.com/gtm.js?id=GTM-MSFSLTFP" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());`,
+          }}
+        />
+      </head>
       <body className="font-sans antialiased">
         <SiteGate comingSoon={comingSoon} elevated={elevated}>
           {children}
