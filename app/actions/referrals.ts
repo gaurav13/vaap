@@ -8,13 +8,15 @@ import {
   rewardPayments,
   referralClicks,
   notifications,
+  notificationReads,
   members,
 } from "@/lib/db/schema"
+import { COMMUNITY_AUDIENCE, adminAudiencesFor, type NotificationScope } from "@/lib/notification-audience"
 import { getSession } from "@/lib/session"
 import { ensureKolReferralCode, isVerifiedKolUser } from "@/lib/kol"
 import { canOwnReferralCode } from "@/lib/permissions"
 import { buildReferralCode } from "@/lib/referral"
-import { and, desc, eq, inArray, sql } from "drizzle-orm"
+import { and, desc, eq, inArray, isNull, or, sql, type SQL } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 
 async function requireUser() {
@@ -123,54 +125,85 @@ export async function getMyReferralDashboard() {
   }
 }
 
-export async function getMyNotifications() {
-  const current = await requireUser()
-  const rows = await db
-    .select()
-    .from(notifications)
-    .where(
-      current.role
-        ? sql`(${notifications.userId} = ${current.id} OR ${notifications.role} = ${current.role})`
-        : eq(notifications.userId, current.id),
-    )
-    .orderBy(desc(notifications.createdAt))
-    .limit(50)
-  return rows
+// Role-based notification feeds.
+//   member scope: the caller's own private notifications + community updates.
+//   admin scope:  admin/staff broadcasts (registrations, payments, settings),
+//                 only for internal roles.
+// Members can never read admin broadcasts or another user's personal rows.
+function feedFilter(current: { id: string; role?: string | null }, scope: NotificationScope): SQL {
+  if (scope === "admin") {
+    const audiences = adminAudiencesFor(current.role)
+    if (!audiences.length) throw new Error("Unauthorized")
+    return and(isNull(notifications.userId), inArray(notifications.role, audiences)) as SQL
+  }
+  return or(
+    eq(notifications.userId, current.id),
+    and(isNull(notifications.userId), eq(notifications.role, COMMUNITY_AUDIENCE)),
+  ) as SQL
 }
 
-export async function markNotificationsRead(ids: number[]) {
-  const current = await requireUser()
-  if (!ids.length) return { ok: true as const }
-  // Only allow marking notifications the user can actually see: their own
-  // personal ones or role-broadcast ones matching their role.
-  await db
-  .update(notifications)
-  .set({ read: true })
-  .where(
-  and(
-  inArray(notifications.id, ids),
-  current.role
-  ? sql`(${notifications.userId} = ${current.id} OR ${notifications.role} = ${current.role})`
-  : eq(notifications.userId, current.id),
-  ),
-  )
-  revalidatePath("/dashboard")
-  return { ok: true as const }
-  }
+function parseScope(scope: unknown): NotificationScope {
+  return scope === "admin" ? "admin" : "member"
+}
 
-export async function markAllNotificationsRead() {
+export async function getMyNotifications(scopeInput: NotificationScope = "member") {
   const current = await requireUser()
+  const scope = parseScope(scopeInput)
+  return db
+    .select({
+      id: notifications.id,
+      type: notifications.type,
+      title: notifications.title,
+      body: notifications.body,
+      link: notifications.link,
+      createdAt: notifications.createdAt,
+      // Personal rows carry their own flag; broadcasts use per-user receipts.
+      read: sql<boolean>`CASE WHEN ${notifications.userId} IS NOT NULL THEN ${notifications.read}
+        ELSE EXISTS (SELECT 1 FROM ${notificationReads}
+          WHERE ${notificationReads.notificationId} = ${notifications.id}
+          AND ${notificationReads.userId} = ${current.id}) END`,
+    })
+    .from(notifications)
+    .where(feedFilter(current, scope))
+    .orderBy(desc(notifications.createdAt))
+    .limit(50)
+}
+
+async function markRead(current: { id: string; role?: string | null }, scope: NotificationScope, ids?: number[]) {
+  const visible = feedFilter(current, scope)
+  const idFilter = ids ? inArray(notifications.id, ids) : undefined
+
   await db
-  .update(notifications)
-  .set({ read: true })
-  .where(
-  and(
-  eq(notifications.read, false),
-  current.role
-  ? sql`(${notifications.userId} = ${current.id} OR ${notifications.role} = ${current.role})`
-  : eq(notifications.userId, current.id),
-  ),
-  )
-  revalidatePath("/dashboard")
-  return { ok: true as const }
+    .update(notifications)
+    .set({ read: true })
+    .where(and(visible, idFilter, eq(notifications.userId, current.id), eq(notifications.read, false)))
+
+  const broadcasts = await db
+    .select({ id: notifications.id })
+    .from(notifications)
+    .where(and(visible, idFilter, isNull(notifications.userId)))
+    .orderBy(desc(notifications.createdAt))
+    .limit(200)
+  if (broadcasts.length) {
+    await db
+      .insert(notificationReads)
+      .values(broadcasts.map((b) => ({ notificationId: b.id, userId: current.id })))
+      .onConflictDoNothing()
   }
+}
+
+export async function markNotificationsRead(ids: number[], scopeInput: NotificationScope = "member") {
+  const current = await requireUser()
+  const clean = ids.filter((id) => Number.isInteger(id)).slice(0, 200)
+  if (!clean.length) return { ok: true as const }
+  await markRead(current, parseScope(scopeInput), clean)
+  revalidatePath(scopeInput === "admin" ? "/admin" : "/dashboard", "layout")
+  return { ok: true as const }
+}
+
+export async function markAllNotificationsRead(scopeInput: NotificationScope = "member") {
+  const current = await requireUser()
+  await markRead(current, parseScope(scopeInput))
+  revalidatePath(scopeInput === "admin" ? "/admin" : "/dashboard", "layout")
+  return { ok: true as const }
+}

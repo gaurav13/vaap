@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, serial, integer, jsonb, uniqueIndex } from "drizzle-orm/pg-core"
+import { pgTable, text, timestamp, boolean, serial, integer, jsonb, uniqueIndex, primaryKey } from "drizzle-orm/pg-core"
 import type { EmailContent } from "@/lib/email-templates/registry"
 
 // --- Better Auth required tables -------------------------------------------
@@ -705,8 +705,19 @@ export const notifications = pgTable("notifications", {
   link: text("link").notNull().default(""),
   read: boolean("read").notNull().default(false),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
-})
+  })
 
+// Per-user read receipts for broadcast (role / community) notifications.
+export const notificationReads = pgTable(
+  "notification_reads",
+  {
+    notificationId: integer("notificationId").notNull(),
+    userId: text("userId").notNull(),
+    readAt: timestamp("readAt").notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.notificationId, t.userId] })],
+)
+  
 // ===========================================================================
 // Governance, Elections & XRPL verification system (see 005-governance-schema.sql)
 // ===========================================================================

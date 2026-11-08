@@ -7,6 +7,7 @@ import { can } from "@/lib/permissions"
 import { and, desc, eq, inArray, ne } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { formatAlertDate, sendAdminAlert } from "@/lib/admin-alerts"
+import { notifyCommunity } from "@/lib/notifications"
 
 function slugify(input: string): string {
   return input
@@ -222,6 +223,14 @@ export async function createAdminArticle(input: {
     note: published ? "Created and published from admin" : "Created from admin",
   })
 
+  if (published) {
+    await notifyCommunity({
+      type: "article",
+      title: "New article published",
+      body: created.title,
+      link: `/insights/${slug}`,
+    })
+  }
   revalidatePath("/admin/articles")
   revalidatePath("/insights")
   if (published) revalidatePath(`/insights/${slug}`)
@@ -325,6 +334,12 @@ export async function publishArticle(id: number) {
       link: `/insights/${article.slug}`,
     })
   }
+  await notifyCommunity({
+    type: "article",
+    title: "New article published",
+    body: article.title,
+    link: `/insights/${article.slug}`,
+  })
   revalidatePath("/admin/articles")
   revalidatePath("/dashboard/articles")
   revalidatePath("/insights")

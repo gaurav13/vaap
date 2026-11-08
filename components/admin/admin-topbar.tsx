@@ -3,8 +3,9 @@
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { useState } from "react"
-import { Bell, ChevronDown, Home, LogOut, Search } from "lucide-react"
+import { ChevronDown, Home, LogOut, Search } from "lucide-react"
 import { authClient } from "@/lib/auth-client"
+import { NotificationBell, type NotificationItem } from "@/components/member/notification-bell"
 
 function initials(name: string) {
   return name
@@ -16,7 +17,15 @@ function initials(name: string) {
     .toUpperCase()
 }
 
-export function AdminTopbar({ name, role, notifications }: { name: string; role: "staff" | "admin"; notifications: number }) {
+export function AdminTopbar({
+  name,
+  role,
+  notifications,
+}: {
+  name: string
+  role: "staff" | "admin"
+  notifications: NotificationItem[]
+}) {
   const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
   const [query, setQuery] = useState("")
@@ -47,18 +56,7 @@ export function AdminTopbar({ name, role, notifications }: { name: string; role:
         />
       </form>
       <div className="flex flex-1 items-center justify-end gap-3 md:flex-none">
-        <Link
-          href="/admin/applications"
-          className="relative inline-flex size-10 items-center justify-center rounded-lg border border-line text-muted-2 hover:bg-surface hover:text-heading"
-          aria-label={`${notifications} pending notifications`}
-        >
-          <Bell className="size-5" />
-          {notifications > 0 && (
-            <span className="absolute -right-1 -top-1 flex min-w-5 items-center justify-center rounded-full bg-green px-1 text-[10px] font-bold text-white">
-              {notifications > 99 ? "99+" : notifications}
-            </span>
-          )}
-        </Link>
+        <NotificationBell initial={notifications} scope="admin" />
         <div className="relative">
           <button
             type="button"

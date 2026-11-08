@@ -19,6 +19,7 @@ import { getSession, isStaff } from "@/lib/session"
 import { desc, eq, and, isNull, sql } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { ENTITIES, type EntityKey, type FieldDef } from "@/lib/cms/entities"
+import { notifyCommunity } from "@/lib/notifications"
 
 const TABLES = {
   publications,
@@ -114,6 +115,14 @@ export async function saveEntity(key: EntityKey, id: number | null, formData: Fo
     } else {
       await db.insert(table).values(values)
       await log(actor, `created ${config.singular}`, String(values[config.list.title] ?? ""))
+      if (key === "mediaHighlights" || key === "publications") {
+        await notifyCommunity({
+          type: key === "mediaHighlights" ? "media" : "announcement",
+          title: key === "mediaHighlights" ? "New media coverage" : "New publication",
+          body: String(values[config.list.title] ?? ""),
+          link: key === "mediaHighlights" ? "/" : "/knowledge",
+        })
+      }
     }
   } catch {
     return { ok: false, error: "Save failed." }

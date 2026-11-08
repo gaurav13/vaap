@@ -36,7 +36,7 @@ export type Permission =
   | "admin.view"
 
 // Admin routes a read-only staff user may open. Everything else redirects.
-export const STAFF_ADMIN_ROUTES = ["/admin/members", "/admin/articles", "/admin/referrals"] as const
+export const STAFF_ADMIN_ROUTES = ["/admin/members", "/admin/articles", "/admin/referrals", "/admin/notifications"] as const
 
 export function isStaffAdminRoute(pathname: string): boolean {
   return STAFF_ADMIN_ROUTES.some((r) => pathname === r || pathname.startsWith(`${r}/`))
