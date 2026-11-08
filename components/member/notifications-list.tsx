@@ -2,8 +2,23 @@
 
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
-import { Award, Bell, CheckCheck, FileCheck2, IdCard, Info, ShieldAlert } from "lucide-react"
+import {
+  Award,
+  BadgeCheck,
+  Bell,
+  CalendarDays,
+  CheckCheck,
+  CreditCard,
+  FileCheck2,
+  FileText,
+  IdCard,
+  Info,
+  Megaphone,
+  Newspaper,
+  ShieldAlert,
+} from "lucide-react"
 import { cn } from "@/lib/utils"
+import type { NotificationScope } from "@/lib/notification-audience"
 import type { NotificationItem } from "@/components/member/notification-bell"
 import { markAllNotificationsRead, markNotificationsRead } from "@/app/actions/referrals"
 
@@ -13,6 +28,13 @@ const TYPE_META: Record<string, { icon: typeof Bell; badge: string }> = {
   reward: { icon: Award, badge: "bg-green/10 text-green" },
   security: { icon: ShieldAlert, badge: "bg-destructive/10 text-destructive" },
   info: { icon: Info, badge: "bg-muted text-muted-2" },
+  payment: { icon: CreditCard, badge: "bg-gold/15 text-gold-ink" },
+  article: { icon: FileText, badge: "bg-green/10 text-green" },
+  news: { icon: Newspaper, badge: "bg-green/10 text-green" },
+  media: { icon: Newspaper, badge: "bg-green/10 text-green" },
+  event: { icon: CalendarDays, badge: "bg-gold/15 text-gold-ink" },
+  kol: { icon: BadgeCheck, badge: "bg-gold/15 text-gold-ink" },
+  announcement: { icon: Megaphone, badge: "bg-navy/10 text-navy" },
 }
 
 function formatDate(input: string | Date) {
@@ -25,7 +47,13 @@ function formatDate(input: string | Date) {
   })
 }
 
-export function NotificationsList({ initial }: { initial: NotificationItem[] }) {
+export function NotificationsList({
+  initial,
+  scope = "member",
+}: {
+  initial: NotificationItem[]
+  scope?: NotificationScope
+}) {
   const router = useRouter()
   const [items, setItems] = useState<NotificationItem[]>(initial)
   const [, startTransition] = useTransition()
@@ -36,7 +64,7 @@ export function NotificationsList({ initial }: { initial: NotificationItem[] }) 
     if (!item.read) {
       setItems((prev) => prev.map((n) => (n.id === item.id ? { ...n, read: true } : n)))
       startTransition(async () => {
-        await markNotificationsRead([item.id])
+        await markNotificationsRead([item.id], scope)
       })
     }
     if (item.link) router.push(item.link)
@@ -45,7 +73,7 @@ export function NotificationsList({ initial }: { initial: NotificationItem[] }) 
   function markAll() {
     setItems((prev) => prev.map((n) => ({ ...n, read: true })))
     startTransition(async () => {
-      await markAllNotificationsRead()
+      await markAllNotificationsRead(scope)
       router.refresh()
     })
   }
@@ -58,7 +86,9 @@ export function NotificationsList({ initial }: { initial: NotificationItem[] }) 
         </span>
         <p className="text-base font-semibold text-heading">No notifications yet</p>
         <p className="max-w-sm text-sm text-muted-2">
-          Updates about your membership, applications, rewards, and account security will show up here.
+          {scope === "admin"
+            ? "New registrations, membership status changes, and payment activity will show up here."
+            : "Community updates and your own membership, payment, and account notices will show up here."}
         </p>
       </div>
     )

@@ -10,7 +10,7 @@ import { computeExpiry } from "@/lib/membership"
 import { processMembershipApproval } from "@/lib/referral-engine"
 import { canOwnReferralCode } from "@/lib/permissions"
 import { isVerifiedKolUser } from "@/lib/kol"
-import { notify } from "@/lib/notifications"
+import { notify, notifyCommunity } from "@/lib/notifications"
 import { and, desc, eq, sql } from "drizzle-orm"
 import { randomUUID } from "crypto"
 import { revalidatePath } from "next/cache"
@@ -92,6 +92,14 @@ export async function createNews(formData: FormData) {
     published,
     authorId: author.id,
   })
+  if (published) {
+    await notifyCommunity({
+      type: publisher.sourceType === "external" ? "media" : "news",
+      title: publisher.sourceType === "external" ? "New media coverage" : "Latest news",
+      body: title,
+      link: "/news",
+    })
+  }
   revalidatePath("/admin/news")
   revalidatePath("/news")
   revalidatePath("/working-groups")
@@ -192,7 +200,10 @@ export async function createEvent(formData: FormData) {
     published,
     status: "approved",
   }).returning({ id: events.id })
-  if (published) scheduleEventAnnouncement(created.id)
+  if (published) {
+    scheduleEventAnnouncement(created.id)
+    await notifyCommunity({ type: "event", title: "New event announced", body: title, link: "/events" })
+  }
   revalidatePath("/admin/events")
   revalidatePath("/events")
   revalidatePath("/")

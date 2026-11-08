@@ -10,6 +10,7 @@ import {
   markAllNotificationsRead,
   markNotificationsRead,
 } from "@/app/actions/referrals"
+import type { NotificationScope } from "@/lib/notification-audience"
 
 export type NotificationItem = {
   id: number
@@ -40,9 +41,23 @@ const TYPE_DOT: Record<string, string> = {
   reward: "bg-green",
   security: "bg-destructive",
   info: "bg-muted-2",
+  payment: "bg-gold",
+  article: "bg-green",
+  news: "bg-green",
+  media: "bg-green",
+  event: "bg-gold",
+  kol: "bg-gold",
+  announcement: "bg-navy",
 }
 
-export function NotificationBell({ initial }: { initial: NotificationItem[] }) {
+export function NotificationBell({
+  initial,
+  scope = "member",
+}: {
+  initial: NotificationItem[]
+  scope?: NotificationScope
+}) {
+  const viewAllHref = scope === "admin" ? "/admin/notifications" : "/dashboard/notifications"
   const router = useRouter()
   const [items, setItems] = useState<NotificationItem[]>(initial)
   const [open, setOpen] = useState(false)
@@ -53,12 +68,12 @@ export function NotificationBell({ initial }: { initial: NotificationItem[] }) {
 
   const refresh = useCallback(async () => {
     try {
-      const rows = (await getMyNotifications()) as unknown as NotificationItem[]
+      const rows = (await getMyNotifications(scope)) as unknown as NotificationItem[]
       setItems(rows)
     } catch {
       // Silent — the bell should never break the shell.
     }
-  }, [])
+  }, [scope])
 
   // Poll periodically so new events (approvals, rewards) surface without a
   // full reload. Also refresh whenever the panel is opened.
@@ -85,7 +100,7 @@ export function NotificationBell({ initial }: { initial: NotificationItem[] }) {
     if (!item.read) {
       setItems((prev) => prev.map((n) => (n.id === item.id ? { ...n, read: true } : n)))
       startTransition(async () => {
-        await markNotificationsRead([item.id])
+        await markNotificationsRead([item.id], scope)
       })
     }
     setOpen(false)
@@ -95,7 +110,7 @@ export function NotificationBell({ initial }: { initial: NotificationItem[] }) {
   function handleMarkAll() {
     setItems((prev) => prev.map((n) => ({ ...n, read: true })))
     startTransition(async () => {
-      await markAllNotificationsRead()
+      await markAllNotificationsRead(scope)
       router.refresh()
     })
   }
@@ -176,7 +191,7 @@ export function NotificationBell({ initial }: { initial: NotificationItem[] }) {
 
           <div className="border-t border-line p-2">
             <Link
-              href="/dashboard/notifications"
+              href={viewAllHref}
               onClick={() => setOpen(false)}
               className="block rounded-md px-3 py-2 text-center text-sm font-semibold text-green transition-colors hover:bg-mint hover:text-navy"
             >

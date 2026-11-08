@@ -11,6 +11,9 @@ import { eq } from "drizzle-orm"
 import { sendEmail, brandedEmail } from "@/lib/mailer"
 import { sendTemplateEmail } from "@/lib/email-templates/service"
 import type { EmailTemplateKey } from "@/lib/email-templates/registry"
+import { COMMUNITY_AUDIENCE } from "@/lib/notification-audience"
+
+export type CommunityNotifyType = "article" | "news" | "media" | "event" | "kol" | "announcement"
 
 export type NotifyType =
   | "info"
@@ -70,6 +73,31 @@ function toAbsolute(path?: string) {
   if (/^https?:\/\//.test(path)) return path
   const base = baseUrl().replace(/\/$/, "")
   return base ? `${base}${path.startsWith("/") ? "" : "/"}${path}` : path
+}
+
+/**
+ * Broadcast a public community update (article, news, event, KOL,
+ * announcement) to every member. Never use this for anything involving
+ * another member's registration, payment, or internal admin activity.
+ */
+export async function notifyCommunity(opts: {
+  type: CommunityNotifyType
+  title: string
+  body?: string
+  link?: string
+}): Promise<void> {
+  try {
+    await db.insert(notifications).values({
+      userId: null,
+      role: COMMUNITY_AUDIENCE,
+      type: opts.type,
+      title: opts.title.slice(0, 200),
+      body: (opts.body ?? "").slice(0, 500),
+      link: opts.link ?? "",
+    })
+  } catch (err) {
+    console.log("[v0] notifyCommunity failed:", err instanceof Error ? err.message : err)
+  }
 }
 
 export async function notify(opts: NotifyOptions): Promise<void> {

@@ -18,6 +18,7 @@ import { KOL_EDITABLE, KOL_EXPERTISE, KOL_PLATFORMS, sumFollowers, type KolStatu
 import { sendEmail } from "@/lib/mailer"
 import { CONTACT_EMAIL } from "@/lib/contact"
 import { formatAlertDate, sendAdminAlert } from "@/lib/admin-alerts"
+import { notifyCommunity } from "@/lib/notifications"
 
 type Result = { ok: true; message?: string } | { ok: false; error: string }
 
@@ -268,6 +269,14 @@ export async function adminSetKolStatus(memberId: number, status: KolStatus, not
       return { ok: false, error: "Only active members can be verified as KOLs." }
     }
     await transitionKol(memberId, status, { actor: user.email, note: text(note, 1000) })
+    if (status === "verified") {
+      await notifyCommunity({
+        type: "kol",
+        title: "New Verified KOL",
+        body: `${member[0]?.name ?? "A member"} is now a Verified Opinion Leader.`,
+        link: "/membership/verified-opinion-leaders",
+      })
+    }
     revalidatePath("/admin/kol")
     revalidatePath(`/admin/kol/${memberId}`)
     revalidatePath("/membership/verified-opinion-leaders")
