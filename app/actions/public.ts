@@ -646,7 +646,9 @@ export async function submitFullApplication(input: ApplicationInput) {
     if (!check.ok) return { ok: false as const, error: check.error }
   }
 
-  const paymentMethod = clean(input.paymentMethod)
+  // Invite-only memberships carry no payment; ignore any payment fields sent by the client.
+  const paymentRequired = access === "open"
+  const paymentMethod = paymentRequired ? clean(input.paymentMethod) : ""
   const requestedCoin = clean(input.cryptoCoin)
   // The wallet address is resolved server-side so a tampered client cannot change what is recorded.
   const cryptoCoin = paymentMethod === "crypto" && isCryptoCoinId(requestedCoin) ? requestedCoin : null
@@ -664,13 +666,13 @@ export async function submitFullApplication(input: ApplicationInput) {
     phone: clean(input.phone) || null,
     cnic: clean(input.cnic) || null,
     paymentMethod: paymentMethod || null,
-    txid: clean(input.txid) || null,
+    txid: paymentRequired ? clean(input.txid) || null : null,
     cryptoCoin,
     cryptoAddress,
     admissionFee: clean(input.admissionFee) || null,
     annualFee: clean(input.annualFee) || null,
-    totalAmount: clean(input.totalAmount) || null,
-    message: `Application for ${category}.`,
+    totalAmount: paymentRequired ? clean(input.totalAmount) || null : "No payment required",
+    message: paymentRequired ? `Application for ${category}.` : `Invited application for ${category} — no payment required.`,
     completed: true,
   }
 
@@ -776,14 +778,14 @@ export async function submitFullApplication(input: ApplicationInput) {
     await notify({
       role: "staff",
       type: "application",
-      title: "New paid membership application",
+      title: paymentRequired ? "New paid membership application" : "New invited membership application",
       body: `${name} applied for ${category}${reference ? ` (ref ${reference})` : ""}${paymentSummary}.${values.txid ? ` TXID: ${values.txid}` : ""}`,
       link: "/admin/applications",
     })
     await notify({
       role: "admin",
       type: "application",
-      title: "New paid membership application",
+      title: paymentRequired ? "New paid membership application" : "New invited membership application",
       body: `${name} applied for ${category}${reference ? ` (ref ${reference})` : ""}${paymentSummary}.${values.txid ? ` TXID: ${values.txid}` : ""}`,
       link: "/admin/applications",
     })
