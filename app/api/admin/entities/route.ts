@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { saveEntity, deleteEntity } from "@/app/actions/cms"
+import { saveEntity, deleteEntity, reorderEntity } from "@/app/actions/cms"
 import { ENTITIES, type EntityKey } from "@/lib/cms/entities"
 
 function parseTarget(url: string) {
@@ -28,6 +28,19 @@ export async function POST(request: Request) {
     const formData = await request.formData()
     const res = await saveEntity(target.entity, target.id, formData)
     return NextResponse.json(res ?? { ok: true })
+  } catch (err) {
+    return errorResponse(err)
+  }
+}
+
+export async function PATCH(request: Request) {
+  const target = parseTarget(request.url)
+  if (!target) return NextResponse.json({ ok: false, error: "Invalid request." }, { status: 400 })
+  try {
+    const body = (await request.json().catch(() => null)) as { ids?: unknown } | null
+    const ids = Array.isArray(body?.ids) ? body.ids.map(Number) : []
+    const res = await reorderEntity(target.entity, ids)
+    return NextResponse.json(res, { status: res.ok ? 200 : 400 })
   } catch (err) {
     return errorResponse(err)
   }

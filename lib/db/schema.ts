@@ -302,6 +302,7 @@ export const documents = pgTable("documents", {
   description: text("description").notNull().default(""),
   fileUrl: text("fileUrl"),
   published: boolean("published").notNull().default(true),
+  sortOrder: integer("sortOrder").notNull().default(0),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 })
 
