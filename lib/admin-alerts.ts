@@ -6,6 +6,7 @@ import { db } from "@/lib/db"
 import { settings } from "@/lib/db/schema"
 import { CONTACT_EMAIL } from "@/lib/contact"
 import { sendTemplateEmail } from "@/lib/email-templates/service"
+import { claimEmailOnce } from "@/lib/email-dedupe"
 import {
   ADMIN_ALERTS,
   ADMIN_ALERTS_SETTINGS_KEY,
@@ -73,14 +74,26 @@ export function reportSummary(category: string, description: string) {
  * Emails the configured admin recipients. Runs after the response is sent so a
  * slow or failing mail server never delays or breaks the user's submission.
  */
-export function sendAdminAlert(type: AdminAlertType, vars: Record<string, string | undefined>) {
+export function sendAdminAlert(
+  type: AdminAlertType,
+  vars: Record<string, string | undefined>,
+  options: { dedupeKey?: (to: string) => string } = {},
+) {
   const def = ADMIN_ALERTS.find((a) => a.type === type)
   if (!def) return
+  const sendTo = async (to: string) => {
+    if (!options.dedupeKey) return sendTemplateEmail({ to, key: def.templateKey, vars })
+    const release = await claimEmailOnce(def.templateKey, options.dedupeKey(to), to)
+    if (!release) return true
+    const ok = await sendTemplateEmail({ to, key: def.templateKey, vars }).catch(() => false)
+    if (!ok) await release()
+    return ok
+  }
   const run = async () => {
     try {
       const config = await getAdminAlertConfig()
       if (!config.enabled[type] || config.recipients.length === 0) return
-      await Promise.all(config.recipients.map((to) => sendTemplateEmail({ to, key: def.templateKey, vars })))
+      await Promise.all(config.recipients.map(sendTo))
     } catch (err) {
       console.error(`[admin-alerts] ${type} alert failed:`, err instanceof Error ? err.message : err)
     }

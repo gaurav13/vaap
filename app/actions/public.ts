@@ -12,6 +12,7 @@ import { sendTemplateEmail } from "@/lib/email-templates/service"
 import { CONTACT_EMAIL } from "@/lib/contact"
 import { getCryptoPayment } from "@/lib/site-settings"
 import { formatAlertDate, sendAdminAlert } from "@/lib/admin-alerts"
+import { registrationAlertKey, releaseRegistrationEmailClaims } from "@/lib/email-dedupe"
 import { redirect } from "next/navigation"
 import { accessForCategory, checkInvitationCode, redeemInvitationCode } from "@/app/actions/invitations"
 import {
@@ -316,16 +317,27 @@ function refreshEventPaths(ev: { id: number; slug: string | null }) {
   revalidatePath("/events")
 }
 
-function alertRegistration(name: string, email: string, ev: { id: number; title: string }, verified: boolean) {
-  sendAdminAlert("registration", {
-    name,
-    email,
-    eventName: ev.title,
-    registeredAt: formatAlertDate(),
-    emailVerified: verified ? "Yes" : "Not yet — verification link sent",
-    status: verified ? "Confirmed" : "Pending verification",
-    reviewUrl: `/admin/events/${ev.id}/participants`,
-  })
+/** One admin alert per registration ID, no matter how often the form is resubmitted. */
+function alertRegistration(
+  rsvpId: number,
+  name: string,
+  email: string,
+  ev: { id: number; title: string },
+  verified: boolean,
+) {
+  sendAdminAlert(
+    "registration",
+    {
+      name,
+      email,
+      eventName: ev.title,
+      registeredAt: formatAlertDate(),
+      emailVerified: verified ? "Yes" : "Not yet — verification link sent",
+      status: verified ? "Confirmed" : "Pending verification",
+      reviewUrl: `/admin/events/${ev.id}/participants`,
+    },
+    { dedupeKey: (to) => registrationAlertKey(rsvpId, to) },
+  )
 }
 
 /**
@@ -364,6 +376,7 @@ export async function rsvpToEvent(formData: FormData): Promise<RsvpResult> {
 
   try {
     if (rsvp) {
+      if (rsvp.status === "cancelled") await releaseRegistrationEmailClaims(rsvp.id)
       ;[rsvp] = await db
         .update(eventRsvps)
         .set({ name, organization, userId: rsvp.userId ?? userId, status: "pending", cancelledAt: null })
@@ -390,13 +403,13 @@ export async function rsvpToEvent(formData: FormData): Promise<RsvpResult> {
       .set({ status: "confirmed", verifiedAt: new Date(), verifyTokenHash: null, verifyExpiresAt: null })
       .where(eq(eventRsvps.id, rsvp.id))
     await sendConfirmedEmail(rsvp, ev)
-    alertRegistration(name, email, ev, true)
+    alertRegistration(rsvp.id, name, email, ev, true)
     refreshEventPaths(ev)
     return { ok: true, status: "confirmed" }
   }
 
   const sent = await sendVerification(rsvp, ev)
-  alertRegistration(name, email, ev, false)
+  alertRegistration(rsvp.id, name, email, ev, false)
   refreshEventPaths(ev)
   return { ok: true, status: "pending", email, notice: verificationNotice(sent) }
 }
