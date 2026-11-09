@@ -69,6 +69,14 @@ export async function saveAutomationConfig(key: string, input: AutomationConfig)
       config.intervalDays = clampInt(input.intervalDays, 1, 30, 3)
       config.maxReminders = clampInt(input.maxReminders, 1, 10, 3)
     }
+    if (def.key === "membership-invitation") {
+      const days = (input.reminderDays ?? []).map((d, i) => clampInt(d, 1, 90, [3, 7, 14][i] ?? 14)).slice(0, 3)
+      if (days.length !== 3 || !(days[0] < days[1] && days[1] < days[2])) {
+        throw new Error("Reminder days must be three increasing numbers, e.g. 3, 7, 14.")
+      }
+      config.reminderDays = days
+      config.dailyLimit = clampInt(input.dailyLimit, 1, 500, 100)
+    }
     if (def.key === "incomplete-application") {
       config.followUp3d = Boolean(input.followUp3d)
       config.followUp7d = Boolean(input.followUp7d)
