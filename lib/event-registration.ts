@@ -4,6 +4,7 @@ import { and, eq, gt, sql } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { eventRsvps, events } from "@/lib/db/schema"
 import { appBaseUrl, sendTemplateEmail } from "@/lib/email-templates/service"
+import { claimEmailOnce, registrationConfirmedKey } from "@/lib/email-dedupe"
 import { eventPath } from "@/lib/event-slug"
 import { createToken, readSignedToken } from "@/lib/email-tokens"
 
@@ -108,11 +109,17 @@ export async function sendVerification(rsvp: RsvpRow, ev: EventRow): Promise<Sen
   return sent ? { ok: true } : { ok: false, reason: "email" }
 }
 
-export async function sendConfirmedEmail(rsvp: Pick<RsvpRow, "email" | "name">, ev: EventRow) {
+/** Sends the attendee confirmation at most once per registration. */
+export async function sendConfirmedEmail(rsvp: Pick<RsvpRow, "id" | "email" | "name">, ev: EventRow) {
+  let release: (() => Promise<void>) | null = null
   try {
-    await sendTemplateEmail({ to: rsvp.email, key: "event.registration-confirmed", vars: eventEmailVars(ev, rsvp.name) })
+    release = await claimEmailOnce("event.registration-confirmed", registrationConfirmedKey(rsvp.id), rsvp.email)
+    if (!release) return
+    const ok = await sendTemplateEmail({ to: rsvp.email, key: "event.registration-confirmed", vars: eventEmailVars(ev, rsvp.name) })
+    if (!ok) await release()
   } catch (err) {
-    console.log("[v0] event confirmation email failed:", err instanceof Error ? err.message : err)
+    if (release) await release().catch(() => {})
+    console.error("[event-registration] confirmation email failed:", err instanceof Error ? err.message : err)
   }
 }
 

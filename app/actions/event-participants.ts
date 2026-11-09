@@ -6,6 +6,7 @@ import { db } from "@/lib/db"
 import { eventRsvps, events } from "@/lib/db/schema"
 import { getSession } from "@/lib/session"
 import { sendTemplateEmail } from "@/lib/email-templates/service"
+import { releaseRegistrationEmailClaims } from "@/lib/email-dedupe"
 import {
   eventEmailVars,
   isValidEmail,
@@ -147,6 +148,7 @@ export async function setParticipantStatus(id: number, eventId: number, status: 
     .where(and(eq(eventRsvps.id, id), eq(eventRsvps.eventId, eventId)))
     .returning()
   if (!row) return { ok: false as const, error: "Participant not found." }
+  if (status === "cancelled") await releaseRegistrationEmailClaims(row.id)
   if (status === "confirmed") {
     const event = await loadEvent(eventId)
     if (event) await sendConfirmedEmail(row, event)
