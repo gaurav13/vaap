@@ -59,7 +59,7 @@ export function KolReferralCard({ code, url, firstName }: { code: string; url: s
             </Link>
             <button
               type="button"
-              onClick={() => copy(new URL(url, window.location.origin).toString(), "link")}
+              onClick={() => copy(url, "link")}
               className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-heading/20 bg-card px-4 py-3 text-sm font-semibold text-heading transition-colors hover:border-green hover:text-green focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green"
             >
               {copied === "link" ? <Check className="size-4" aria-hidden="true" /> : <Link2 className="size-4" aria-hidden="true" />}

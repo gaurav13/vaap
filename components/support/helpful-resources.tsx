@@ -7,19 +7,19 @@ const RESOURCES: { icon: LucideIcon; title: string; body: string; href: string }
     icon: BookOpen,
     title: "AML/CFT Basics",
     body: "Understand KYC, source of funds and your responsibilities.",
-    href: "/resources",
+    href: "/knowledge",
   },
   {
     icon: ShieldCheck,
     title: "Stay Safe from Scams",
     body: "Learn to identify fraud and phishing attempts.",
-    href: "/resources",
+    href: "/knowledge",
   },
   {
     icon: Wallet,
     title: "Wallet Security",
     body: "Best practices for securing your digital assets.",
-    href: "/resources",
+    href: "/knowledge",
   },
 ]
 
@@ -33,7 +33,7 @@ export function HelpfulResources() {
             <p className="mt-2 text-body">Stay informed. Stay safe.</p>
           </div>
           <Link
-            href="/resources"
+            href="/knowledge"
             className="inline-flex items-center gap-1.5 text-sm font-semibold text-green transition-colors hover:text-green-hover"
           >
             View All Resources

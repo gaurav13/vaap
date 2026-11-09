@@ -359,7 +359,7 @@ export const DEFAULT_FOOTER: Footer = {
     { label: "Terms of Use", href: "#" },
     { label: "Disclaimer", href: "#" },
     { label: "Membership Policy", href: "#" },
-    { label: "Sitemap", href: "/sitemap" },
+    { label: "Sitemap", href: "/sitemap.xml" },
   ],
 }
 

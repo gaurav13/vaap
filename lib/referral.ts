@@ -1,4 +1,5 @@
 // Shared referral / reward helpers used by server actions and UI.
+import { PUBLIC_SITE_URL } from "@/lib/site-url"
 
 export const REFERRAL_COOKIE = "vaap_ref"
 export const REFERRAL_COOKIE_MAX_AGE = 60 * 60 * 24 * 60 // 60 days
@@ -42,9 +43,14 @@ export function buildPartnerCode(seq: number): string {
   return `KOL-${String(seq).padStart(4, "0")}`
 }
 
-export function referralUrl(code: string, origin?: string): string {
-  const base = origin?.replace(/\/$/, "") ?? ""
-  return `${base}/join?ref=${encodeURIComponent(code)}`
+export function referralUrl(code: string, origin: string = PUBLIC_SITE_URL): string {
+  const base = origin.replace(/\/+$/, "")
+  return `${base}/join?ref=${encodeURIComponent(code.trim())}`
+}
+
+export function normalizeReferralCode(raw: string | null | undefined): string {
+  const code = (raw ?? "").trim()
+  return /^[A-Za-z0-9_-]{3,64}$/.test(code) ? code : ""
 }
 
 export type CommissionRuleLike = {
