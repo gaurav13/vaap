@@ -6,7 +6,7 @@ import { serializeRows } from "@/lib/cms/serialize"
 import { ENTITIES } from "@/lib/cms/entities"
 
 export default async function AdminDocumentsPage() {
-  const rows = await db.select().from(documents).orderBy(desc(documents.createdAt))
+  const rows = await db.select().from(documents).orderBy(documents.sortOrder, desc(documents.createdAt))
   return (
     <div>
       <h1 className="font-serif text-2xl font-bold text-heading">{ENTITIES.documents.label}</h1>

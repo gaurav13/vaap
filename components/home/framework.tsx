@@ -1,3 +1,4 @@
+import Image from "next/image"
 import {
   Users,
   ShieldCheck,
@@ -54,20 +55,25 @@ const FOCUS_AREAS = [
 export function Framework() {
   return (
     <section className="relative overflow-hidden bg-mint-2 vaap-section-y">
-      <img
+      <Image
         src="/images/framework-bg.png"
         alt=""
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 h-full w-full select-none object-cover"
+        fill
+        sizes="100vw"
+        className="pointer-events-none select-none object-cover"
       />
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/85 via-white/70 to-white/85"
       />
-      <img
+      <Image
   src="/images/framework-flag-left.png"
   alt=""
   aria-hidden="true"
+  width={1408}
+  height={768}
+  sizes="(min-width: 1024px) 320px, 256px"
   className="pointer-events-none absolute left-0 top-0 h-48 w-auto max-w-[32%] select-none object-contain object-left-top opacity-80 mix-blend-multiply sm:h-64 lg:h-80"
       />
 

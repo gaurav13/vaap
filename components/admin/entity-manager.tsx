@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
-import { ExternalLink, Pencil, Plus, Trash2, X } from "lucide-react"
+import { ChevronDown, ChevronUp, ExternalLink, Pencil, Plus, Trash2, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 async function callEntityApi(method: "POST" | "DELETE", entity: string, id: number | null, body?: FormData) {
   const params = new URLSearchParams({ entity })
@@ -69,7 +69,41 @@ export function EntityManager({ entity, items }: { entity: EntityKey; items: Row
     })
   }
 
+  const [ordered, setOrdered] = useState(items)
+  const [prevItems, setPrevItems] = useState(items)
+  if (items !== prevItems) {
+    setPrevItems(items)
+    setOrdered(items)
+  }
+
+  function onMove(index: number, delta: -1 | 1) {
+    const target = index + delta
+    if (target < 0 || target >= ordered.length) return
+    const previous = ordered
+    const next = [...ordered]
+    ;[next[index], next[target]] = [next[target], next[index]]
+    setOrdered(next)
+    setError(null)
+    startTransition(async () => {
+      try {
+        const params = new URLSearchParams({ entity })
+        const res = await fetch(`/api/admin/entities?${params}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ids: next.map((row) => row.id) }),
+        })
+        const data = (await res.json().catch(() => null)) as { ok?: boolean; error?: string } | null
+        if (!res.ok || !data?.ok) throw new Error(data?.error || "Could not save the new order.")
+        router.refresh()
+      } catch (err) {
+        setOrdered(previous)
+        setError(actionErrorMessage(err))
+      }
+    })
+  }
+
   const showForm = creating || editing !== null
+  const list = config.orderable ? ordered : items
 
   return (
     <div className="mt-6">
@@ -126,12 +160,23 @@ export function EntityManager({ entity, items }: { entity: EntityKey; items: Row
         </form>
       )}
 
+      {config.orderable && list.length > 1 && (
+        <p className="mb-3 text-sm text-muted-2">
+          Use the arrows to set the order shown on the public site. Changes save automatically.
+        </p>
+      )}
+      {!showForm && error && (
+        <p className="mb-3 rounded-lg bg-destructive/10 px-3.5 py-2.5 text-sm text-destructive" role="alert">
+          {error}
+        </p>
+      )}
+
       <div className="overflow-hidden rounded-xl border border-line bg-card">
-        {items.length === 0 ? (
+        {list.length === 0 ? (
           <p className="p-8 text-center text-sm text-muted-2">No {config.label.toLowerCase()} yet.</p>
         ) : (
           <ul className="divide-y divide-line">
-            {items.map((item) => {
+            {list.map((item, index) => {
               const title = String(item[config.list.title] ?? "Untitled")
               const subtitle = config.list.subtitle ? String(item[config.list.subtitle] ?? "") : ""
               const badge = config.list.badge ? String(item[config.list.badge] ?? "") : ""
@@ -139,7 +184,29 @@ export function EntityManager({ entity, items }: { entity: EntityKey; items: Row
               const isDraft = "published" in item ? item.published === false : item.status === "draft"
               return (
                 <li key={item.id} className="flex items-center justify-between gap-4 p-4">
-                  <div className="min-w-0">
+                  {config.orderable && (
+                    <div className="flex shrink-0 flex-col">
+                      <button
+                        type="button"
+                        onClick={() => onMove(index, -1)}
+                        disabled={pending || index === 0}
+                        className="flex size-8 items-center justify-center rounded-md text-muted-2 transition-colors hover:bg-mint hover:text-green disabled:pointer-events-none disabled:opacity-30"
+                        aria-label={`Move ${title} up`}
+                      >
+                        <ChevronUp className="size-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onMove(index, 1)}
+                        disabled={pending || index === list.length - 1}
+                        className="flex size-8 items-center justify-center rounded-md text-muted-2 transition-colors hover:bg-mint hover:text-green disabled:pointer-events-none disabled:opacity-30"
+                        aria-label={`Move ${title} down`}
+                      >
+                        <ChevronDown className="size-4" />
+                      </button>
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       {badge && (
                         <span className="rounded-md bg-mint px-2 py-0.5 text-[11px] font-semibold text-green">{badge}</span>

@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { useRef, useState } from "react"
 import { ArrowRight, CalendarDays, Clock, MapPin } from "lucide-react"
 
@@ -55,18 +56,21 @@ export function EventsSlider({ events }: { events: SliderEvent[] }) {
               <div className="relative aspect-[16/9] overflow-hidden bg-navy-dark">
                 {e.coverImage ? (
                   <>
-                    <img
-                      src={e.coverImage || "/placeholder.svg"}
+                    <Image
+                      src={e.coverImage}
                       alt=""
                       aria-hidden="true"
-                      loading="lazy"
-                      className="absolute inset-0 size-full scale-110 object-cover opacity-50 blur-xl"
+                      fill
+                      sizes="64px"
+                      quality={30}
+                      className="scale-110 object-cover opacity-50 blur-xl"
                     />
-                    <img
-                      src={e.coverImage || "/placeholder.svg"}
+                    <Image
+                      src={e.coverImage}
                       alt={`${e.title} banner`}
-                      loading="lazy"
-                      className="relative size-full object-contain"
+                      fill
+                      sizes="(min-width: 1024px) 400px, 90vw"
+                      className="object-contain"
                     />
                   </>
                 ) : (
@@ -116,7 +120,7 @@ export function EventsSlider({ events }: { events: SliderEvent[] }) {
 
       <div className="flex items-center justify-between">
         {events.length > 1 ? (
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center">
             {events.map((e, i) => (
               <button
                 key={e.id}
@@ -124,8 +128,13 @@ export function EventsSlider({ events }: { events: SliderEvent[] }) {
                 onClick={() => goTo(i)}
                 aria-label={`Show event ${i + 1}`}
                 aria-current={active === i}
-                className={`h-1.5 rounded-full transition-all ${active === i ? "w-5 bg-green" : "w-1.5 bg-line"}`}
-              />
+                className="flex h-6 min-w-6 items-center justify-center px-1"
+              >
+                <span
+                  aria-hidden="true"
+                  className={`block h-1.5 rounded-full transition-all ${active === i ? "w-5 bg-green" : "w-1.5 bg-line"}`}
+                />
+              </button>
             ))}
           </div>
         ) : (

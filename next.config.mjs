@@ -4,7 +4,15 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
-    unoptimized: true,
+    // Served by `next start` (sharp) so the 1-2.5 MB source PNGs reach visitors
+    // as right-sized AVIF/WebP. Admin-entered image URLs can point anywhere.
+    formats: ["image/avif", "image/webp"],
+    minimumCacheTTL: 2678400,
+    qualities: [30, 60, 75, 90],
+    remotePatterns: [
+      { protocol: "https", hostname: "**" },
+      { protocol: "http", hostname: "**" },
+    ],
   },
   poweredByHeader: false,
   async headers() {
@@ -16,6 +24,10 @@ const nextConfig = {
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           { key: "Strict-Transport-Security", value: "max-age=63072000" },
         ],
+      },
+      {
+        source: "/images/:path*",
+        headers: [{ key: "Cache-Control", value: "public, max-age=2592000, stale-while-revalidate=86400" }],
       },
       {
         source: "/admin/:path*",

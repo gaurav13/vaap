@@ -41,6 +41,8 @@ export type EntityConfig = {
   revalidate: string[]
   // Builds the public "view live" URL for a row, or null when not viewable.
   viewUrl?: (row: Record<string, unknown>) => string | null
+  // Admin can rearrange rows; the table must have a "sortOrder" column.
+  orderable?: boolean
 }
 
 export const ENTITIES: Record<EntityKey, EntityConfig> = {
@@ -101,6 +103,7 @@ export const ENTITIES: Record<EntityKey, EntityConfig> = {
     ],
     list: { title: "title", subtitle: "description", badge: "category" },
     viewUrl: () => "/governance",
+    orderable: true,
   },
   leadership: {
     label: "Leadership",

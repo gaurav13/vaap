@@ -113,6 +113,12 @@ export async function saveEntity(key: EntityKey, id: number | null, formData: Fo
       await db.update(table).set(values).where(eq(table.id, id))
       await log(actor, `updated ${config.singular}`, String(values[config.list.title] ?? id))
     } else {
+      if (config.orderable) {
+        const [{ next }] = await db
+          .select({ next: sql<number>`coalesce(max(${table.sortOrder}), -1) + 1` })
+          .from(table)
+        values.sortOrder = Number(next)
+      }
       await db.insert(table).values(values)
       await log(actor, `created ${config.singular}`, String(values[config.list.title] ?? ""))
       if (key === "mediaHighlights" || key === "publications") {
@@ -139,6 +145,25 @@ export async function deleteEntity(key: EntityKey, id: number) {
   const table = TABLES[key] as any
   await db.delete(table).where(eq(table.id, id))
   await log(actor, `deleted ${config.singular}`, String(id))
+  for (const path of config.revalidate) revalidatePath(path)
+  revalidatePath(`/admin/${adminSlug(key)}`)
+  return { ok: true }
+}
+
+export async function reorderEntity(key: EntityKey, ids: number[]) {
+  const actor = await requireStaff()
+  const config = ENTITIES[key]
+  if (!config.orderable) return { ok: false, error: "This list cannot be reordered." }
+  if (!Array.isArray(ids) || ids.length === 0 || ids.some((id) => !Number.isInteger(id) || id <= 0)) {
+    return { ok: false, error: "Invalid order." }
+  }
+  const table = TABLES[key] as any
+  await db.transaction(async (tx) => {
+    for (const [index, id] of ids.entries()) {
+      await tx.update(table).set({ sortOrder: index }).where(eq(table.id, id))
+    }
+  })
+  await log(actor, `reordered ${config.label}`, `${ids.length} items`)
   for (const path of config.revalidate) revalidatePath(path)
   revalidatePath(`/admin/${adminSlug(key)}`)
   return { ok: true }
@@ -171,7 +196,11 @@ export async function getPublications() {
 }
 
 export async function getDocuments() {
-  return db.select().from(documents).where(eq(documents.published, true)).orderBy(desc(documents.createdAt))
+  return db
+    .select()
+    .from(documents)
+    .where(eq(documents.published, true))
+    .orderBy(documents.sortOrder, desc(documents.createdAt))
 }
 
 export async function getLeadership(kind?: "committee" | "message") {

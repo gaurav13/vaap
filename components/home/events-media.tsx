@@ -1,4 +1,5 @@
 import Link from "next/link"
+import Image from "next/image"
 import type { ComponentType, ReactNode } from "react"
 import {
   ArrowRight,
@@ -106,15 +107,16 @@ function Media({
     <div className={`relative overflow-hidden bg-navy-dark ${className}`}>
       {src && contain ? (
         <>
-          <img src={src || "/placeholder.svg"} alt="" aria-hidden="true" loading="lazy" className="absolute inset-0 size-full scale-110 object-cover opacity-60 blur-xl" />
-          <img src={src || "/placeholder.svg"} alt={alt} loading="lazy" className="relative size-full object-contain" />
+          <Image src={src} alt="" aria-hidden="true" fill sizes="64px" quality={30} className="scale-110 object-cover opacity-60 blur-xl" />
+          <Image src={src} alt={alt} fill sizes="(min-width: 1024px) 400px, 100vw" className="object-contain" />
         </>
       ) : src ? (
-        <img
-          src={src || "/placeholder.svg"}
+        <Image
+          src={src}
           alt={alt}
-          loading="lazy"
-          className="absolute inset-0 size-full object-cover transition-transform duration-500 group-hover:scale-105"
+          fill
+          sizes="(min-width: 1024px) 400px, 100vw"
+          className="object-cover transition-transform duration-500 group-hover:scale-105"
         />
       ) : (
         <div className="absolute inset-0 flex items-center justify-center">
@@ -195,10 +197,12 @@ function EventsColumn({ events }: { events: EventItem[] }) {
           >
             <div className="relative overflow-hidden bg-mint">
               {featured.coverImage ? (
-                <img
-                  src={featured.coverImage || "/placeholder.svg"}
+                <Image
+                  src={featured.coverImage}
                   alt={`${featured.title} banner`}
-                  loading="lazy"
+                  width={1200}
+                  height={600}
+                  sizes="(min-width: 1024px) 600px, 100vw"
                   className="block h-auto w-full transition-transform duration-500 group-hover:scale-[1.02]"
                 />
               ) : (

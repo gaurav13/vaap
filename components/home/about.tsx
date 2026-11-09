@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import { ArrowRight } from 'lucide-react'
 
 const STATS = [
@@ -50,10 +51,12 @@ export function About() {
 
           {/* Right: featured image card */}
           <div className="relative overflow-hidden rounded-2xl bg-navy">
-            <img
+            <Image
               src="/images/next-generation.png"
               alt="Young Pakistani professionals collaborating"
-              className="absolute inset-0 size-full object-cover opacity-55"
+              fill
+              sizes="(min-width: 1024px) 50vw, 100vw"
+              className="object-cover opacity-55"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-navy via-navy/70 to-navy/20" />
             <div className="relative flex h-full flex-col justify-end p-8 lg:p-10">
