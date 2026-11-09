@@ -193,11 +193,14 @@ export function ApplyWizard({
   plans,
   initialPlanId,
   resume,
+  referralCode,
 }: {
   plans: ApplyPlan[]
   initialPlanId?: number | null
   /** Saved draft opened from a reminder email's secure link. */
   resume?: ResumeApplication | null
+  /** Validated referral code from a /join?ref= or ?ref= link. */
+  referralCode?: string | null
 }) {
   // When arriving with a preselected membership type (e.g. chosen on the
   // dashboard), skip the "Select Membership" step and land on Information.
@@ -332,6 +335,7 @@ export function ApplyWizard({
       admissionFee: selectedPlan.admissionFee,
       annualFee: selectedPlan.annualFee,
       totalAmount: totalForPlan(selectedPlan),
+      refCode: referralCode ?? undefined,
     })
     setSubmitting(false)
     if (!result.ok) {
@@ -350,6 +354,21 @@ export function ApplyWizard({
       </div>
 
       <div className="px-5 py-8 lg:px-10 lg:py-10">
+        {referralCode && step < 4 && (
+          <div
+            role="status"
+            className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-green/20 bg-green/5 px-4 py-3"
+          >
+            <p className="text-sm text-heading">
+              <span className="font-semibold">Referral code applied.</span>{" "}
+              <span className="text-muted-foreground">Your application will be credited to this referrer.</span>
+            </p>
+            <span className="rounded-md border border-green/30 bg-card px-3 py-1 font-mono text-sm font-semibold tracking-wide text-green">
+              {referralCode}
+            </span>
+          </div>
+        )}
+
         {error && (
           <p className="mb-6 rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm font-medium text-destructive">
             {error}

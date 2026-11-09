@@ -10,6 +10,9 @@ import { getMembershipPlans } from "@/app/actions/cms"
 import { seoMetadata } from "@/lib/seo"
 import { staticSubjectByPath } from "@/lib/seo/subjects"
 import { SeoJsonLd } from "@/components/seo/json-ld"
+import { cookies } from "next/headers"
+import { normalizeReferralCode, REFERRAL_COOKIE } from "@/lib/referral"
+import { resolveReferralCode } from "@/lib/referral-engine"
 
 async function loadResume(token: string | undefined): Promise<{ category: string; draft: ResumeApplication } | null> {
   const payload = verifyToken(token, "resume")
@@ -46,6 +49,22 @@ async function loadResume(token: string | undefined): Promise<{ category: string
   }
 }
 
+// The URL `?ref=` wins over the attribution cookie; only active, valid codes
+// are shown so an unknown or expired code never appears as "applied".
+async function loadReferralCode(fromUrl: string | undefined, fromCookie: string | undefined): Promise<string | null> {
+  for (const candidate of [fromUrl, fromCookie]) {
+    const code = normalizeReferralCode(candidate)
+    if (!code) continue
+    try {
+      const resolved = await resolveReferralCode(code)
+      if (resolved) return resolved.code
+    } catch (err) {
+      console.log("[v0] referral lookup failed:", err instanceof Error ? err.message : err)
+    }
+  }
+  return null
+}
+
 function toLines(value: string | null): string[] {
   return (value ?? "")
     .split("\n")
@@ -60,10 +79,13 @@ export function generateMetadata() {
 export default async function ApplyPage({
   searchParams,
 }: {
-  searchParams: Promise<{ plan?: string; resume?: string }>
+  searchParams: Promise<{ plan?: string; resume?: string; ref?: string }>
 }) {
-  const [user, rows, sp] = await Promise.all([getHeaderUser(), getMembershipPlans(), searchParams])
-  const resume = await loadResume(sp.resume)
+  const [user, rows, sp, cookieStore] = await Promise.all([getHeaderUser(), getMembershipPlans(), searchParams, cookies()])
+  const [resume, referralCode] = await Promise.all([
+    loadResume(sp.resume),
+    loadReferralCode(sp.ref, cookieStore.get(REFERRAL_COOKIE)?.value),
+  ])
 
   const plans: ApplyPlan[] = rows.map((row) => ({
     id: row.id,
@@ -91,7 +113,12 @@ export default async function ApplyPage({
       <SiteHeaderServer active="Membership" user={user} />
       <main className="bg-muted/40">
         <div className="mx-auto max-w-6xl px-5 py-10 lg:px-8 lg:py-14">
-          <ApplyWizard plans={plans} initialPlanId={initialPlanId} resume={resume?.draft ?? null} />
+          <ApplyWizard
+            plans={plans}
+            initialPlanId={initialPlanId}
+            resume={resume?.draft ?? null}
+            referralCode={referralCode}
+          />
         </div>
       </main>
       <SiteFooter />
