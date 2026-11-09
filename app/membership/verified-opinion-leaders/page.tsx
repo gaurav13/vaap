@@ -22,7 +22,9 @@ export default async function KolDirectoryPage() {
     organization: k.organization,
     photo: k.photo,
     expertise: k.expertise,
-    platforms: k.platforms.map((p) => ({ platform: p.platform, followers: Number(p.followers) || 0 })),
+    platforms: k.platforms
+      .map((p) => ({ platform: p.platform, followers: Number(p.followers) || 0 }))
+      .sort((a, b) => b.followers - a.followers),
   }))
   const categories = [...new Set(kols.flatMap((k) => k.expertise))].sort()
   const reach = kols.reduce((sum, k) => sum + totalFollowers(k), 0)

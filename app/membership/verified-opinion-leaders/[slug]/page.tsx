@@ -80,6 +80,9 @@ export default async function KolProfilePage({ params }: Props) {
   const location = [kol.city, kol.country].filter(Boolean).join(", ")
   const referralCode = await getActiveKolReferralCode(kol.memberId)
   const total = totalFollowers(kol)
+  const platformsByFollowers = [...kol.platforms].sort(
+    (a, b) => (Number(b.followers) || 0) - (Number(a.followers) || 0),
+  )
   const stats = [
     { Icon: Users, label: "Total Followers", value: formatCount(total) },
     { Icon: Megaphone, label: "Monthly Reach", value: kol.monthlyReach > 0 ? formatCount(kol.monthlyReach) : "—" },
@@ -266,7 +269,7 @@ export default async function KolProfilePage({ params }: Props) {
                   </div>
                 </div>
                 <ul className="flex flex-col px-5 pt-2 sm:px-7">
-                  {kol.platforms.map((p, i) => {
+                  {platformsByFollowers.map((p, i) => {
                     const followers = Number(p.followers)
                     return (
                       <li
