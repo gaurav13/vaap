@@ -1,13 +1,16 @@
 import Link from "next/link"
+import Image from "next/image"
 import { ArrowRight } from "lucide-react"
 
 export function JoinCta() {
   return (
     <section className="relative isolate overflow-hidden bg-navy">
-      <img
+      <Image
         src="/images/cta-lahore.png"
         alt="Minar-e-Pakistan in Lahore at dusk"
-        className="absolute inset-0 -z-10 size-full object-cover opacity-40"
+        fill
+        sizes="100vw"
+        className="-z-10 object-cover opacity-40"
       />
       <div className="absolute inset-0 -z-10 bg-gradient-to-r from-navy via-navy/90 to-navy/60" />
 

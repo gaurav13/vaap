@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { ArrowRight, CalendarDays, ChevronLeft, ChevronRight, ExternalLink, Newspaper } from "lucide-react"
 import { NEWS_TABS, newsTabFor, type NewsTab } from "@/lib/news-options"
 import { cn } from "@/lib/utils"
@@ -51,6 +52,7 @@ function ReadLink({ item, className }: { item: HomeNewsItem; className?: string 
   return (
     <Link href={item.href} className={base}>
       {readLabel(item)}
+      <span className="sr-only">: {item.title}</span>
       <ArrowRight className="size-4" aria-hidden="true" />
     </Link>
   )
@@ -165,7 +167,13 @@ export function LatestNewsMedia({ items }: { items: HomeNewsItem[] }) {
                     className="absolute inset-0 bg-muted"
                     style={{ clipPath: "polygon(0 0, 100% 0, 100% calc(86% - 4px), 0 calc(100% - 4px))" }}
                   >
-                    <img src={item.image || "/images/news-skyline.png"} alt="" className="size-full object-cover" />
+                    <Image
+                      src={item.image || "/images/news-skyline.png"}
+                      alt=""
+                      fill
+                      sizes="(min-width: 1024px) 300px, (min-width: 768px) 33vw, (min-width: 640px) 50vw, 100vw"
+                      className="object-cover"
+                    />
                   </div>
                 </div>
                 <div className="flex flex-1 flex-col gap-2 px-3 pb-3 pt-1">
@@ -179,9 +187,11 @@ export function LatestNewsMedia({ items }: { items: HomeNewsItem[] }) {
                   <div className="mt-auto flex flex-col gap-2.5 border-t border-line pt-2.5 text-xs">
                     <div className="flex min-w-0 items-center gap-3">
                       {item.publisherLogo && !/^vaap$/i.test(item.publisherName?.trim() ?? "") ? (
-                        <img
+                        <Image
                           src={item.publisherLogo}
                           alt={item.publisherName || "Media outlet"}
+                          width={140}
+                          height={28}
                           className="h-7 w-auto max-w-[45%] shrink-0 object-contain object-left"
                         />
                       ) : (

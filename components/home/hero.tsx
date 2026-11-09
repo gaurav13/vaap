@@ -26,6 +26,7 @@ export function Hero() {
           alt="Faisal Mosque and Margalla hills of Islamabad with the Pakistan national flag at sunrise"
           fill
           priority
+          quality={60}
           sizes="100vw"
           className="object-cover object-[68%_center]"
         />
@@ -71,7 +72,7 @@ export function Hero() {
                 href="/about"
                 className="inline-flex h-[52px] items-center justify-center gap-2 rounded-lg border border-white/25 bg-white/5 px-7 text-sm font-semibold text-white backdrop-blur-sm transition-colors hover:bg-white/10 sm:h-[56px]"
               >
-                Learn More
+                Learn More<span className="sr-only"> About VAAP</span>
               </Link>
             </div>
 
@@ -134,12 +135,12 @@ export function Hero() {
           <dl className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4 lg:gap-0 lg:divide-x lg:divide-white/10">
             {STATS.map(({ icon: Icon, value, title, caption }) => (
               <div key={title} className="flex flex-col gap-4 lg:px-8 lg:first:pl-0 lg:last:pr-0">
-                <div className="flex items-center gap-3">
+                <dt className="flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.14em] text-white/70">
                   <span className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-gold/30 bg-gold/10">
                     <Icon className="size-5 text-gold" strokeWidth={1.75} aria-hidden="true" />
                   </span>
-                  <dt className="text-xs font-semibold uppercase tracking-[0.14em] text-white/70">{title}</dt>
-                </div>
+                  {title}
+                </dt>
                 <dd className="flex flex-col gap-1.5">
                   <span className="whitespace-nowrap font-sans text-4xl font-bold leading-none tracking-tight text-white tabular-nums lg:text-[2.75rem]">
                     {value}

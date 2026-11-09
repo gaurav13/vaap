@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { ArrowRight, BarChart3, Lightbulb, ShieldCheck, Users } from 'lucide-react'
 import type { CtaBanner as CtaBannerData } from '@/lib/site-settings'
 
@@ -23,11 +24,15 @@ export function CtaBanner({ data }: { data: CtaBannerData }) {
           />
           {/* Photographic backdrop, weighted to the right */}
           {data.image && (
-            <img
-              src={data.image || '/placeholder.svg'}
-              alt={data.imageAlt}
-              className="pointer-events-none absolute inset-y-0 right-0 h-full w-full object-cover object-right lg:w-3/4"
-            />
+            <div className="pointer-events-none absolute inset-y-0 right-0 w-full lg:w-3/4">
+              <Image
+                src={data.image}
+                alt={data.imageAlt || ''}
+                fill
+                sizes="(min-width: 1280px) 960px, (min-width: 1024px) 75vw, 100vw"
+                className="object-cover object-right"
+              />
+            </div>
           )}
           {/* Directional teal wash keeps the copy legible over the photo */}
           <div
