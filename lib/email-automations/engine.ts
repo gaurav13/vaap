@@ -18,6 +18,8 @@ import { sendEmail } from "@/lib/mailer"
 import { createToken } from "@/lib/email-tokens"
 import { appBaseUrl, getLiveContent, renderWith } from "@/lib/email-templates/service"
 import type { EmailContent, EmailTemplateKey } from "@/lib/email-templates/registry"
+import { getRegisteredUsers, isInvitable } from "@/lib/membership-funnel"
+import { runMembershipInvitationAutomation } from "@/lib/membership-invitations"
 import {
   AUTOMATIONS,
   getAutomation,
@@ -42,7 +44,7 @@ export async function getAutomationStates() {
     const row = rows.find((r) => r.key === def.key)
     return {
       def,
-      enabled: row?.enabled ?? true,
+      enabled: row?.enabled ?? def.defaultEnabled ?? true,
       config: { ...def.defaults, ...((row?.config as AutomationConfig) ?? {}) } as AutomationConfig,
       lastRunAt: row?.lastRunAt ?? null,
       lastSentAt: row?.lastSentAt ?? null,
@@ -105,6 +107,10 @@ export async function getSegment(key: SegmentKey): Promise<Recipient[]> {
       .where(and(eq(user.emailVerified, false), ne(user.role, "admin")))
       .orderBy(desc(user.createdAt))
     return uniqueByEmail(rows.map((r) => ({ ...r, refId: r.id, meta: "Unverified email" })))
+  }
+  if (key === "registered-unpaid") {
+    const rows = (await getRegisteredUsers()).filter((u) => u.emailVerified && isInvitable(u))
+    return rows.map((u) => ({ email: u.email.toLowerCase(), name: u.name, refId: u.id, meta: `${u.invitationsSent} sent`, createdAt: u.registeredAt }))
   }
   // Incomplete applications: unsubmitted, not rejected, and the applicant has
   // neither submitted another application nor become a member since.
@@ -450,6 +456,7 @@ export async function runAutomation(
         ? await runEventAnnouncement(def, opts.eventId)
         : { sent: 0, skipped: 0, failed: 0, note: "Choose an event to announce" }
     } else if (key === "verification-reminder") result = await runVerificationReminders(def, state.config)
+    else if (key === "membership-invitation") result = await runMembershipInvitationAutomation(state.config)
     else result = await runIncompleteReminders(def, state.config)
   } catch (err) {
     console.error(`[email-automation] ${key} failed:`, err)

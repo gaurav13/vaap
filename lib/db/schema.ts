@@ -209,6 +209,20 @@ export const membershipInvitationCodes = pgTable("membership_invitation_codes", 
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 })
 
+// Invitations and reminders sent to registered users who have not activated a
+// paid membership. One row per send attempt.
+export const membershipInvitations = pgTable("membership_invitations", {
+  id: serial("id").primaryKey(),
+  userId: text("userId"),
+  email: text("email").notNull(),
+  stage: text("stage").notNull(), // invitation | reminder-1 | reminder-2 | reminder-final | manual-reminder
+  trigger: text("trigger").notNull(), // manual | bulk | automation
+  status: text("status").notNull(), // sent | failed | skipped
+  error: text("error"),
+  actor: text("actor"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
 export const contactMessages = pgTable("contact_messages", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),

@@ -72,6 +72,7 @@ const GROUPS: { heading: string; links: { href: string; label: string; icon: typ
     heading: "Community",
     links: [
       { href: "/admin/members", label: "Members", icon: IdCard },
+      { href: "/admin/membership-funnel", label: "Registered vs Paid", icon: Users, adminOnly: true },
       { href: "/admin/membership-plans", label: "Membership Plans", icon: Wallet },
       { href: "/admin/membership-faqs", label: "Membership FAQs", icon: HelpCircle },
       { href: "/admin/applications", label: "Applications", icon: FileText },

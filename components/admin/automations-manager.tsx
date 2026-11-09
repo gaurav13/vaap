@@ -145,7 +145,12 @@ type ActProps = { pending: boolean; act: (fn: () => Promise<{ ok: boolean; messa
 function AutomationCard({ automation: a, events, pending, act }: { automation: Automation; events: Props["events"] } & ActProps) {
   const [config, setConfig] = useState<AutomationConfig>(a.config)
   const [eventId, setEventId] = useState<string>(events[0] ? String(events[0].id) : "")
-  const hasSettings = a.schedule === "weekly" || a.key === "verification-reminder" || a.key === "incomplete-application"
+  const hasSettings =
+    a.schedule === "weekly" ||
+    a.key === "verification-reminder" ||
+    a.key === "incomplete-application" ||
+    a.key === "membership-invitation"
+  const reminderDays = config.reminderDays ?? [3, 7, 14]
 
   return (
     <article className="rounded-xl border border-line bg-card p-5">
@@ -228,6 +233,36 @@ function AutomationCard({ automation: a, events, pending, act }: { automation: A
                 className="w-24 rounded-lg border border-line bg-card px-3 py-2 text-sm"
                 value={config.maxReminders ?? 3}
                 onChange={(e) => setConfig({ ...config, maxReminders: Number(e.target.value) })}
+              />
+            </Field>
+          </>
+        ) : null}
+        {a.key === "membership-invitation" ? (
+          <>
+            {["Reminder 1", "Reminder 2", "Final reminder"].map((label, i) => (
+              <Field key={label} label={`${label} (day)`}>
+                <input
+                  type="number"
+                  min={1}
+                  max={90}
+                  className="w-24 rounded-lg border border-line bg-card px-3 py-2 text-sm"
+                  value={reminderDays[i]}
+                  onChange={(e) => {
+                    const next = [...reminderDays]
+                    next[i] = Number(e.target.value)
+                    setConfig({ ...config, reminderDays: next })
+                  }}
+                />
+              </Field>
+            ))}
+            <Field label="Daily limit">
+              <input
+                type="number"
+                min={1}
+                max={500}
+                className="w-24 rounded-lg border border-line bg-card px-3 py-2 text-sm"
+                value={config.dailyLimit ?? 100}
+                onChange={(e) => setConfig({ ...config, dailyLimit: Number(e.target.value) })}
               />
             </Field>
           </>
