@@ -34,7 +34,7 @@ export function SupportFaq() {
           Frequently Asked Questions
         </h2>
         <Link
-          href="/resources"
+          href="/membership"
           className="inline-flex items-center gap-1.5 text-sm font-semibold text-green transition-colors hover:text-green-hover"
         >
           View All FAQs

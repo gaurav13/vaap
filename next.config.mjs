@@ -32,6 +32,8 @@ const nextConfig = {
       { source: "/membership/kols", destination: "/membership/verified-opinion-leaders", permanent: true },
       { source: "/membership/kols/:slug", destination: "/membership/verified-opinion-leaders/:slug", permanent: true },
       { source: "/governance/framework", destination: "/governance", permanent: true },
+      { source: "/resources", destination: "/knowledge", permanent: false },
+      { source: "/sitemap", destination: "/sitemap.xml", permanent: false },
       { source: "/governance/register", destination: "/voting/results", permanent: true },
   { source: "/voting/register", destination: "/voting/results", permanent: true },
   ...["proposals", "verify", "elections"].flatMap((seg) => [

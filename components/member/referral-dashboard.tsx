@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { Check, Copy, MousePointerClick, Share2, TrendingUp, Users, Wallet } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { referralUrl } from "@/lib/referral"
 
 type Attribution = {
   id: number
@@ -83,8 +84,7 @@ export function ReferralDashboard({ data }: { data: ReferralData }) {
   const [copied, setCopied] = useState(false)
   const [tab, setTab] = useState<"referrals" | "rewards" | "payments">("referrals")
 
-  const origin = typeof window !== "undefined" ? window.location.origin : ""
-  const link = data.code ? `${origin}/join?ref=${data.code}` : ""
+  const link = data.code ? referralUrl(data.code) : ""
 
   async function copyLink() {
     if (!link) return

@@ -222,7 +222,7 @@ export function ReferralConsole({
                       <td className="px-5 py-3 font-mono text-xs font-semibold text-foreground">{c.code}</td>
                       <td className="px-5 py-3 text-muted-foreground">{c.label || "—"}</td>
                       <td className="px-5 py-3">
-                        <CopyLink url={referralUrl(c.code, baseUrl)} />
+                        <CopyLink url={referralUrl(c.code)} />
                       </td>
                       <td className="px-5 py-3 text-foreground">{c.uses}</td>
                       <td className="px-5 py-3">

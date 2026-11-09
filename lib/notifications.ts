@@ -59,6 +59,7 @@ type NotifyOptions = {
 function baseUrl() {
   return (
     process.env.BETTER_AUTH_URL ||
+    (process.env.VERCEL_ENV === "production" ? "https://vaap.org.pk" : "") ||
     (process.env.VERCEL_PROJECT_PRODUCTION_URL
       ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
       : process.env.VERCEL_URL
