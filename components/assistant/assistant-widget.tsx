@@ -22,6 +22,7 @@ import { usePathname } from "next/navigation"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { cn } from "@/lib/utils"
 import { AssistantMessageText } from "./assistant-message-text"
+import { ASSISTANT_ASK_EVENT } from "./assistant-events"
 
 type Lang = "en" | "ur" | "roman-ur"
 
@@ -164,6 +165,20 @@ export function AssistantWidget() {
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
   }, [open])
+
+  const askRef = useRef<(text: string) => void>(() => {})
+  askRef.current = ask
+  useEffect(() => {
+    const onAsk = (e: Event) => {
+      const text = (e as CustomEvent<{ text?: string }>).detail?.text ?? ""
+      setOpen(true)
+      setSeen(true)
+      if (text.trim()) askRef.current(text)
+      else requestAnimationFrame(() => inputRef.current?.focus())
+    }
+    window.addEventListener(ASSISTANT_ASK_EVENT, onAsk)
+    return () => window.removeEventListener(ASSISTANT_ASK_EVENT, onAsk)
+  }, [])
 
   if (pathname?.startsWith("/admin")) return null
 

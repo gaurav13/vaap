@@ -1,6 +1,7 @@
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { Hero } from "@/components/home/hero"
+import { AskVaapAi } from "@/components/home/ask-vaap-ai"
 import { Legitimacy } from "@/components/home/legitimacy"
 import { Framework } from "@/components/home/framework"
 import { LatestNewsMedia, type HomeNewsItem } from "@/components/home/latest-news-media"
@@ -66,6 +67,7 @@ export default async function Home() {
       <SiteHeader variant="solid" active="Home" user={toHeaderUser(session)} nav={nav} newsAlert={newsAlert} />
       <main className="flex-1">
         <Hero />
+        <AskVaapAi />
         <LatestNewsMedia items={newsItems} />
         <EventsMedia events={events} media={media} social={settings.social} />
         <Legitimacy />
