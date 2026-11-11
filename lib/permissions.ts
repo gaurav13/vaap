@@ -74,6 +74,7 @@ export function isStaffAdminRoute(pathname: string): boolean {
 export const MANAGER_ADMIN_ROUTES = [
   ...STAFF_ADMIN_ROUTES,
   "/admin/media-highlights",
+  "/admin/media-coverage",
   "/admin/pages",
   "/admin/publications",
   "/admin/documents",

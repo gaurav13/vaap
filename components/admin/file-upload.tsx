@@ -11,7 +11,7 @@ type Props = {
   required?: boolean
   // Pages store images in DigitalOcean Spaces and keep the public URL.
   storage?: "inline" | "spaces"
-  folder?: "pages" | "news" | "articles" | "events" | "publications"
+  folder?: "pages" | "news" | "articles" | "events" | "publications" | "media-coverage"
   onBusyChange?: (busy: boolean) => void
 }
 

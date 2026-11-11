@@ -2,6 +2,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { ArrowRight, Users, ShieldCheck, TrendingUp, Building2, Globe } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
+import { MediaCoverageSlider, type MediaCoverageItem } from "@/components/home/media-coverage-slider"
 
 const FEATURES: { icon: LucideIcon; label: string }[] = [
   { icon: Users, label: "A United\nIndustry Voice" },
@@ -16,7 +17,7 @@ const STATS: { icon: LucideIcon; value: string; title: string; caption: string }
   { icon: TrendingUp, value: "$100B+", title: "Economic Opportunity", caption: "Pakistan's digital economy" },
 ]
 
-export function Hero() {
+export function Hero({ media = [] }: { media?: MediaCoverageItem[] }) {
   return (
     <section className="relative isolate overflow-hidden bg-navy">
       {/* Full-bleed hero with directional teal overlay (governance style) */}
@@ -131,22 +132,25 @@ export function Hero() {
           className="absolute inset-0 -z-10 bg-gradient-to-b from-navy-dark/90 via-navy-dark/85 to-navy-dark"
         />
 
-        <div className="relative mx-auto max-w-7xl px-6 py-12 sm:px-10 lg:py-14">
-          <dl className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4 lg:gap-0 lg:divide-x lg:divide-white/10">
+        <div className="relative mx-auto max-w-7xl px-4 py-10 sm:px-10 sm:py-12 lg:py-14">
+          <dl className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 lg:gap-0 lg:divide-x lg:divide-white/10">
             {STATS.map(({ icon: Icon, value, title, caption }) => (
-              <div key={title} className="flex flex-col gap-4 lg:px-8 lg:first:pl-0 lg:last:pr-0">
-                <dt className="flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.14em] text-white/70">
-                  <span className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-gold/30 bg-gold/10">
-                    <Icon className="size-5 text-gold" strokeWidth={1.75} aria-hidden="true" />
+              <div
+                key={title}
+                className="flex min-w-0 flex-col gap-3 rounded-xl border border-white/10 bg-white/[0.04] p-3.5 sm:gap-4 sm:p-5 lg:rounded-none lg:border-0 lg:bg-transparent lg:p-0 lg:px-8 lg:first:pl-0 lg:last:pr-0"
+              >
+                <dt className="flex flex-col items-start gap-2.5 text-[10px] font-semibold uppercase leading-snug tracking-[0.1em] text-white/70 sm:flex-row sm:items-center sm:gap-3 sm:text-xs sm:tracking-[0.14em]">
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-gold/30 bg-gold/10 sm:size-10">
+                    <Icon className="size-4 text-gold sm:size-5" strokeWidth={1.75} aria-hidden="true" />
                   </span>
-                  {title}
+                  <span className="min-h-[2.75em] text-pretty sm:min-h-0">{title}</span>
                 </dt>
                 <dd className="flex flex-col gap-1.5">
-                  <span className="whitespace-nowrap font-sans text-4xl font-bold leading-none tracking-tight text-white tabular-nums lg:text-[2.75rem]">
+                  <span className="whitespace-nowrap font-sans text-2xl font-bold min-[360px]:text-[1.75rem] leading-none tracking-tight text-white tabular-nums sm:text-4xl lg:text-[2.75rem]">
                     {value}
                   </span>
-                  <span className="flex items-center gap-2 text-sm leading-relaxed text-white/60">
-                    <span className="h-px w-5 bg-gold" aria-hidden="true" />
+                  <span className="flex items-start gap-2 text-xs leading-snug text-white/60 sm:items-center sm:text-sm sm:leading-relaxed">
+                    <span className="mt-[0.55em] h-px w-3 shrink-0 bg-gold sm:mt-0 sm:w-5" aria-hidden="true" />
                     {caption}
                   </span>
                 </dd>
@@ -154,11 +158,16 @@ export function Hero() {
             ))}
           </dl>
 
+          <MediaCoverageSlider items={media} />
+
           <div className="mt-12 flex items-center gap-4 border-t border-white/10 pt-8">
             <span className="hidden h-px flex-1 bg-gradient-to-r from-transparent to-gold/40 sm:block" aria-hidden="true" />
-            <p className="text-center text-[11px] font-semibold uppercase leading-[1.8] tracking-[0.28em] text-white/80 sm:text-xs">
-              Real People <span className="mx-2 text-gold">&bull;</span> Real Potential{" "}
-              <span className="mx-2 text-gold">&bull;</span> A Digital Pakistan
+            <p className="flex w-full flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center text-[10px] font-semibold uppercase leading-[1.8] tracking-[0.2em] text-white/80 sm:w-auto sm:gap-x-3 sm:text-xs sm:tracking-[0.28em]">
+              <span className="whitespace-nowrap">Real People</span>
+              <span className="text-gold" aria-hidden="true">&bull;</span>
+              <span className="whitespace-nowrap">Real Potential</span>
+              <span className="text-gold" aria-hidden="true">&bull;</span>
+              <span className="whitespace-nowrap">A Digital Pakistan</span>
             </p>
             <span className="hidden h-px flex-1 bg-gradient-to-l from-transparent to-gold/40 sm:block" aria-hidden="true" />
           </div>

@@ -396,6 +396,23 @@ export const mediaHighlights = pgTable("media_highlights", {
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 })
 
+// --- "As Seen on National TV & Media" logo slider (home hero) --------------
+
+export const mediaCoverage = pgTable(
+  "media_coverage",
+  {
+    id: serial("id").primaryKey(),
+    name: text("name").notNull(),
+    logo: text("logo").notNull(),
+    url: text("url").notNull(),
+    coverageDate: timestamp("coverageDate"),
+    sortOrder: serial("sortOrder"),
+    published: boolean("published").notNull().default(true),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+  },
+  (t) => [index("media_coverage_published_order_idx").on(t.published, t.sortOrder)],
+)
+
 // --- Official status blocks (CMS-controlled credibility content) -----------
 
 export const officialStatus = pgTable("official_status", {

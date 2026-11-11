@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
-import { ChevronDown, ChevronUp, ExternalLink, Pencil, Plus, Trash2, X } from "lucide-react"
+import { ChevronDown, ChevronUp, ExternalLink, GripVertical, Pencil, Plus, Trash2, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 async function callEntityApi(method: "POST" | "DELETE", entity: string, id: number | null, body?: FormData) {
   const params = new URLSearchParams({ entity })
@@ -39,6 +39,7 @@ export function EntityManager({ entity, items }: { entity: EntityKey; items: Row
   const [uploads, setUploads] = useState(0)
   const spacesImages = entity === "pages"
   const spacesFiles = entity === "publications"
+  const imageFolder = entity === "mediaCoverage" ? "media-coverage" : "pages"
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -76,12 +77,19 @@ export function EntityManager({ entity, items }: { entity: EntityKey; items: Row
     setOrdered(items)
   }
 
+  const [dragIndex, setDragIndex] = useState<number | null>(null)
+  const [dropIndex, setDropIndex] = useState<number | null>(null)
+
   function onMove(index: number, delta: -1 | 1) {
-    const target = index + delta
-    if (target < 0 || target >= ordered.length) return
+    moveItem(index, index + delta)
+  }
+
+  function moveItem(from: number, target: number) {
+    if (from === target || target < 0 || target >= ordered.length) return
     const previous = ordered
     const next = [...ordered]
-    ;[next[index], next[target]] = [next[target], next[index]]
+    const [moved] = next.splice(from, 1)
+    next.splice(target, 0, moved)
     setOrdered(next)
     setError(null)
     startTransition(async () => {
@@ -141,6 +149,7 @@ export function EntityManager({ entity, items }: { entity: EntityKey; items: Row
                 value={editing?.[field.name]}
                 spacesImages={spacesImages}
                 spacesFiles={spacesFiles}
+                imageFolder={imageFolder}
                 onBusyChange={(busy) => setUploads((count) => Math.max(0, count + (busy ? 1 : -1)))}
               />
             ))}
@@ -162,7 +171,8 @@ export function EntityManager({ entity, items }: { entity: EntityKey; items: Row
 
       {config.orderable && list.length > 1 && (
         <p className="mb-3 text-sm text-muted-2">
-          Use the arrows to set the order shown on the public site. Changes save automatically.
+          Drag rows by the handle, or use the arrows, to set the order shown on the public site. Changes save
+          automatically.
         </p>
       )}
       {!showForm && error && (
@@ -183,7 +193,45 @@ export function EntityManager({ entity, items }: { entity: EntityKey; items: Row
               const flagOn = config.list.flag ? Boolean(item[config.list.flag]) : false
               const isDraft = "published" in item ? item.published === false : item.status === "draft"
               return (
-                <li key={item.id} className="flex items-center justify-between gap-4 p-4">
+                <li
+                  key={item.id}
+                  draggable={Boolean(config.orderable) && !pending}
+                  onDragStart={(event) => {
+                    setDragIndex(index)
+                    event.dataTransfer.effectAllowed = "move"
+                    event.dataTransfer.setData("text/plain", String(item.id))
+                  }}
+                  onDragOver={(event) => {
+                    if (dragIndex === null) return
+                    event.preventDefault()
+                    if (dropIndex !== index) setDropIndex(index)
+                  }}
+                  onDrop={(event) => {
+                    event.preventDefault()
+                    if (dragIndex !== null) moveItem(dragIndex, index)
+                    setDragIndex(null)
+                    setDropIndex(null)
+                  }}
+                  onDragEnd={() => {
+                    setDragIndex(null)
+                    setDropIndex(null)
+                  }}
+                  className={`flex items-center justify-between gap-4 p-4 transition-colors ${
+                    dragIndex === index ? "opacity-50" : ""
+                  } ${dropIndex === index && dragIndex !== index ? "bg-mint" : ""}`}
+                >
+                  {config.orderable && (
+                    <GripVertical
+                      className="size-4 shrink-0 cursor-grab text-muted-2 active:cursor-grabbing"
+                      aria-hidden="true"
+                    />
+                  )}
+                  {config.orderable && entity === "mediaCoverage" && typeof item.logo === "string" && item.logo && (
+                    <span className="flex h-10 w-16 shrink-0 items-center justify-center rounded-md border border-line bg-card p-1">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={item.logo} alt="" className="max-h-full max-w-full object-contain" />
+                    </span>
+                  )}
                   {config.orderable && (
                     <div className="flex shrink-0 flex-col">
                       <button
@@ -292,12 +340,14 @@ function FieldRenderer({
   value,
   spacesImages = false,
   spacesFiles = false,
+  imageFolder = "pages",
   onBusyChange,
 }: {
   field: FieldDef
   value: unknown
   spacesImages?: boolean
   spacesFiles?: boolean
+  imageFolder?: "pages" | "media-coverage"
   onBusyChange?: (busy: boolean) => void
 }) {
   const wrapCls = field.fullWidth || field.type === "textarea" ? "sm:col-span-2" : ""
@@ -338,7 +388,7 @@ function FieldRenderer({
           defaultValue={strVal(value)}
           required={field.required}
           storage={field.type === "image" || spacesFiles ? "spaces" : "inline"}
-          folder={spacesFiles ? "publications" : "pages"}
+          folder={spacesFiles ? "publications" : imageFolder}
           onBusyChange={onBusyChange}
         />
         {field.help && <span className="mt-1 block text-xs text-muted-2">{field.help}</span>}

@@ -10,7 +10,7 @@ import { EventsMedia } from "@/components/home/events-media"
 import { getSession } from "@/lib/session"
 import { getMenuItems, getNewsAlert, getSiteSettings } from "@/lib/site-settings"
 import { getPublishedNews, getPublishedEvents } from "@/app/actions/public"
-import { getMediaHighlights } from "@/app/actions/cms"
+import { getMediaCoverage, getMediaHighlights } from "@/app/actions/cms"
 import { toHeaderUser } from "@/lib/header-user"
 import { seoMetadata } from "@/lib/seo"
 import { staticSubjectByPath } from "@/lib/seo/subjects"
@@ -21,7 +21,7 @@ export function generateMetadata() {
 }
 
 export default async function Home() {
-  const [session, nav, news, articles, events, newsAlert, media, settings] = await Promise.all([
+  const [session, nav, news, articles, events, newsAlert, media, settings, mediaCoverage] = await Promise.all([
     getSession(),
     getMenuItems(),
     getPublishedNews(24),
@@ -30,6 +30,7 @@ export default async function Home() {
     getNewsAlert(),
     getMediaHighlights(3),
     getSiteSettings(),
+    getMediaCoverage(),
   ])
 
   const newsItems: HomeNewsItem[] = [
@@ -66,7 +67,7 @@ export default async function Home() {
     <div className="flex min-h-screen flex-col bg-background">
       <SiteHeader variant="solid" active="Home" user={toHeaderUser(session)} nav={nav} newsAlert={newsAlert} />
       <main className="flex-1">
-        <Hero />
+        <Hero media={mediaCoverage} />
         <AskVaapAi />
         <LatestNewsMedia items={newsItems} />
         <EventsMedia events={events} media={media} social={settings.social} />
