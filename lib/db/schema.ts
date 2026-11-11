@@ -1317,8 +1317,18 @@ export const aiUsageLogs = pgTable("ai_usage_logs", {
   costMicroUsd: integer("costMicroUsd").notNull().default(0),
   pricingVersion: text("pricingVersion").notNull().default(""),
   language: text("language").notNull().default("en"),
-  status: text("status").notNull().default("ok"),
+  status: text("status").notNull().default("ok"), // ok | error | blocked_budget | blocked_quota | disabled | free_fallback
   latencyMs: integer("latencyMs").notNull().default(0),
+  conversationId: text("conversationId"),
+  messageId: text("messageId"),
+  provider: text("provider").notNull().default(""),
+  question: text("question").notNull().default(""),
+  topic: text("topic").notNull().default("general"),
+  answered: boolean("answered"),
+  generationIds: text("generationIds").notNull().default(""),
+  actualCostMicroUsd: integer("actualCostMicroUsd"),
+  reconciledAt: timestamp("reconciledAt"),
+  errorMessage: text("errorMessage").notNull().default(""),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 })
 
@@ -1334,6 +1344,11 @@ export const aiKnowledgeSources = pgTable("ai_knowledge_sources", {
   charCount: integer("charCount").notNull().default(0),
   chunkCount: integer("chunkCount").notNull().default(0),
   active: boolean("active").notNull().default(true),
+  status: text("status").notNull().default("pending"), // pending | approved | rejected
+  version: integer("version").notNull().default(1),
+  reviewedBy: text("reviewedBy"),
+  reviewedAt: timestamp("reviewedAt"),
+  reviewNote: text("reviewNote").notNull().default(""),
   createdBy: text("createdBy"),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
@@ -1346,4 +1361,62 @@ export const aiKnowledgeChunks = pgTable("ai_knowledge_chunks", {
     .references(() => aiKnowledgeSources.id, { onDelete: "cascade" }),
   position: integer("position").notNull(),
   content: text("content").notNull(),
+})
+
+// Snapshot of a knowledge source each time its content is added, edited or re-read.
+export const aiKnowledgeVersions = pgTable("ai_knowledge_versions", {
+  id: serial("id").primaryKey(),
+  sourceId: integer("sourceId")
+    .notNull()
+    .references(() => aiKnowledgeSources.id, { onDelete: "cascade" }),
+  version: integer("version").notNull(),
+  action: text("action").notNull(), // created | edited | refreshed | approved | rejected
+  title: text("title").notNull(),
+  content: text("content").notNull().default(""),
+  note: text("note").notNull().default(""),
+  changedBy: text("changedBy"),
+  changedByName: text("changedByName").notNull().default(""),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
+// Single-row (id = 1) Super Admin configuration for Ask VAAP AI.
+export const aiSettings = pgTable("ai_settings", {
+  id: integer("id").primaryKey(),
+  data: jsonb("data").notNull(),
+  updatedBy: text("updatedBy"),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+})
+
+// Worst-case cost held while a paid request is in flight, so concurrent requests cannot overspend.
+export const aiBudgetReservations = pgTable("ai_budget_reservations", {
+  requestId: text("requestId").primaryKey(),
+  amountMicroUsd: integer("amountMicroUsd").notNull(),
+  expiresAt: timestamp("expiresAt").notNull(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
+// One row per budget threshold notification per period, so each alert is sent once.
+export const aiBudgetAlerts = pgTable(
+  "ai_budget_alerts",
+  {
+    period: text("period").notNull(), // e.g. month:2026-11 or day:2026-11-11
+    threshold: integer("threshold").notNull(),
+    spentMicroUsd: integer("spentMicroUsd").notNull().default(0),
+    sentAt: timestamp("sentAt").notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.period, t.threshold] })],
+)
+
+export const aiFeedback = pgTable("ai_feedback", {
+  id: serial("id").primaryKey(),
+  requestId: text("requestId"),
+  conversationId: text("conversationId"),
+  messageId: text("messageId").notNull().unique(),
+  rating: integer("rating").notNull(), // 1 helpful, -1 not helpful
+  comment: text("comment").notNull().default(""),
+  question: text("question").notNull().default(""),
+  userId: text("userId"),
+  sessionId: text("sessionId").notNull(),
+  resolved: boolean("resolved").notNull().default(false),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
 })
