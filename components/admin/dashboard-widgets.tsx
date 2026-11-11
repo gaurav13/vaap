@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils"
 
 export type Tone = "green" | "teal" | "amber" | "indigo"
 export type StatCard = { label: string; value: number | string; hint?: string; hintTone?: "up" | "warn"; href: string; icon: LucideIcon; tone: Tone }
-export type ModuleCard = { label: string; description: string; href: string; icon: LucideIcon; tone: Tone; count?: number }
+export type ModuleCard = { label: string; description: string; href: string; icon: LucideIcon; tone: Tone; count?: number; unit?: string }
 export type ActivityItem = { id: number; action: string; target: string; actor: string; at: Date }
 export type ApprovalItem = { label: string; count: number; href: string; icon: LucideIcon; tone: Tone }
 export type QuickAction = { label: string; href: string; icon: LucideIcon; tone?: Tone | "danger" }
@@ -51,7 +51,7 @@ export function DashboardHero({ title, subtitle }: { title: string; subtitle: st
   )
 }
 
-export function StatGrid({ stats }: { stats: StatCard[] }) {
+export function StatGrid({ stats, labelFirst = false }: { stats: StatCard[]; labelFirst?: boolean }) {
   return (
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       {stats.map((s) => (
@@ -62,8 +62,17 @@ export function StatGrid({ stats }: { stats: StatCard[] }) {
         >
           <Tile icon={s.icon} tone={s.tone} size="lg" />
           <div className="min-w-0">
-            <p className="text-3xl font-extrabold leading-none text-heading">{s.value}</p>
-            <p className="mt-1.5 text-sm text-body">{s.label}</p>
+            {labelFirst ? (
+              <>
+                <p className="text-sm font-medium text-heading">{s.label}</p>
+                <p className="mt-1.5 text-3xl font-extrabold leading-none text-heading">{s.value}</p>
+              </>
+            ) : (
+              <>
+                <p className="text-3xl font-extrabold leading-none text-heading">{s.value}</p>
+                <p className="mt-1.5 text-sm text-body">{s.label}</p>
+              </>
+            )}
             {s.hint &&
               (s.hintTone === "warn" ? (
                 <span className="mt-1.5 inline-flex rounded-full bg-amber-tint px-2.5 py-0.5 text-xs font-semibold text-amber">{s.hint}</span>
@@ -163,18 +172,30 @@ export function RevenueBanner({
   )
 }
 
-export function ModuleGrid({ modules, title = "Management Modules" }: { modules: ModuleCard[]; title?: string }) {
+export function ModuleGrid({
+  modules,
+  title = "Management Modules",
+  columns = 4,
+}: {
+  modules: ModuleCard[]
+  title?: string
+  columns?: 3 | 4
+}) {
+  const remainder = modules.length % columns
   return (
     <section aria-labelledby="modules">
-      <h2 id="modules" className="mb-3 text-xl font-bold text-heading">
+      <h2 id="modules" className={cn("mb-3 text-xl font-bold text-heading", columns === 3 && "sr-only")}>
         {title}
       </h2>
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {modules.map((m) => (
+      <div className={cn("grid gap-3 sm:grid-cols-2", columns === 3 ? "xl:grid-cols-6" : "xl:grid-cols-4")}>
+        {modules.map((m, i) => (
           <Link
             key={m.href}
             href={m.href}
-            className="group flex items-center gap-4 rounded-2xl border border-line bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-green-border hover:shadow-md"
+            className={cn(
+              "group flex items-center gap-4 rounded-2xl border border-line bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-green-border hover:shadow-md",
+              columns === 3 && (remainder > 0 && i >= modules.length - remainder ? (remainder === 1 ? "xl:col-span-6" : "xl:col-span-3") : "xl:col-span-2"),
+            )}
           >
             <Tile icon={m.icon} tone={m.tone} />
             <div className="min-w-0 flex-1">
@@ -182,7 +203,10 @@ export function ModuleGrid({ modules, title = "Management Modules" }: { modules:
               <p className="text-pretty text-xs leading-relaxed text-muted-2">{m.description}</p>
             </div>
             {m.count !== undefined && (
-              <span className="rounded-lg bg-surface px-2.5 py-1 text-sm font-bold text-heading">{m.count}</span>
+              <span className="flex min-w-14 flex-col items-center rounded-xl bg-surface px-2.5 py-1.5 leading-tight">
+                <span className="text-lg font-bold text-heading">{m.count}</span>
+                {m.unit && <span className="text-xs text-muted-2">{m.unit}</span>}
+              </span>
             )}
             <span className="flex size-7 shrink-0 items-center justify-center rounded-full text-heading transition-colors group-hover:bg-mint group-hover:text-green">
               <ArrowRight className="size-4" aria-hidden />
@@ -202,8 +226,37 @@ const ACTION_STYLE: Record<NonNullable<QuickAction["tone"]>, string> = {
   danger: "text-destructive",
 }
 
-export function QuickActions({ actions }: { actions: QuickAction[] }) {
+export function QuickActions({ actions, bar = false }: { actions: QuickAction[]; bar?: boolean }) {
   if (actions.length === 0) return null
+  if (bar) {
+    return (
+      <section
+        aria-labelledby="quick-actions"
+        className="flex flex-col gap-3 rounded-2xl border border-line bg-card p-3 shadow-sm lg:flex-row lg:items-center"
+      >
+        <h2 id="quick-actions" className="px-2 text-lg font-bold text-heading lg:border-r lg:border-line lg:pr-5">
+          Quick Actions
+        </h2>
+        <div className="flex flex-wrap gap-2">
+          {actions.map((a, i) => (
+            <Link
+              key={a.href + a.label}
+              href={a.href}
+              className={cn(
+                "flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold shadow-sm transition-colors",
+                i === 0
+                  ? "border-green bg-green text-primary-foreground hover:bg-green-hover"
+                  : "border-line bg-card text-heading hover:border-green-border hover:bg-mint",
+              )}
+            >
+              <a.icon className={cn("size-5 shrink-0", i === 0 ? "text-primary-foreground" : "text-green")} aria-hidden />
+              {a.label}
+            </Link>
+          ))}
+        </div>
+      </section>
+    )
+  }
   return (
     <section aria-labelledby="quick-actions" className="rounded-2xl border border-line bg-card p-5 shadow-sm">
       <h2 id="quick-actions" className="mb-4 flex items-center gap-2 text-lg font-bold text-heading">

@@ -123,7 +123,7 @@ export default async function AdminOverview() {
   const totalMembers = funnel.stats.totalRegistered
   const pendingPayments = funnel.stats.pendingPayments
 
-  const stats: StatCard[] = [
+  const stats: StatCard[] = isSuper ? [
     { label: "Total Members", value: totalMembers, hint: `${paidMembers} paid`, href: "/admin/members", icon: Users, tone: "green" },
     isSuper
       ? { label: "Paid Members", value: paidMembers, hint: `${totalMembers ? Math.round((paidMembers / totalMembers) * 100) : 0}% of members`, href: "/admin/membership-funnel", icon: Layers, tone: "teal" }
@@ -132,7 +132,23 @@ export default async function AdminOverview() {
     isSuper
       ? { label: "Pending Approvals", value: c.appsPending + c.rsvpsPending + c.articlesPending + c.kolsPending, href: "/admin/applications", icon: History, tone: "indigo" }
       : { label: "Published Articles", value: c.published, hint: `${c.articlesPending} awaiting review`, href: "/admin/articles", icon: PenSquare, tone: "indigo" },
+  ] : [
+    { label: "Total Members", value: totalMembers, hint: `${paidMembers} paid`, href: "/admin/members", icon: Users, tone: "green" },
+    { label: "Pending (Unpaid)", value: pendingPayments, hint: "Payment Pending", hintTone: "warn", href: "/admin/applications", icon: FileText, tone: "amber" },
+    { label: "Active Events", value: c.events, hint: `${c.upcoming} upcoming`, href: "/admin/events", icon: CalendarDays, tone: "green" },
+    { label: "Published Articles", value: c.published, hint: `${c.articlesPending} awaiting review`, href: "/admin/articles", icon: Newspaper, tone: "green" },
   ]
+
+  const UNITS: Record<string, string> = {
+    "/admin/members": "Total",
+    "/admin/applications": "Pending",
+    "/admin/messages": "New",
+    "/admin/events": "Events",
+    "/admin/participants": "Requests",
+    "/admin/articles": "Pending",
+    "/admin/news": "Posts",
+    "/admin/kols": "Profiles",
+  }
 
   const allModules: ModuleCard[] = [
     { label: "Memberships", description: "Members, applications and payment status.", href: "/admin/members", tone: "green", icon: IdCard, count: totalMembers },
@@ -150,7 +166,9 @@ export default async function AdminOverview() {
     { label: "Reports", description: "Membership and engagement reports.", href: "/admin/reports", tone: "indigo", icon: BarChart3 },
     { label: "Activity & Restore", description: "Audit every action and restore edits.", href: "/admin/activity", tone: "indigo", icon: History },
   ]
-  const modules = allModules.filter((m) => canOpenAdminRoute(role, m.href))
+  const modules = allModules
+    .filter((m) => canOpenAdminRoute(role, m.href))
+    .map((m) => (isSuper ? { ...m, count: undefined } : { ...m, unit: UNITS[m.href] }))
 
   const quickActions = (
     isSuper
@@ -182,24 +200,33 @@ export default async function AdminOverview() {
   const title = isSuper ? "Super Admin Dashboard" : `Welcome, ${actor.name || ADMIN_AREA_LABELS[role]}`
   const subtitle = isSuper
     ? "Full control and management of the VAAP platform."
-    : role === "manager"
-      ? "Manage members, content, events and community operations."
-      : "Review applications, events, articles and messages."
+    : `VAAP ${ADMIN_AREA_LABELS[role]} Dashboard – Manage members, content, events and community operations.`
 
   return (
     <div className="flex flex-col gap-6">
       <DashboardHero title={title} subtitle={subtitle} />
 
-      <StatGrid stats={stats} />
+      <StatGrid stats={stats} labelFirst={!isSuper} />
+
+      {!isSuper && (
+        <>
+          <QuickActions actions={visibleActions} bar />
+          <ModuleGrid modules={modules} columns={3} />
+          <div className="grid gap-4 lg:grid-cols-2">
+            <RecentActivity items={activity} viewAllHref={canOpenAdminRoute(role, "/admin/activity") ? "/admin/activity" : undefined} />
+            <PendingApprovals items={approvals} />
+          </div>
+        </>
+      )}
 
       {isSuper && (
-        <RevenueBanner
+        <>
+      <RevenueBanner
           totals={revenueTotals(funnel.paid.map((p) => p.amount))}
           paidMembers={paidMembers}
           pendingPayments={pendingPayments}
           trend={paidTrend(funnel.paid.map((p) => p.paymentDate))}
         />
-      )}
 
       <ModuleGrid modules={modules} />
 
@@ -208,6 +235,8 @@ export default async function AdminOverview() {
         <RecentActivity items={activity} viewAllHref={canOpenAdminRoute(role, "/admin/activity") ? "/admin/activity" : undefined} />
         <PendingApprovals items={approvals} />
       </div>
+        </>
+      )}
     </div>
   )
 }

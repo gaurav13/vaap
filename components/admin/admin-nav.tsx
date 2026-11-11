@@ -133,10 +133,22 @@ export function AdminNav({ role, name }: { role: AdminAreaRole; name: string }) 
         <Link href="/" className="flex items-center justify-center rounded-2xl bg-card px-4 py-3 shadow-sm">
           <VaapLogo height={44} />
         </Link>
-        <span className="inline-flex items-center justify-center gap-1.5 self-center rounded-full bg-green px-4 py-1.5 text-sm font-semibold text-primary-foreground">
-          {role === "admin" ? <Crown className="size-4 text-gold-tint" aria-hidden /> : <ShieldCheck className="size-4" aria-hidden />}
-          {ADMIN_AREA_LABELS[role]}
-        </span>
+  {role === "admin" ? (
+  <span className="inline-flex items-center justify-center gap-1.5 self-center rounded-full bg-green px-4 py-1.5 text-sm font-semibold text-primary-foreground">
+  <Crown className="size-4 text-gold-tint" aria-hidden />
+  {ADMIN_AREA_LABELS[role]}
+  </span>
+  ) : (
+  <div className="hidden items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-3.5 py-3 lg:flex">
+  <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-green text-primary-foreground">
+  <ShieldCheck className="size-5" aria-hidden />
+  </span>
+  <div className="min-w-0">
+  <p className="truncate text-sm font-semibold text-white">{ADMIN_AREA_LABELS[role]}</p>
+  <p className="text-xs text-white/70">Operational Access</p>
+  </div>
+  </div>
+  )}
       </div>
 
       <nav className="flex gap-1 overflow-x-auto px-3 pb-3 lg:flex-col lg:gap-0 lg:overflow-visible lg:px-3 lg:py-2">
