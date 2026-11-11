@@ -1299,3 +1299,25 @@ export const kolAuditLog = pgTable("kol_audit_log", {
   actor: text("actor").notNull().default(""),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 })
+
+// --- VAAP AI Assistant: one row per model request -----------------------------
+// Cost is stored in micro-USD (1 = USD 0.000001) so sums stay exact integers.
+
+export const aiUsageLogs = pgTable("ai_usage_logs", {
+  id: serial("id").primaryKey(),
+  requestId: text("requestId").notNull().unique(),
+  userId: text("userId"),
+  sessionId: text("sessionId").notNull(),
+  model: text("model").notNull(),
+  inputTokens: integer("inputTokens").notNull().default(0),
+  outputTokens: integer("outputTokens").notNull().default(0),
+  cachedInputTokens: integer("cachedInputTokens").notNull().default(0),
+  reasoningTokens: integer("reasoningTokens").notNull().default(0),
+  toolCalls: integer("toolCalls").notNull().default(0),
+  costMicroUsd: integer("costMicroUsd").notNull().default(0),
+  pricingVersion: text("pricingVersion").notNull().default(""),
+  language: text("language").notNull().default("en"),
+  status: text("status").notNull().default("ok"),
+  latencyMs: integer("latencyMs").notNull().default(0),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
