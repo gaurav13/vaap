@@ -25,6 +25,7 @@ import { MISSION_TAGLINE } from "@/lib/member/content"
 import { effectiveExpiry } from "@/lib/membership"
 import { getMembershipStanding, MEMBERSHIP_STATE_LABEL } from "@/lib/membership-state"
 import { MembershipCta } from "@/components/member/membership-cta"
+import { MembershipJourney } from "@/components/member/membership-journey"
 import { LatestUpdates } from "@/components/member/latest-updates"
 
 function fmtDate(d: Date | string) {
@@ -37,7 +38,10 @@ export default async function DashboardPage() {
   const user = session.user
 
   // Claims an email-only member row for this account before resolving standing.
-  await getMyMembership(user.id)
+  const profile = await getMyMembership(user.id)
+  const profileComplete = Boolean(
+    user.name?.trim() && profile?.phone && profile?.city && (profile?.designation || profile?.organization),
+  )
   const [standing, news, articles, events] = await Promise.all([
     getMembershipStanding(user.id, user.email),
     getPublishedNews(24),
@@ -53,19 +57,18 @@ export default async function DashboardPage() {
     ? `${membership.category} Member`
     : standing.application && !notMember && standing.state !== "rejected"
       ? `${standing.application.category} (applied)`
-      : notMember
-        ? "Not Applied"
-        : "Not Assigned"
+      : "Not Selected"
+  const inJourney = ["not-member", "payment-pending", "under-review", "rejected"].includes(standing.state)
+  const applied = standing.state === "payment-pending" || standing.state === "under-review"
+  const statusLabel = notMember ? "Not Applied" : MEMBERSHIP_STATE_LABEL[standing.state]
   const validExpiry = isActive ? effectiveExpiry(membership?.joinedAt, membership?.expiresAt) : null
   const validTill = validExpiry ? fmtDate(validExpiry) : null
   const votingEligible = isActive && (membership?.votingEligible ?? false)
   const statusTone: "green" | "amber" | "red" | "neutral" = isActive
     ? "green"
-    : standing.state === "payment-pending" || standing.state === "under-review"
+    : standing.state === "payment-pending" || standing.state === "under-review" || notMember
       ? "amber"
-      : standing.state === "not-member"
-        ? "neutral"
-        : "red"
+      : "red"
 
   return (
     <div className="flex w-full flex-col gap-6">
@@ -93,26 +96,33 @@ export default async function DashboardPage() {
         </div>
       </section>
 
+      {inJourney && (
+        <MembershipJourney
+          profileComplete={profileComplete}
+          applied={applied}
+          paid={standing.state === "under-review"}
+          verified={false}
+        />
+      )}
+
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatusCard
           icon={IdCard}
           label="Member ID"
           value={memberId}
-          valueTone={membership ? undefined : "neutral"}
-          hint={membership ? undefined : "Issued once your membership is approved"}
+          hint={membership || inJourney ? undefined : "Issued once your membership is approved"}
         />
         <StatusCard
           icon={BadgeCheck}
           label="Membership Category"
           value={category}
-          valueTone={membership ? undefined : "neutral"}
-          action={notMember ? { label: "Apply for Paid Membership", href: "/membership/apply" } : undefined}
         />
         <StatusCard
           icon={CheckCircle2}
           label="Membership Status"
-          value={MEMBERSHIP_STATE_LABEL[standing.state]}
+          value={statusLabel}
           valueTone={statusTone}
+          highlight={!isActive}
           hint={validTill ? `Valid till ${validTill}` : undefined}
         />
         <StatusCard
@@ -258,6 +268,7 @@ function StatusCard({
   value,
   hint,
   valueTone,
+  highlight,
   action,
 }: {
   icon: typeof IdCard
@@ -265,23 +276,28 @@ function StatusCard({
   value: string
   hint?: string
   valueTone?: "green" | "amber" | "red" | "neutral"
+  highlight?: boolean
   action?: { label: string; href: string }
 }) {
   const toneClass = {
     green: "text-green",
-    amber: "text-amber-700",
+    amber: "text-amber",
     red: "text-red-700",
     neutral: "text-body",
   } as const
   const valueClass = valueTone ? toneClass[valueTone] : "text-heading"
   return (
-    <div className="flex items-center gap-4 rounded-2xl border border-line bg-card p-5">
+    <div
+      className={`flex items-center gap-4 rounded-2xl border p-5 shadow-sm ${
+        highlight ? "border-amber/20 bg-amber-tint" : "border-line bg-card"
+      }`}
+    >
       <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-mint text-green">
         <Icon className="size-6" aria-hidden />
       </span>
       <div className="min-w-0">
-        <p className="text-xs font-medium text-muted-2">{label}</p>
-        <p className={`mt-0.5 text-pretty text-base font-bold leading-snug ${valueClass}`}>{value}</p>
+        <p className="text-sm font-medium text-muted-2">{label}</p>
+        <p className={`mt-0.5 text-pretty text-xl font-bold leading-snug ${valueClass}`}>{value}</p>
         {hint && <p className="mt-0.5 text-pretty text-xs leading-relaxed text-muted-2">{hint}</p>}
         {action && (
           <Link
