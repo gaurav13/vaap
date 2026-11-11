@@ -1389,6 +1389,20 @@ export const aiSettings = pgTable("ai_settings", {
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 })
 
+// Encrypted AI provider credentials (AES-256-GCM). Only server code can decrypt; the plaintext key never leaves the server.
+export const aiProviderCredentials = pgTable("ai_provider_credentials", {
+  provider: text("provider").primaryKey(),
+  ciphertext: text("ciphertext").notNull(),
+  iv: text("iv").notNull(),
+  authTag: text("authTag").notNull(),
+  keyHint: text("keyHint").notNull(),
+  status: text("status").notNull().default("untested"),
+  lastError: text("lastError"),
+  lastTestedAt: timestamp("lastTestedAt"),
+  updatedBy: text("updatedBy"),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+})
+
 // Worst-case cost held while a paid request is in flight, so concurrent requests cannot overspend.
 export const aiBudgetReservations = pgTable("ai_budget_reservations", {
   requestId: text("requestId").primaryKey(),

@@ -10,6 +10,7 @@ import { ImprovementTab } from "@/components/admin/ai/tabs/improvement-tab"
 import { CostTab } from "@/components/admin/ai/tabs/cost-tab"
 import { UsersTab } from "@/components/admin/ai/tabs/users-tab"
 import { SettingsTab } from "@/components/admin/ai/tabs/settings-tab"
+import { ApiTab } from "@/components/admin/ai/tabs/api-tab"
 import { AuditTab } from "@/components/admin/ai/tabs/audit-tab"
 
 export const metadata = { title: "Ask VAAP AI Management | VAAP Admin" }
@@ -53,6 +54,7 @@ export default async function AdminAiPage({ searchParams }: { searchParams: Sear
       {tab === "cost" && <CostTab range={range} page={page} status={one("status") ?? ""} />}
       {tab === "users" && <UsersTab range={range} />}
       {tab === "settings" && <SettingsTab />}
+      {tab === "api" && <ApiTab />}
       {tab === "audit" && <AuditTab />}
     </div>
   )
