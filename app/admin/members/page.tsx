@@ -1,21 +1,25 @@
 import Link from "next/link"
 import { db } from "@/lib/db"
-import { members, membershipApplications, membershipCertificates } from "@/lib/db/schema"
-import { desc, eq, isNull, isNotNull } from "drizzle-orm"
+import { members, membershipCertificates } from "@/lib/db/schema"
+import { desc, isNull, isNotNull } from "drizzle-orm"
+import { getMemberDirectory } from "@/lib/membership-funnel"
 import { serializeRows } from "@/lib/cms/serialize"
 import { MembersAdmin } from "@/components/admin/members-admin"
 import { getSession } from "@/lib/session"
 import { listMemberVotingRights } from "@/lib/voting-rights"
 import { VotingRightsManager } from "@/components/governance/voting-rights-manager"
 
-export default async function AdminMembersPage() {
-  const session = await getSession()
-  const isSuperAdmin = session?.user?.role === "admin"
+const STAGES = ["all", "incomplete", "not-paid", "pending-approval", "active", "expired", "suspended"] as const
 
-  const [memberRows, trashed, pending, votingRows, certRows] = await Promise.all([
+export default async function AdminMembersPage({ searchParams }: { searchParams: Promise<{ stage?: string }> }) {
+  const [session, { stage }] = await Promise.all([getSession(), searchParams])
+  const isSuperAdmin = session?.user?.role === "admin"
+  const initialStage = STAGES.find((s) => s === stage) ?? "all"
+
+  const [memberRows, trashed, directory, votingRows, certRows] = await Promise.all([
     db.select().from(members).where(isNull(members.deletedAt)).orderBy(desc(members.joinedAt)),
     db.select().from(members).where(isNotNull(members.deletedAt)).orderBy(desc(members.deletedAt)),
-    db.select({ id: membershipApplications.id }).from(membershipApplications).where(eq(membershipApplications.status, "pending")),
+    getMemberDirectory(),
     isSuperAdmin ? listMemberVotingRights() : Promise.resolve(null),
     db
       .select({
@@ -43,18 +47,7 @@ export default async function AdminMembersPage() {
       : { ...r, email: "Hidden", phone: null, ntn: null, linkedin: null, website: null, userId: null }
   const rows = memberRows.map((r) => ({ ...redact(r), certificate: certByMember.get(r.id) ?? null }))
   const trashedRows = isSuperAdmin ? trashed : []
-
-  const now = new Date()
-  const in30 = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
-
-  const stats = {
-    total: rows.length,
-    pending: pending.length,
-    active: rows.filter((r) => r.status === "active").length,
-    expiringSoon: rows.filter((r) => r.expiresAt && r.expiresAt > now && r.expiresAt <= in30).length,
-    newThisMonth: rows.filter((r) => r.joinedAt >= monthStart).length,
-  }
+  const people = directory.rows.map(({ userId: _userId, ...p }) => (isSuperAdmin ? p : { ...p, email: "Hidden" }))
 
   return (
     <>
@@ -79,7 +72,9 @@ export default async function AdminMembersPage() {
       <MembersAdmin
         items={serializeRows(rows) as unknown as Parameters<typeof MembersAdmin>[0]["items"]}
         trashed={serializeRows(trashedRows) as unknown as Parameters<typeof MembersAdmin>[0]["items"]}
-        stats={stats}
+        people={serializeRows(people) as unknown as Parameters<typeof MembersAdmin>[0]["people"]}
+        stats={directory.stats}
+        initialStage={initialStage}
         readOnly={!isSuperAdmin}
       />
 

@@ -20,7 +20,7 @@ import {
 import { count, desc, eq, gte, inArray } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { articles, auditLogs, contactMessages, eventRsvps, events, kolProfiles, membershipApplications, news } from "@/lib/db/schema"
-import { getMembershipFunnel } from "@/lib/membership-funnel"
+import { getMemberDirectory, getMembershipFunnel } from "@/lib/membership-funnel"
 import { currentOperator } from "@/lib/rbac"
 import { ADMIN_AREA_LABELS, canOpenAdminRoute } from "@/lib/permissions"
 import {
@@ -114,29 +114,29 @@ export default async function AdminOverview() {
   const isSuper = role === "admin"
 
   // Staff only see their own actions in the feed; Admin and Super Admin see everyone's.
-  const [c, funnel, activity] = await Promise.all([
+  const [c, funnel, directory, activity] = await Promise.all([
     loadCounts(),
     getMembershipFunnel(),
+    getMemberDirectory(),
     loadActivity(role === "staff" ? actor.id : null),
   ])
-  const paidMembers = funnel.paid.filter((p) => p.status === "active").length
-  const totalMembers = funnel.stats.totalRegistered
-  const pendingPayments = funnel.stats.pendingPayments
+  // Every membership number on this page comes from the shared stage classification,
+  // so it matches the tabs on the Members page exactly.
+  const s = directory.stats
+  const paidMembers = s.activePaid
+  const totalMembers = s.totalRegistered
+  const pendingPayments = s.notPaid
 
   const stats: StatCard[] = isSuper ? [
-    { label: "Total Members", value: totalMembers, hint: `${paidMembers} paid`, href: "/admin/members", icon: Users, tone: "green" },
-    isSuper
-      ? { label: "Paid Members", value: paidMembers, hint: `${totalMembers ? Math.round((paidMembers / totalMembers) * 100) : 0}% of members`, href: "/admin/membership-funnel", icon: Layers, tone: "teal" }
-      : { label: "Active Events", value: c.events, hint: `${c.upcoming} upcoming`, href: "/admin/events", icon: CalendarDays, tone: "teal" },
-    { label: "Pending Payments", value: pendingPayments, hint: "Payment pending", hintTone: "warn", href: "/admin/applications", icon: CreditCard, tone: "amber" },
-    isSuper
-      ? { label: "Pending Approvals", value: c.appsPending + c.rsvpsPending + c.articlesPending + c.kolsPending, href: "/admin/applications", icon: History, tone: "indigo" }
-      : { label: "Published Articles", value: c.published, hint: `${c.articlesPending} awaiting review`, href: "/admin/articles", icon: PenSquare, tone: "indigo" },
+    { label: "Total Registered Users", value: totalMembers, hint: `${paidMembers} active paid`, href: "/admin/members", icon: Users, tone: "green" },
+    { label: "Active Paid Members", value: paidMembers, hint: `${totalMembers ? Math.round((paidMembers / totalMembers) * 100) : 0}% of users`, href: "/admin/members?stage=active", icon: Layers, tone: "teal" },
+    { label: "Not Paid Users", value: pendingPayments, hint: "Submitted, payment unverified", hintTone: "warn", href: "/admin/members?stage=not-paid", icon: CreditCard, tone: "amber" },
+    { label: "Pending Approvals", value: s.pendingApproval + c.rsvpsPending + c.articlesPending + c.kolsPending, hint: `${s.pendingApproval} paid memberships`, href: "/admin/applications", icon: History, tone: "indigo" },
   ] : [
-    { label: "Total Members", value: totalMembers, hint: `${paidMembers} paid`, href: "/admin/members", icon: Users, tone: "green" },
-    { label: "Pending (Unpaid)", value: pendingPayments, hint: "Payment Pending", hintTone: "warn", href: "/admin/applications", icon: FileText, tone: "amber" },
-    { label: "Active Events", value: c.events, hint: `${c.upcoming} upcoming`, href: "/admin/events", icon: CalendarDays, tone: "green" },
-    { label: "Published Articles", value: c.published, hint: `${c.articlesPending} awaiting review`, href: "/admin/articles", icon: Newspaper, tone: "green" },
+    { label: "Total Registered Users", value: totalMembers, hint: `${paidMembers} active paid`, href: "/admin/members", icon: Users, tone: "green" },
+    { label: "Incomplete Profiles", value: s.incomplete, hint: "Application not submitted", href: "/admin/members?stage=incomplete", icon: FileText, tone: "indigo" },
+    { label: "Not Paid Users", value: pendingPayments, hint: "Payment unverified", hintTone: "warn", href: "/admin/members?stage=not-paid", icon: CreditCard, tone: "amber" },
+    { label: "Pending Approval", value: s.pendingApproval, hint: "Paid, awaiting review", href: "/admin/members?stage=pending-approval", icon: History, tone: "teal" },
   ]
 
   const UNITS: Record<string, string> = {
@@ -152,7 +152,7 @@ export default async function AdminOverview() {
 
   const allModules: ModuleCard[] = [
     { label: "Memberships", description: "Members, applications and payment status.", href: "/admin/members", tone: "green", icon: IdCard, count: totalMembers },
-    { label: "Applications", description: "Review and approve paid applications.", href: "/admin/applications", tone: "teal", icon: FileText, count: c.appsPending },
+    { label: "Applications", description: "Review and approve paid applications.", href: "/admin/applications", tone: "teal", icon: FileText, count: s.pendingApproval },
     { label: "Messages & Inquiries", description: "Reply to website inquiries.", href: "/admin/messages", tone: "teal", icon: Inbox, count: c.msgsNew },
     { label: "Events", description: "Create, review and approve events.", href: "/admin/events", tone: "indigo", icon: CalendarDays, count: c.events },
     { label: "Event Participants", description: "Approve event registrations.", href: "/admin/participants", tone: "green", icon: Users, count: c.rsvps },
@@ -191,7 +191,7 @@ export default async function AdminOverview() {
   const visibleActions = quickActions.filter((a) => canOpenAdminRoute(role, a.href))
 
   const approvals: ApprovalItem[] = [
-    { label: "Membership Applications", count: c.appsPending, href: "/admin/applications", icon: Users, tone: "green" as const },
+    { label: "Paid Membership Applications", count: s.pendingApproval, href: "/admin/applications", icon: Users, tone: "green" as const },
     { label: "Event Participation Requests", count: c.rsvpsPending, href: "/admin/participants", icon: CalendarDays, tone: "indigo" as const },
     { label: "Article Submissions", count: c.articlesPending, href: "/admin/articles", icon: PenSquare, tone: "teal" as const },
     { label: "KOL Verification Requests", count: c.kolsPending, href: "/admin/kols", icon: BadgeCheck, tone: "green" as const },

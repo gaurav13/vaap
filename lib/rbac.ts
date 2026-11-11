@@ -108,15 +108,19 @@ export const REVISION_LABELS: Record<RevisionEntity, string> = {
   kol_profile: "KOL profile",
 }
 
-/** Payment is "system-confirmed" for card checkouts and no-fee invites; crypto needs a Super Admin check. */
+/**
+ * Payment counts only once it is verified: Stripe-confirmed card checkouts and
+ * Super-Admin-checked crypto both set `paymentVerifiedAt`; no-fee invites need none.
+ * Run `syncCardPaymentVerifications` first so fresh Stripe payments are recorded.
+ */
 export function isPaymentConfirmed(app: {
   completed: boolean
   paymentMethod: string | null
   totalAmount: string | null
   paymentVerifiedAt: Date | null
+  invitationCode?: string | null
 }) {
   if (!app.completed) return false
   if (app.paymentVerifiedAt) return true
-  if (app.totalAmount === "No payment required") return true
-  return app.paymentMethod === "card"
+  return app.totalAmount === "No payment required" || Boolean(app.invitationCode)
 }

@@ -70,6 +70,41 @@ async function isPaymentConfirmed(app: Application) {
   return Boolean(app.paymentVerifiedAt)
 }
 
+/** Server-side payment check used before any approval: Stripe for card, Super Admin check for crypto. */
+export async function isApplicationPaymentConfirmed(app: Application) {
+  return app.completed && (await isPaymentConfirmed(app))
+}
+
+type CardCheckable = Pick<Application, "id" | "completed" | "status" | "paymentMethod" | "txid" | "paymentVerifiedAt">
+
+/**
+ * Asks Stripe about submitted, still-pending card applications that are not yet
+ * marked verified, and records the result. Mutates `paymentVerifiedAt` on the
+ * passed rows so callers can classify them without re-querying.
+ */
+export async function syncCardPaymentVerifications<T extends CardCheckable>(apps: T[]) {
+  const unchecked = apps
+    .filter((a) => a.completed && a.status === "pending" && a.paymentMethod === "card" && !a.paymentVerifiedAt && a.txid?.startsWith("cs_"))
+    .slice(0, 25)
+  await Promise.all(
+    unchecked.map(async (a) => {
+      try {
+        const session = await stripe.checkout.sessions.retrieve(a.txid as string)
+        if (session.payment_status !== "paid") return
+        const verifiedAt = new Date()
+        await db
+          .update(membershipApplications)
+          .set({ paymentVerifiedAt: verifiedAt, paymentVerifiedBy: "stripe" })
+          .where(and(eq(membershipApplications.id, a.id), isNull(membershipApplications.paymentVerifiedAt)))
+        a.paymentVerifiedAt = verifiedAt
+      } catch {
+        // Unreachable or unknown session: leave unverified.
+      }
+    }),
+  )
+  return apps
+}
+
 /**
  * Single source of truth for a user's paid-membership standing. Payment
  * confirmation and staff approval are checked independently: a completed
