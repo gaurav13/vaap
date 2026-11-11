@@ -64,7 +64,15 @@ function fmt(iso: string | null) {
   return new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })
 }
 
-export function ParticipantsManager({ eventId, participants }: { eventId: number; participants: ParticipantRow[] }) {
+export function ParticipantsManager({
+  eventId,
+  participants,
+  canDelete = true,
+}: {
+  eventId: number
+  participants: ParticipantRow[]
+  canDelete?: boolean
+}) {
   const [tab, setTab] = useState<"all" | Status>("all")
   const [query, setQuery] = useState("")
   const [selected, setSelected] = useState<Set<number>>(new Set())
@@ -428,18 +436,20 @@ export function ParticipantsManager({ eventId, participants }: { eventId: number
                           <Ban className="size-4" />
                         </button>
                       )}
-                      <button
-                        type="button"
-                        title="Delete"
-                        aria-label={`Delete ${p.name}`}
-                        disabled={busy}
-                        className={`${iconBtn} hover:bg-red-50 hover:text-red-600`}
-                        onClick={() => {
-                          if (confirm(`Permanently delete ${p.name}'s registration?`)) run(p.id, () => removeParticipant(p.id, eventId))
-                        }}
-                      >
-                        <Trash2 className="size-4" />
-                      </button>
+                      {canDelete && (
+                        <button
+                          type="button"
+                          title="Delete"
+                          aria-label={`Delete ${p.name}`}
+                          disabled={busy}
+                          className={`${iconBtn} hover:bg-red-50 hover:text-red-600`}
+                          onClick={() => {
+                            if (confirm(`Permanently delete ${p.name}'s registration?`)) run(p.id, () => removeParticipant(p.id, eventId))
+                          }}
+                        >
+                          <Trash2 className="size-4" />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

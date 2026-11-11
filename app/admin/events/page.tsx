@@ -2,6 +2,7 @@ import { db } from "@/lib/db"
 import { events, eventRsvps } from "@/lib/db/schema"
 import { count, desc } from "drizzle-orm"
 import { EventsManager } from "@/components/admin/events-manager"
+import { getSession } from "@/lib/session"
 
 export default async function AdminEventsPage() {
   const rows = await db
@@ -43,6 +44,7 @@ export default async function AdminEventsPage() {
         )}
       </p>
       <EventsManager
+        canDelete={(await getSession())?.user?.role === "admin"}
         items={rows.map((r) => ({
           id: r.id,
           title: r.title,

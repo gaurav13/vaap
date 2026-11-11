@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache"
 import { db } from "@/lib/db"
 import { eventRsvps, events } from "@/lib/db/schema"
 import { getSession } from "@/lib/session"
+import { HIDDEN, logActivity, requireSuperAdmin } from "@/lib/rbac"
 import { sendTemplateEmail } from "@/lib/email-templates/service"
 import { releaseRegistrationEmailClaims } from "@/lib/email-dedupe"
 import {
@@ -39,14 +40,16 @@ async function loadEvent(eventId: number) {
 }
 
 export async function getEventParticipants(eventId: number) {
-  await requireStaff()
+  const actor = await requireStaff()
   const event = await loadEvent(eventId)
   if (!event) return null
-  const participants = await db
+  const rows = await db
     .select()
     .from(eventRsvps)
     .where(eq(eventRsvps.eventId, eventId))
     .orderBy(asc(eventRsvps.createdAt))
+  const participants =
+    actor.role === "admin" ? rows : rows.map((p) => ({ ...p, email: HIDDEN, ...("phone" in p ? { phone: null } : {}) }))
   return { event, participants }
 }
 
@@ -77,17 +80,21 @@ export async function getParticipantsOverview() {
 }
 
 export async function searchAllParticipants(query: string, status?: string) {
-  await requireStaff()
+  const actor = await requireStaff()
+  const superAdmin = actor.role === "admin"
   const q = query.trim().slice(0, 100)
   const filters = []
   if (q) {
     const like = `%${q.replace(/[%_\\]/g, (c) => `\\${c}`)}%`
+    // Staff cannot search by email, otherwise they could probe for addresses.
     filters.push(
-      or(ilike(eventRsvps.name, like), ilike(eventRsvps.email, like), ilike(eventRsvps.organization, like), ilike(events.title, like)),
+      superAdmin
+        ? or(ilike(eventRsvps.name, like), ilike(eventRsvps.email, like), ilike(eventRsvps.organization, like), ilike(events.title, like))
+        : or(ilike(eventRsvps.name, like), ilike(eventRsvps.organization, like), ilike(events.title, like)),
     )
   }
   if (status && STATUSES.includes(status as RsvpStatus)) filters.push(eq(eventRsvps.status, status))
-  return db
+  const rows = await db
     .select({
       id: eventRsvps.id,
       name: eventRsvps.name,
@@ -105,6 +112,7 @@ export async function searchAllParticipants(query: string, status?: string) {
     .where(filters.length ? and(...filters) : undefined)
     .orderBy(desc(eventRsvps.createdAt))
     .limit(300)
+  return superAdmin ? rows : rows.map((r) => ({ ...r, email: HIDDEN }))
 }
 
 export async function setParticipantCheckIn(id: number, eventId: number, checkedIn: boolean) {
@@ -126,8 +134,9 @@ export async function checkInAllParticipants(eventId: number) {
 }
 
 export async function removeParticipant(id: number, eventId: number) {
-  await requireStaff()
+  const actor = await requireSuperAdmin()
   await db.delete(eventRsvps).where(and(eq(eventRsvps.id, id), eq(eventRsvps.eventId, eventId)))
+  await logActivity(actor, "participant.delete", { entityType: "participant", entityId: id, details: `Event #${eventId}` })
   refresh(eventId)
 }
 

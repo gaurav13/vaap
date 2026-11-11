@@ -35,10 +35,23 @@ export type Permission =
   // Read-only admin views granted to staff (members, articles, referrals).
   | "admin.view"
 
-// Admin routes a read-only staff user may open. Everything else redirects.
-export const STAFF_ADMIN_ROUTES = ["/admin/members", "/admin/articles", "/admin/referrals", "/admin/notifications"] as const
+// Admin routes a Staff Admin may open. Everything else redirects. Server actions
+// enforce the same rules independently (see lib/rbac.ts).
+export const STAFF_ADMIN_ROUTES = [
+  "/admin/members",
+  "/admin/applications",
+  "/admin/messages",
+  "/admin/events",
+  "/admin/participants",
+  "/admin/articles",
+  "/admin/news",
+  "/admin/kols",
+  "/admin/activity",
+  "/admin/notifications",
+] as const
 
 export function isStaffAdminRoute(pathname: string): boolean {
+  if (pathname === "/admin" || pathname === "/admin/") return true
   return STAFF_ADMIN_ROUTES.some((r) => pathname === r || pathname.startsWith(`${r}/`))
 }
 

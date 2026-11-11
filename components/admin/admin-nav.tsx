@@ -81,6 +81,7 @@ const GROUPS: { heading: string; links: { href: string; label: string; icon: typ
       { href: "/admin/messages", label: "Messages", icon: Inbox },
       { href: "/admin/reports", label: "Reports", icon: ShieldCheck, adminOnly: true },
       { href: "/admin/users", label: "Users & Roles", icon: Users, adminOnly: true },
+      { href: "/admin/activity", label: "Activity & Restore", icon: ShieldCheck, adminOnly: true },
     ],
   },
   {

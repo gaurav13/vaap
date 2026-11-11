@@ -4,6 +4,7 @@ import { db } from "@/lib/db"
 import { articles, articleApprovals, notifications } from "@/lib/db/schema"
 import { getSession } from "@/lib/session"
 import { can } from "@/lib/permissions"
+import { logActivity, requireSuperAdmin, saveRevision } from "@/lib/rbac"
 import { and, desc, eq, inArray, ne } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { formatAlertDate, sendAdminAlert } from "@/lib/admin-alerts"
@@ -358,9 +359,11 @@ export async function unpublishArticle(id: number) {
 
 export async function deleteArticle(id: number) {
   try {
-    await requirePublisher()
-    const [article] = await db.select({ id: articles.id }).from(articles).where(eq(articles.id, id)).limit(1)
+    const actor = await requireSuperAdmin()
+    const [article] = await db.select().from(articles).where(eq(articles.id, id)).limit(1)
     if (!article) return { ok: false as const, error: "Article not found." }
+    await saveRevision(actor, "article", id, article, "delete")
+    await logActivity(actor, "article.delete", { entityType: "article", entityId: id, target: article.title })
     await db.delete(articleApprovals).where(eq(articleApprovals.articleId, id))
     await db.delete(articles).where(eq(articles.id, id))
     revalidatePath("/admin/articles")
