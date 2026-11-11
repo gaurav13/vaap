@@ -5,6 +5,8 @@ import {
   CalendarDays,
   CreditCard,
   FileText,
+  Plus,
+  Trash2,
   History,
   IdCard,
   Inbox,
@@ -22,6 +24,7 @@ import { getMembershipFunnel } from "@/lib/membership-funnel"
 import { currentOperator } from "@/lib/rbac"
 import { ADMIN_AREA_LABELS, canOpenAdminRoute } from "@/lib/permissions"
 import {
+  DashboardHero,
   ModuleGrid,
   PendingApprovals,
   QuickActions,
@@ -30,6 +33,7 @@ import {
   StatGrid,
   type ApprovalItem,
   type ModuleCard,
+  type QuickAction,
   type StatCard,
 } from "@/components/admin/dashboard-widgets"
 
@@ -47,6 +51,19 @@ function revenueTotals(amounts: (string | null)[]) {
   return [...byCurrency.entries()]
     .map(([currency, amount]) => ({ currency, amount: Math.round(amount) }))
     .sort((a, b) => (a.currency === "PKR" ? -1 : b.currency === "PKR" ? 1 : 0))
+}
+
+function paidTrend(dates: (Date | null)[], days = 30) {
+  const start = Date.now() - days * 86400000
+  const before = dates.filter((d) => d && new Date(d).getTime() < start).length
+  const buckets = Array.from({ length: days }, () => 0)
+  for (const d of dates) {
+    if (!d) continue
+    const idx = Math.floor((new Date(d).getTime() - start) / 86400000)
+    if (idx >= 0 && idx < days) buckets[idx]++
+  }
+  let running = before
+  return buckets.map((n) => (running += n))
 }
 
 async function loadCounts() {
@@ -107,43 +124,59 @@ export default async function AdminOverview() {
   const pendingPayments = funnel.stats.pendingPayments
 
   const stats: StatCard[] = [
-    { label: "Total members", value: totalMembers, hint: `${paidMembers} paid`, href: "/admin/members", icon: Users },
-    { label: "Pending (unpaid)", value: pendingPayments, hint: "Payment pending", href: "/admin/applications", icon: CreditCard },
-    { label: "Events", value: c.events, hint: `${c.upcoming} upcoming`, href: "/admin/events", icon: CalendarDays },
-    { label: "Published articles", value: c.published, hint: `${c.articlesPending} awaiting review`, href: "/admin/articles", icon: PenSquare },
+    { label: "Total Members", value: totalMembers, hint: `${paidMembers} paid`, href: "/admin/members", icon: Users, tone: "green" },
+    isSuper
+      ? { label: "Paid Members", value: paidMembers, hint: `${totalMembers ? Math.round((paidMembers / totalMembers) * 100) : 0}% of members`, href: "/admin/membership-funnel", icon: Layers, tone: "teal" }
+      : { label: "Active Events", value: c.events, hint: `${c.upcoming} upcoming`, href: "/admin/events", icon: CalendarDays, tone: "teal" },
+    { label: "Pending Payments", value: pendingPayments, hint: "Payment pending", hintTone: "warn", href: "/admin/applications", icon: CreditCard, tone: "amber" },
+    isSuper
+      ? { label: "Pending Approvals", value: c.appsPending + c.rsvpsPending + c.articlesPending + c.kolsPending, href: "/admin/applications", icon: History, tone: "indigo" }
+      : { label: "Published Articles", value: c.published, hint: `${c.articlesPending} awaiting review`, href: "/admin/articles", icon: PenSquare, tone: "indigo" },
   ]
 
   const allModules: ModuleCard[] = [
-    { label: "Memberships", description: "Members, applications and payment status.", href: "/admin/members", icon: IdCard, count: totalMembers },
-    { label: "Applications", description: "Review and approve paid applications.", href: "/admin/applications", icon: FileText, count: c.appsPending },
-    { label: "Messages & Inquiries", description: "Reply to website inquiries.", href: "/admin/messages", icon: Inbox, count: c.msgsNew },
-    { label: "Events", description: "Create, review and approve events.", href: "/admin/events", icon: CalendarDays, count: c.events },
-    { label: "Event Participants", description: "Approve event registrations.", href: "/admin/participants", icon: Users, count: c.rsvps },
-    { label: "Articles", description: "Review, edit and publish member articles.", href: "/admin/articles", icon: PenSquare, count: c.articlesPending },
-    { label: "News", description: "Publish news and announcements.", href: "/admin/news", icon: Newspaper, count: c.news },
-    { label: "Verified KOLs", description: "Review and manage KOL profiles.", href: "/admin/kols", icon: BadgeCheck, count: c.kols },
-    { label: "Content Management", description: "Website pages, sections and media.", href: "/admin/pages", icon: Layers },
-    { label: "Users & Roles", description: "Assign Staff, Admin and Super Admin roles.", href: "/admin/users", icon: UserCog },
-    { label: "Website Settings", description: "General, SEO and integration settings.", href: "/admin/settings", icon: Settings },
-    { label: "Payments", description: "Crypto payments and transactions.", href: "/admin/payments", icon: CreditCard },
-    { label: "Reports", description: "Membership and engagement reports.", href: "/admin/reports", icon: BarChart3 },
-    { label: "Activity & Restore", description: "Audit every action and restore edits.", href: "/admin/activity", icon: History },
+    { label: "Memberships", description: "Members, applications and payment status.", href: "/admin/members", tone: "green", icon: IdCard, count: totalMembers },
+    { label: "Applications", description: "Review and approve paid applications.", href: "/admin/applications", tone: "teal", icon: FileText, count: c.appsPending },
+    { label: "Messages & Inquiries", description: "Reply to website inquiries.", href: "/admin/messages", tone: "teal", icon: Inbox, count: c.msgsNew },
+    { label: "Events", description: "Create, review and approve events.", href: "/admin/events", tone: "indigo", icon: CalendarDays, count: c.events },
+    { label: "Event Participants", description: "Approve event registrations.", href: "/admin/participants", tone: "green", icon: Users, count: c.rsvps },
+    { label: "Articles", description: "Review, edit and publish member articles.", href: "/admin/articles", tone: "teal", icon: PenSquare, count: c.articlesPending },
+    { label: "News", description: "Publish news and announcements.", href: "/admin/news", tone: "teal", icon: Newspaper, count: c.news },
+    { label: "Verified KOLs", description: "Review and manage KOL profiles.", href: "/admin/kols", tone: "green", icon: BadgeCheck, count: c.kols },
+    { label: "Content Management", description: "Website pages, sections and media.", href: "/admin/pages", tone: "indigo", icon: Layers },
+    { label: "Users & Roles", description: "Assign Staff, Admin and Super Admin roles.", href: "/admin/users", tone: "green", icon: UserCog },
+    { label: "Website Settings", description: "General, SEO and integration settings.", href: "/admin/settings", tone: "teal", icon: Settings },
+    { label: "Payments", description: "Crypto payments and transactions.", href: "/admin/payments", tone: "amber", icon: CreditCard },
+    { label: "Reports", description: "Membership and engagement reports.", href: "/admin/reports", tone: "indigo", icon: BarChart3 },
+    { label: "Activity & Restore", description: "Audit every action and restore edits.", href: "/admin/activity", tone: "indigo", icon: History },
   ]
   const modules = allModules.filter((m) => canOpenAdminRoute(role, m.href))
 
-  const quickActions = [
-    { label: "Review memberships", href: "/admin/applications", icon: Users },
-    { label: "Approve events", href: "/admin/events", icon: CalendarDays },
-    { label: "Approve articles", href: "/admin/articles", icon: PenSquare },
-    { label: "KOL profiles", href: "/admin/kols", icon: BadgeCheck },
-    { label: "Reply to messages", href: "/admin/messages", icon: Inbox },
-  ].filter((a) => canOpenAdminRoute(role, a.href))
+  const quickActions = (
+    isSuper
+      ? [
+          { label: "Add Member", href: "/admin/members", icon: Plus, tone: "green" },
+          { label: "Create Event", href: "/admin/events", icon: CalendarDays, tone: "indigo" },
+          { label: "Publish Article", href: "/admin/news", icon: FileText, tone: "teal" },
+          { label: "Verify KOL", href: "/admin/kols", icon: BadgeCheck, tone: "green" },
+          { label: "Manage Payments", href: "/admin/payments", icon: CreditCard, tone: "amber" },
+          { label: "Delete Records", href: "/admin/activity", icon: Trash2, tone: "danger" },
+        ]
+      : [
+          { label: "Review Memberships", href: "/admin/applications", icon: Users, tone: "green" },
+          { label: "Approve Events", href: "/admin/events", icon: CalendarDays, tone: "indigo" },
+          { label: "Approve Articles", href: "/admin/articles", icon: PenSquare, tone: "teal" },
+          { label: "Edit KOL Profiles", href: "/admin/kols", icon: BadgeCheck, tone: "green" },
+          { label: "Reply to Messages", href: "/admin/messages", icon: Inbox, tone: "teal" },
+        ]
+  ) as QuickAction[]
+  const visibleActions = quickActions.filter((a) => canOpenAdminRoute(role, a.href))
 
   const approvals: ApprovalItem[] = [
-    { label: "Membership applications", count: c.appsPending, href: "/admin/applications", icon: Users },
-    { label: "Event participation requests", count: c.rsvpsPending, href: "/admin/participants", icon: CalendarDays },
-    { label: "Article submissions", count: c.articlesPending, href: "/admin/articles", icon: PenSquare },
-    { label: "KOL verification requests", count: c.kolsPending, href: "/admin/kols", icon: BadgeCheck },
+    { label: "Membership Applications", count: c.appsPending, href: "/admin/applications", icon: Users, tone: "green" as const },
+    { label: "Event Participation Requests", count: c.rsvpsPending, href: "/admin/participants", icon: CalendarDays, tone: "indigo" as const },
+    { label: "Article Submissions", count: c.articlesPending, href: "/admin/articles", icon: PenSquare, tone: "teal" as const },
+    { label: "KOL Verification Requests", count: c.kolsPending, href: "/admin/kols", icon: BadgeCheck, tone: "green" as const },
   ].filter((a) => a.count > 0 && canOpenAdminRoute(role, a.href))
 
   const title = isSuper ? "Super Admin Dashboard" : `Welcome, ${actor.name || ADMIN_AREA_LABELS[role]}`
@@ -155,20 +188,23 @@ export default async function AdminOverview() {
 
   return (
     <div className="flex flex-col gap-6">
-      <header>
-        <h1 className="text-balance font-serif text-2xl font-bold text-heading">{title}</h1>
-        <p className="mt-1 text-muted-2">{subtitle}</p>
-      </header>
+      <DashboardHero title={title} subtitle={subtitle} />
 
       <StatGrid stats={stats} />
 
-      {isSuper && <RevenueBanner totals={revenueTotals(funnel.paid.map((p) => p.amount))} paidMembers={paidMembers} pendingPayments={pendingPayments} />}
-
-      <QuickActions actions={quickActions} />
+      {isSuper && (
+        <RevenueBanner
+          totals={revenueTotals(funnel.paid.map((p) => p.amount))}
+          paidMembers={paidMembers}
+          pendingPayments={pendingPayments}
+          trend={paidTrend(funnel.paid.map((p) => p.paymentDate))}
+        />
+      )}
 
       <ModuleGrid modules={modules} />
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
+        <QuickActions actions={visibleActions} />
         <RecentActivity items={activity} viewAllHref={canOpenAdminRoute(role, "/admin/activity") ? "/admin/activity" : undefined} />
         <PendingApprovals items={approvals} />
       </div>

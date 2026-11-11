@@ -10,6 +10,9 @@ import {
   CalendarDays,
   Clapperboard,
   Coins,
+  Crown,
+  ExternalLink,
+  Globe,
   FileText,
   FolderOpen,
   Handshake,
@@ -125,13 +128,13 @@ export function AdminNav({ role, name }: { role: AdminAreaRole; name: string }) 
   }
 
   return (
-    <aside className="flex shrink-0 flex-col border-b border-line bg-navy text-white lg:min-h-screen lg:w-64 lg:border-b-0 lg:border-r lg:border-navy/40">
-      <div className="flex items-center justify-between px-5 py-5 lg:block">
-        <Link href="/">
-          <VaapLogo onDark height={52} />
+    <aside className="flex shrink-0 flex-col border-b border-line bg-navy-dark text-white lg:sticky lg:top-0 lg:h-screen lg:w-64 lg:overflow-y-auto lg:border-b-0">
+      <div className="flex items-center justify-between gap-3 px-5 py-5 lg:flex-col lg:items-stretch">
+        <Link href="/" className="flex items-center justify-center rounded-2xl bg-card px-4 py-3 shadow-sm">
+          <VaapLogo height={44} />
         </Link>
-        <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-green/20 px-3 py-1 text-xs font-semibold text-green-light">
-          <ShieldCheck className="size-3.5" aria-hidden />
+        <span className="inline-flex items-center justify-center gap-1.5 self-center rounded-full bg-green px-4 py-1.5 text-sm font-semibold text-primary-foreground">
+          {role === "admin" ? <Crown className="size-4 text-gold-tint" aria-hidden /> : <ShieldCheck className="size-4" aria-hidden />}
           {ADMIN_AREA_LABELS[role]}
         </span>
       </div>
@@ -142,7 +145,7 @@ export function AdminNav({ role, name }: { role: AdminAreaRole; name: string }) 
           if (links.length === 0) return null
           return (
             <div key={group.heading} className="flex gap-1 lg:mt-3 lg:flex-col lg:gap-0.5 lg:first:mt-0">
-              <span className="hidden px-3.5 pb-1 text-[10px] font-bold uppercase tracking-wider text-white/40 lg:block">
+              <span className="hidden px-3.5 pb-1.5 pt-2 text-xs font-semibold uppercase tracking-wider text-white/50 lg:block">
                 {group.heading}
               </span>
               {links.map((l) => {
@@ -153,11 +156,11 @@ export function AdminNav({ role, name }: { role: AdminAreaRole; name: string }) 
                     key={l.href}
                     href={l.href}
                     className={cn(
-                      "flex items-center gap-2.5 whitespace-nowrap rounded-lg px-3.5 py-2.5 text-sm font-medium transition-colors",
-                      active ? "bg-green text-white" : "text-white/75 hover:bg-white/10 hover:text-white",
+                      "flex items-center gap-3 whitespace-nowrap rounded-xl px-3.5 py-2.5 text-sm font-medium transition-colors",
+                      active ? "bg-green font-semibold text-white shadow-sm" : "text-white/80 hover:bg-white/10 hover:text-white",
                     )}
                   >
-                    <Icon className="size-4" />
+                    <Icon className="size-[18px]" aria-hidden />
                     {l.label}
                   </Link>
                 )
@@ -174,9 +177,9 @@ export function AdminNav({ role, name }: { role: AdminAreaRole; name: string }) 
         </div>
         <Link
           href="/"
-          className="flex items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-sm text-white/75 transition-colors hover:bg-white/10 hover:text-white"
+          className="flex items-center gap-2.5 rounded-xl border border-white/20 px-3.5 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10"
         >
-          <Home className="size-4" /> View site
+          <Globe className="size-4" aria-hidden /> View Website <ExternalLink className="ml-auto size-3.5" aria-hidden />
         </Link>
         <button
           type="button"
