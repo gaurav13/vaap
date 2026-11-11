@@ -122,6 +122,9 @@ export async function saveEntity(key: EntityKey, id: number | null, formData: Fo
     const clash = matches.find((row) => row.id !== id && (row.parentSlug ?? null) === parent)
     if (clash) return { ok: false, error: "A page with this slug already exists in that section." }
   }
+  if (key === "mediaHighlights") {
+    values.updatedAt = new Date()
+  }
   if (key === "members") {
     if (!values.membershipId) {
       values.membershipId = `VAAP-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`
@@ -159,7 +162,7 @@ export async function saveEntity(key: EntityKey, id: number | null, formData: Fo
           type: key === "mediaHighlights" ? "media" : "announcement",
           title: key === "mediaHighlights" ? "New media coverage" : "New publication",
           body: String(values[config.list.title] ?? ""),
-          link: key === "mediaHighlights" ? "/" : "/knowledge",
+          link: key === "mediaHighlights" ? "/media" : "/knowledge",
         })
       }
     }
@@ -227,13 +230,13 @@ export async function getMediaCoverage(): Promise<PublicMediaCoverage[]> {
   }
 }
 
-export async function getMediaHighlights(limit = 3) {
-  const rows = await db
+export async function getMediaHighlights(limit?: number) {
+  const query = db
     .select()
     .from(mediaHighlights)
     .where(eq(mediaHighlights.published, true))
-    .orderBy(desc(mediaHighlights.featured), mediaHighlights.sortOrder)
-  return rows.slice(0, limit)
+    .orderBy(desc(mediaHighlights.updatedAt), desc(mediaHighlights.createdAt), desc(mediaHighlights.id))
+  return limit ? query.limit(limit) : query
 }
 
 // --- Public read helpers ---------------------------------------------------
