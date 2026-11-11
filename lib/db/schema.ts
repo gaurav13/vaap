@@ -1639,6 +1639,7 @@ export const socialAccounts = pgTable("social_accounts", {
   accountName: text("accountName").notNull().default(""),
   lastError: text("lastError").notNull().default(""),
   lastCheckedAt: timestamp("lastCheckedAt"),
+  lastPublishedAt: timestamp("lastPublishedAt"),
   updatedBy: text("updatedBy"),
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 })

@@ -4,18 +4,59 @@ import { db } from "@/lib/db"
 import { socialAccounts, socialPosts } from "@/lib/db/schema"
 import { notify } from "@/lib/notifications"
 import { PLATFORM_KEYS, platformLabel, type PlatformKey } from "@/lib/social-agent/config"
-import { CONNECTIONS, type ConnectionView } from "@/lib/social-agent/connections"
+import { CONNECTIONS, OAUTH_PROVIDER, type ConnectionView, type OAuthView } from "@/lib/social-agent/connections"
 import { decryptCredentials, encryptCredentials } from "@/lib/social-agent/crypto"
+import { ensureFresh, isExpiringSoon, stripAppCredentials, withAppCredentials, type Destination, type OAuthResult } from "@/lib/social-agent/oauth"
 import { PUBLISHERS, type Creds } from "@/lib/social-agent/publishers"
 
 type AccountRow = typeof socialAccounts.$inferSelect
 
 const isPlatform = (p: string): p is PlatformKey => PLATFORM_KEYS.includes(p as PlatformKey)
 const short = (e: unknown) => (e instanceof Error ? e.message : "Unknown error").slice(0, 400)
+const STATUSES = ["connected", "error", "pending"] as const
 
 function saver(platform: PlatformKey) {
   return async (next: Creds) => {
-    await db.update(socialAccounts).set({ credentials: encryptCredentials(next), updatedAt: new Date() }).where(eq(socialAccounts.platform, platform))
+    const [row] = await db.select({ credentials: socialAccounts.credentials }).from(socialAccounts).where(eq(socialAccounts.platform, platform)).limit(1)
+    const before = row ? decryptCredentials(row.credentials) : {}
+    const clean = stripAppCredentials(platform, next)
+    if (clean.refreshToken !== before.refreshToken || clean.accessToken !== before.accessToken) clean.lastRefreshedAt = new Date().toISOString()
+    await db.update(socialAccounts).set({ credentials: encryptCredentials(clean), updatedAt: new Date() }).where(eq(socialAccounts.platform, platform))
+  }
+}
+
+/** Decrypts, refreshes if close to expiry, and adds server-held app credentials for the publisher. */
+async function loadCreds(platform: PlatformKey, row: AccountRow | undefined) {
+  const stored = row ? decryptCredentials(row.credentials) : {}
+  const fresh = await ensureFresh(platform, stored, saver(platform))
+  return withAppCredentials(platform, fresh)
+}
+
+function parsePending(creds: Creds): Destination[] {
+  try {
+    const list = JSON.parse(creds.pending || "[]")
+    return Array.isArray(list) ? list : []
+  } catch {
+    return []
+  }
+}
+
+function oauthView(platform: PlatformKey, creds: Creds): OAuthView {
+  const required = CONNECTIONS[platform].permissions
+  const granted = (creds.grantedScopes ?? "").split(" ").filter(Boolean)
+  const mode = creds.authMode === "oauth" ? "oauth" : Object.keys(creds).length ? "manual" : null
+  const iso = (v?: string) => (v ? v : null)
+  return {
+    mode,
+    grantedScopes: granted,
+    // Google reports full scope URLs, others short names; match either form.
+    missingScopes: mode === "oauth" ? required.filter((s) => !granted.some((g) => g === s || g.endsWith(`/${s}`))) : [],
+    expiresAt: iso(creds.expiresAt),
+    refreshExpiresAt: iso(creds.refreshExpiresAt),
+    autoRefresh: mode === "oauth" && (OAUTH_PROVIDER[platform] !== "linkedin" || !!creds.refreshToken),
+    lastRefreshedAt: iso(creds.lastRefreshedAt),
+    connectedAt: iso(creds.connectedAt),
+    pending: parsePending(creds).map(({ id, name, detail }) => ({ id, name, detail })),
   }
 }
 
@@ -29,17 +70,114 @@ export function toConnectionView(row: AccountRow | undefined, platform: Platform
       return [f.key, f.secret ? `•••• ${v.slice(-4)}` : v]
     }),
   )
+  const status = STATUSES.find((s) => s === row?.connectionStatus) ?? "not_connected"
   return {
     platform,
     handle: row?.handle ?? "",
     profileUrl: row?.profileUrl ?? "",
     notes: row?.notes ?? "",
-    status: row?.connectionStatus === "connected" || row?.connectionStatus === "error" ? row.connectionStatus : "not_connected",
+    status,
     accountName: row?.accountName ?? "",
     lastError: row?.lastError ?? "",
     lastCheckedAt: row?.lastCheckedAt?.toISOString() ?? null,
+    lastPublishedAt: row?.lastPublishedAt?.toISOString() ?? null,
+    oauth: oauthView(platform, creds),
     fields,
   }
+}
+
+async function finalizeDestination(platform: PlatformKey, dest: Destination, meta: Pick<OAuthResult, "grantedScopes" | "expiresAt" | "refreshExpiresAt">, actorId: string) {
+  const creds: Creds = {
+    ...dest.creds,
+    authMode: "oauth",
+    destinationId: dest.id,
+    grantedScopes: meta.grantedScopes.join(" "),
+    expiresAt: meta.expiresAt,
+    refreshExpiresAt: meta.refreshExpiresAt,
+    connectedAt: new Date().toISOString(),
+  }
+  await db
+    .update(socialAccounts)
+    .set({ credentials: encryptCredentials(creds), connectionStatus: "not_connected", accountName: dest.name.slice(0, 120), lastError: "", updatedBy: actorId, updatedAt: new Date() })
+    .where(eq(socialAccounts.platform, platform))
+  return testConnection(platform)
+}
+
+/** Stores the result of an OAuth callback. One destination connects immediately; several wait for the Super Admin to choose. */
+export async function completeOAuth(platform: PlatformKey, result: OAuthResult, actorId: string) {
+  if (!result.destinations.length) {
+    const hint: Record<PlatformKey, string> = {
+      facebook: "No Facebook Pages were shared. Reconnect and select the VAAP Page in the Meta dialog.",
+      instagram: "No Instagram Professional account is linked to the Pages you shared. Link it to the VAAP Page, then reconnect.",
+      linkedin: "Your LinkedIn profile is not a Super admin or Content admin of any Company Page.",
+      youtube: "This Google account has no YouTube channel. Pick the channel's account in Google's chooser.",
+      x: "X returned no account.",
+      tiktok: "TikTok returned no account.",
+    }
+    throw new Error(hint[platform])
+  }
+  await db
+    .insert(socialAccounts)
+    .values({ platform, updatedBy: actorId })
+    .onConflictDoNothing({ target: socialAccounts.platform })
+  if (result.destinations.length === 1) {
+    const test = await finalizeDestination(platform, result.destinations[0], result, actorId)
+    return { selected: true as const, test }
+  }
+  const pending: Creds = {
+    authMode: "oauth",
+    pending: JSON.stringify(result.destinations),
+    grantedScopes: result.grantedScopes.join(" "),
+    expiresAt: result.expiresAt,
+    refreshExpiresAt: result.refreshExpiresAt,
+  }
+  await db
+    .update(socialAccounts)
+    .set({ credentials: encryptCredentials(pending), connectionStatus: "pending", accountName: "", lastError: "", updatedBy: actorId, updatedAt: new Date() })
+    .where(eq(socialAccounts.platform, platform))
+  return { selected: false as const, count: result.destinations.length }
+}
+
+export async function selectDestination(platform: PlatformKey, destinationId: string, actorId: string) {
+  const [row] = await db.select().from(socialAccounts).where(eq(socialAccounts.platform, platform)).limit(1)
+  const creds = row ? decryptCredentials(row.credentials) : {}
+  const dest = parsePending(creds).find((d) => d.id === destinationId)
+  if (!dest) throw new Error("That account is no longer available. Click Connect again.")
+  return finalizeDestination(
+    platform,
+    dest,
+    { grantedScopes: (creds.grantedScopes ?? "").split(" ").filter(Boolean), expiresAt: creds.expiresAt ?? "", refreshExpiresAt: creds.refreshExpiresAt ?? "" },
+    actorId,
+  )
+}
+
+/** Daily: refreshes LinkedIn tokens ahead of expiry and flags connections that need reauthorization. */
+export async function refreshExpiringConnections() {
+  const rows = await db.select().from(socialAccounts).where(eq(socialAccounts.connectionStatus, "connected"))
+  const flagged: string[] = []
+  for (const row of rows) {
+    if (!isPlatform(row.platform)) continue
+    const creds = decryptCredentials(row.credentials)
+    if (creds.authMode !== "oauth") continue
+    try {
+      const fresh = await ensureFresh(row.platform, creds, saver(row.platform))
+      const refreshEnds = fresh.refreshExpiresAt || (fresh.refreshToken ? "" : fresh.expiresAt)
+      if (isExpiringSoon(refreshEnds)) flagged.push(`${platformLabel(row.platform)} authorization expires ${new Date(refreshEnds).toLocaleDateString("en-GB")}`)
+    } catch (error) {
+      await db.update(socialAccounts).set({ connectionStatus: "error", lastError: short(error), lastCheckedAt: new Date() }).where(eq(socialAccounts.platform, row.platform))
+      flagged.push(`${platformLabel(row.platform)}: ${short(error)}`)
+    }
+  }
+  if (flagged.length) {
+    await notify({
+      role: "admin",
+      type: "alert",
+      title: "Social account needs reconnecting",
+      body: flagged.join(" · "),
+      link: "/admin/social-agent?tab=accounts",
+    }).catch(() => {})
+  }
+  return { checked: rows.length, flagged }
 }
 
 export async function getConnectionViews() {
@@ -56,7 +194,10 @@ export async function connectedPlatforms() {
 export async function saveCredentials(platform: PlatformKey, input: Record<string, string>, actorId: string) {
   const [row] = await db.select().from(socialAccounts).where(eq(socialAccounts.platform, platform)).limit(1)
   const current = row ? decryptCredentials(row.credentials) : {}
-  const next: Creds = { ...current }
+  // Manual entry replaces any OAuth connection, so OAuth-only bookkeeping is dropped.
+  const next: Creds =
+    current.authMode === "oauth" ? {} : Object.fromEntries(CONNECTIONS[platform].fields.filter((f) => current[f.key]).map((f) => [f.key, current[f.key]]))
+  next.authMode = "manual"
   for (const f of CONNECTIONS[platform].fields) {
     const v = (input[f.key] ?? "").trim()
     if (v) next[f.key] = v
@@ -70,9 +211,10 @@ export async function saveCredentials(platform: PlatformKey, input: Record<strin
 
 export async function testConnection(platform: PlatformKey) {
   const [row] = await db.select().from(socialAccounts).where(eq(socialAccounts.platform, platform)).limit(1)
+  if (row?.connectionStatus === "pending") return { ok: false as const, error: "Choose which account to publish to first." }
   const creds = row ? decryptCredentials(row.credentials) : {}
   try {
-    const accountName = await PUBLISHERS[platform].test(creds, saver(platform))
+    const accountName = await PUBLISHERS[platform].test(await loadCreds(platform, row), saver(platform))
     await db
       .update(socialAccounts)
       .set({ connectionStatus: "connected", accountName: accountName.slice(0, 120), lastError: "", lastCheckedAt: new Date() })
@@ -128,7 +270,7 @@ export async function publishPost(postId: number) {
     }
     try {
       links[platform] = await PUBLISHERS[platform].publish(
-        decryptCredentials(account.credentials),
+        await loadCreds(platform, account),
         {
           caption: post.captions[platform] ?? "",
           imageUrl: post.variants[platform] || post.bannerUrl,
@@ -139,6 +281,7 @@ export async function publishPost(postId: number) {
         saver(platform),
       )
       delete errors[platform]
+      await db.update(socialAccounts).set({ lastPublishedAt: new Date(), lastError: "" }).where(eq(socialAccounts.platform, platform))
     } catch (error) {
       errors[platform] = short(error)
       await db.update(socialAccounts).set({ lastError: short(error) }).where(eq(socialAccounts.platform, platform))

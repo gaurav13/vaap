@@ -9,7 +9,7 @@ import { logActivity, requireSuperAdmin } from "@/lib/rbac"
 import { uploadPageImage } from "@/lib/spaces"
 import { CATEGORY_KEYS, PLATFORM_KEYS, getCategory, type CategoryKey, type PlatformKey } from "@/lib/social-agent/config"
 import { CONNECTIONS } from "@/lib/social-agent/connections"
-import { connectedPlatforms, disconnect, publishPost, saveCredentials, testConnection } from "@/lib/social-agent/publishing"
+import { connectedPlatforms, disconnect, publishPost, saveCredentials, selectDestination, testConnection } from "@/lib/social-agent/publishing"
 import { imageSize, renderBanner } from "@/lib/social-agent/render"
 import { generateCaptions } from "@/lib/social-agent/captions"
 import { generateDraft, getAllRules, getAutomation, rerenderPost, runAutomationScan, saveAutomation } from "@/lib/social-agent/service"
@@ -401,6 +401,17 @@ export async function testPlatformConnection(platform: string) {
     const test = await testConnection(key)
     await log(actor, "social.connection.test", key)
     if (!test.ok) throw new Error(test.error)
+    return { accountName: test.accountName }
+  })
+}
+
+export async function selectConnectionDestination(input: { platform: string; destinationId: string }) {
+  return guarded(async (actor) => {
+    const key = platformKeySchema.parse(input.platform)
+    const destinationId = z.string().min(1).max(200).parse(input.destinationId)
+    const test = await selectDestination(key, destinationId, actor.id)
+    await log(actor, "social.connection.select", key)
+    if (!test.ok) throw new Error(`Account selected, but the connection test failed: ${test.error}`)
     return { accountName: test.accountName }
   })
 }

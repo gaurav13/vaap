@@ -19,7 +19,7 @@ function need(c: Creds, ...keys: string[]) {
   if (missing.length) throw new Error(`Missing credentials: ${missing.join(", ")}`)
 }
 
-async function call<T = Record<string, unknown>>(url: string, init: RequestInit & { timeout?: number } = {}): Promise<{ data: T; headers: Headers }> {
+export async function call<T = Record<string, unknown>>(url: string, init: RequestInit & { timeout?: number } = {}): Promise<{ data: T; headers: Headers }> {
   const res = await fetch(url, { ...init, signal: AbortSignal.timeout(init.timeout ?? 30000) })
   const text = await res.text()
   let data: unknown = {}
@@ -46,12 +46,12 @@ function errorText(data: unknown): string {
   )
 }
 
-const form = (v: Record<string, string>) => new URLSearchParams(v)
+export const form = (v: Record<string, string>) => new URLSearchParams(v)
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
 // --- Meta (Facebook + Instagram) -----------------------------------------------
 
-const graph = (c: Creds) => `https://graph.facebook.com/${/^v\d+\.\d+$/.test(c.graphVersion ?? "") ? c.graphVersion : "v23.0"}`
+export const graph = (c: Creds) => `https://graph.facebook.com/${/^v\d+\.\d+$/.test(c.graphVersion ?? "") ? c.graphVersion : "v23.0"}`
 
 const facebook: Publisher = {
   async test(c) {
@@ -111,7 +111,7 @@ function linkedinVersion(c: Creds) {
   return `${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(2, "0")}`
 }
 
-const liHeaders = (c: Creds) => ({
+export const liHeaders = (c: Creds) => ({
   Authorization: `Bearer ${c.accessToken}`,
   "LinkedIn-Version": linkedinVersion(c),
   "X-Restli-Protocol-Version": "2.0.0",

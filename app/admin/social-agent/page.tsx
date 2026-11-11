@@ -5,7 +5,8 @@ import { db } from "@/lib/db"
 import { auditLogs, socialAccounts, socialPosts, socialTemplates } from "@/lib/db/schema"
 import { getSession } from "@/lib/session"
 import { cn } from "@/lib/utils"
-import { CATEGORIES, POST_STATUSES, categoryLabel, isCategoryKey, type CategoryKey } from "@/lib/social-agent/config"
+import { CATEGORIES, PLATFORM_KEYS, POST_STATUSES, categoryLabel, isCategoryKey, type CategoryKey, type PlatformKey } from "@/lib/social-agent/config"
+import { isAppConfigured, oauthCallbackUrl } from "@/lib/social-agent/oauth"
 import { getAllRules, getAutomation } from "@/lib/social-agent/service"
 import { getSourceRecords } from "@/lib/social-agent/sources"
 import { getConnectionViews } from "@/lib/social-agent/publishing"
@@ -139,7 +140,24 @@ async function TabContent({ tab, params, focusPost }: { tab: Tab; params: Record
     case "published":
       return <PostList posts={await postsWith(["published"])} focusPost={focusPost} empty="Nothing has been published yet." />
     case "accounts":
-      return <AccountsPanel accounts={await getConnectionViews()} />
+      return (
+        <AccountsPanel
+          accounts={await getConnectionViews()}
+          setup={{
+            callbackUrl: oauthCallbackUrl(),
+            configured: Object.fromEntries(PLATFORM_KEYS.map((k) => [k, isAppConfigured(k)])) as Record<PlatformKey, boolean>,
+          }}
+          notice={
+            params.oauth_error
+              ? { platform: params.platform ?? "", tone: "error", text: params.oauth_error.slice(0, 300) }
+              : params.oauth === "connected"
+                ? { platform: params.platform ?? "", tone: "success", text: "Connected. Approved posts will now publish here automatically." }
+                : params.oauth === "select"
+                  ? { platform: params.platform ?? "", tone: "success", text: "Signed in. Choose which account VAAP should publish to." }
+                  : null
+          }
+        />
+      )
     case "automation":
       return <AutomationPanel initial={await getAutomation()} />
     case "activity": {
