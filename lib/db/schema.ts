@@ -1321,3 +1321,29 @@ export const aiUsageLogs = pgTable("ai_usage_logs", {
   latencyMs: integer("latencyMs").notNull().default(0),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 })
+
+// Admin-approved content the assistant retrieves from (Postgres full-text search, no embedding cost).
+export const aiKnowledgeSources = pgTable("ai_knowledge_sources", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  kind: text("kind").notNull(), // text | url | pdf | docx
+  category: text("category").notNull().default("general"),
+  sourceUrl: text("sourceUrl"),
+  fileName: text("fileName"),
+  content: text("content").notNull().default(""),
+  charCount: integer("charCount").notNull().default(0),
+  chunkCount: integer("chunkCount").notNull().default(0),
+  active: boolean("active").notNull().default(true),
+  createdBy: text("createdBy"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+})
+
+export const aiKnowledgeChunks = pgTable("ai_knowledge_chunks", {
+  id: serial("id").primaryKey(),
+  sourceId: integer("sourceId")
+    .notNull()
+    .references(() => aiKnowledgeSources.id, { onDelete: "cascade" }),
+  position: integer("position").notNull(),
+  content: text("content").notNull(),
+})

@@ -79,6 +79,7 @@ export const MANAGER_ADMIN_ROUTES = [
   "/admin/documents",
   "/admin/leadership",
   "/admin/membership-faqs",
+  "/admin/ai-knowledge",
 ] as const
 
 export function isManagerAdminRoute(pathname: string): boolean {
