@@ -325,7 +325,7 @@ function MediaColumn({ items, social }: { items: MediaItem[]; social: SocialLink
             Media &amp; Social Highlights
           </h2>
           <Link
-            href="/news"
+            href="/media"
             className="ml-auto inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-green transition-colors hover:text-navy sm:gap-1.5 sm:text-sm"
           >
             <span className="sm:hidden">

@@ -394,6 +394,7 @@ export const mediaHighlights = pgTable("media_highlights", {
   sortOrder: serial("sortOrder"),
   published: boolean("published").notNull().default(true),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 })
 
 // --- "As Seen on National TV & Media" logo slider (home hero) --------------
