@@ -66,6 +66,7 @@ export type Person = {
   organization: string | null
   category: string | null
   stage: Stage
+  notPaid: boolean
   payment: "not-started" | "unpaid" | "verified" | "not-required"
   application: "not-started" | "draft" | "submitted" | "approved" | "rejected" | "manual"
   applicationReference: string | null
@@ -197,7 +198,7 @@ export function MembersAdmin({
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
     return people.filter((p) => {
-      if (tab !== "all" && p.stage !== tab) return false
+      if (tab === "not-paid" ? !p.notPaid : tab !== "all" && p.stage !== tab) return false
       if (categoryFilter && p.category !== categoryFilter) return false
       const voting = p.memberId ? memberById.get(p.memberId)?.votingEligible : false
       if (votingFilter === "eligible" && !voting) return false
@@ -342,7 +343,7 @@ export function MembersAdmin({
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
         <StatCard onClick={() => { setTab("all"); resetToFirstPage() }} active={tab === "all"} icon={<Users className="size-5" />} tone="green" label="Total Registered Users" value={stats.totalRegistered} sub="All registered accounts" />
         <StatCard onClick={() => { setTab("incomplete"); resetToFirstPage() }} active={tab === "incomplete"} icon={<FileText className="size-5" />} tone="slate" label="Incomplete Profiles" value={stats.incomplete} sub="Application not submitted" />
-        <StatCard onClick={() => { setTab("not-paid"); resetToFirstPage() }} active={tab === "not-paid"} icon={<Ban className="size-5" />} tone="red" label="Not Paid Users" value={stats.notPaid} sub="Submitted, payment unverified" />
+        <StatCard onClick={() => { setTab("not-paid"); resetToFirstPage() }} active={tab === "not-paid"} icon={<Ban className="size-5" />} tone="red" label="Not Paid Users" value={stats.notPaid} sub="Started application, payment unverified" />
         <StatCard onClick={() => { setTab("pending-approval"); resetToFirstPage() }} active={tab === "pending-approval"} icon={<Clock className="size-5" />} tone="amber" label="Pending Approval" value={stats.pendingApproval} sub="Paid, awaiting review" />
         <StatCard onClick={() => { setTab("active"); resetToFirstPage() }} active={tab === "active"} icon={<CheckCircle2 className="size-5" />} tone="green" label="Active Paid Members" value={stats.activePaid} sub="Approved & current" />
         <StatCard onClick={() => { setTab("expired"); resetToFirstPage() }} active={tab === "expired"} icon={<UserPlus className="size-5" />} tone="slate" label="Expired Members" value={stats.expired} sub="Renewal needed" />

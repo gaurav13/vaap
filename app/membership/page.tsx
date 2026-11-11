@@ -9,6 +9,7 @@ import { MembershipBenefits } from "@/components/membership/membership-benefits"
 import { MembershipFaq } from "@/components/membership/membership-faq"
 import { getHeaderUser } from "@/lib/header-user"
 import { getMembershipFaqs } from "@/app/actions/cms"
+import { renderRichContent } from "@/lib/rich-content"
 import { db } from "@/lib/db"
 import { membershipPlans } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
@@ -39,7 +40,7 @@ export default async function MembershipPage() {
   const faqs = faqRows.map((row) => ({
     id: row.id,
     question: row.question,
-    answer: row.answer,
+    answerHtml: renderRichContent(row.answer),
   }))
 
   const plans: MembershipPlan[] = rows

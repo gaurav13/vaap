@@ -248,6 +248,11 @@ export type DirectoryRow = {
   organization: string | null
   category: string | null
   stage: MemberStage
+  /**
+   * Started an application (draft, abandoned, stopped at payment, or submitted)
+   * without a verified payment. Independent of `stage`, which tracks progress.
+   */
+  notPaid: boolean
   payment: "not-started" | "unpaid" | "verified" | "not-required"
   application: "not-started" | "draft" | "submitted" | "approved" | "rejected" | "manual"
   applicationReference: string | null
@@ -299,6 +304,7 @@ function buildDirectory(raw: Raw, now: Date): DirectoryRow[] {
       category: m.category,
       organization: m.organization,
       stage: (expired ? "expired" : m.status === "suspended" ? "suspended" : "active") as MemberStage,
+      notPaid: false,
       payment: (!app ? "verified" : isNoFee(app) ? "not-required" : "verified") as DirectoryRow["payment"],
       application: (app ? "approved" : "manual") as DirectoryRow["application"],
       applicationReference: app?.reference ?? null,
@@ -333,6 +339,7 @@ function buildDirectory(raw: Raw, now: Date): DirectoryRow[] {
       category: app?.category ?? null,
       organization: app?.organization ?? null,
       stage,
+      notPaid: !paid && apps.some((a) => a.status !== "rejected" && a.status !== "approved"),
       payment: !app || !app.completed ? "not-started" : paid ? (isNoFee(paid) ? "not-required" : "verified") : "unpaid",
       application: !app
         ? "not-started"
@@ -374,7 +381,7 @@ export function stageStats(rows: DirectoryRow[]): StageStats {
   return {
     totalRegistered: rows.length,
     incomplete: by("incomplete"),
-    notPaid: by("not-paid"),
+    notPaid: rows.filter((r) => r.notPaid).length,
     pendingApproval: by("pending-approval"),
     activePaid: by("active"),
     expired: by("expired"),

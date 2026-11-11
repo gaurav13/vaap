@@ -1299,3 +1299,190 @@ export const kolAuditLog = pgTable("kol_audit_log", {
   actor: text("actor").notNull().default(""),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 })
+
+// --- VAAP AI Assistant: one row per model request -----------------------------
+// Cost is stored in micro-USD (1 = USD 0.000001) so sums stay exact integers.
+
+export const aiUsageLogs = pgTable("ai_usage_logs", {
+  id: serial("id").primaryKey(),
+  requestId: text("requestId").notNull().unique(),
+  userId: text("userId"),
+  sessionId: text("sessionId").notNull(),
+  model: text("model").notNull(),
+  inputTokens: integer("inputTokens").notNull().default(0),
+  outputTokens: integer("outputTokens").notNull().default(0),
+  cachedInputTokens: integer("cachedInputTokens").notNull().default(0),
+  reasoningTokens: integer("reasoningTokens").notNull().default(0),
+  toolCalls: integer("toolCalls").notNull().default(0),
+  costMicroUsd: integer("costMicroUsd").notNull().default(0),
+  pricingVersion: text("pricingVersion").notNull().default(""),
+  language: text("language").notNull().default("en"),
+  status: text("status").notNull().default("ok"), // ok | error | blocked_budget | blocked_quota | disabled | free_fallback
+  latencyMs: integer("latencyMs").notNull().default(0),
+  conversationId: text("conversationId"),
+  messageId: text("messageId"),
+  provider: text("provider").notNull().default(""),
+  question: text("question").notNull().default(""),
+  answer: text("answer").notNull().default(""),
+  topic: text("topic").notNull().default("general"),
+  tier: text("tier").notNull().default("guest"),
+  answered: boolean("answered"),
+  generationIds: text("generationIds").notNull().default(""),
+  actualCostMicroUsd: integer("actualCostMicroUsd"),
+  reconciledAt: timestamp("reconciledAt"),
+  errorMessage: text("errorMessage").notNull().default(""),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
+// Admin-approved content the assistant retrieves from (Postgres full-text search, no embedding cost).
+export const aiKnowledgeSources = pgTable("ai_knowledge_sources", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  kind: text("kind").notNull(), // text | url | pdf | docx
+  category: text("category").notNull().default("general"),
+  sourceUrl: text("sourceUrl"),
+  fileName: text("fileName"),
+  content: text("content").notNull().default(""),
+  charCount: integer("charCount").notNull().default(0),
+  chunkCount: integer("chunkCount").notNull().default(0),
+  active: boolean("active").notNull().default(true),
+  status: text("status").notNull().default("pending"), // pending | approved | rejected
+  version: integer("version").notNull().default(1),
+  reviewedBy: text("reviewedBy"),
+  reviewedAt: timestamp("reviewedAt"),
+  reviewNote: text("reviewNote").notNull().default(""),
+  createdBy: text("createdBy"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+})
+
+export const aiKnowledgeChunks = pgTable("ai_knowledge_chunks", {
+  id: serial("id").primaryKey(),
+  sourceId: integer("sourceId")
+    .notNull()
+    .references(() => aiKnowledgeSources.id, { onDelete: "cascade" }),
+  position: integer("position").notNull(),
+  content: text("content").notNull(),
+})
+
+// Snapshot of a knowledge source each time its content is added, edited or re-read.
+export const aiKnowledgeVersions = pgTable("ai_knowledge_versions", {
+  id: serial("id").primaryKey(),
+  sourceId: integer("sourceId")
+    .notNull()
+    .references(() => aiKnowledgeSources.id, { onDelete: "cascade" }),
+  version: integer("version").notNull(),
+  action: text("action").notNull(), // created | edited | refreshed | approved | rejected
+  title: text("title").notNull(),
+  content: text("content").notNull().default(""),
+  note: text("note").notNull().default(""),
+  changedBy: text("changedBy"),
+  changedByName: text("changedByName").notNull().default(""),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
+// Single-row (id = 1) Super Admin configuration for Ask VAAP AI.
+export const aiSettings = pgTable("ai_settings", {
+  id: integer("id").primaryKey(),
+  data: jsonb("data").notNull(),
+  updatedBy: text("updatedBy"),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+})
+
+// Worst-case cost held while a paid request is in flight, so concurrent requests cannot overspend.
+export const aiBudgetReservations = pgTable("ai_budget_reservations", {
+  requestId: text("requestId").primaryKey(),
+  amountMicroUsd: integer("amountMicroUsd").notNull(),
+  expiresAt: timestamp("expiresAt").notNull(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
+// Atomic per-subject question counter for the daily allowance. `day` is the
+// calendar date in the configured reset time zone. Subjects: user:<id>, guest:<sid>, ip:<hash>.
+export const aiDailyUsage = pgTable(
+  "ai_daily_usage",
+  {
+    subject: text("subject").notNull(),
+    day: text("day").notNull(),
+    count: integer("count").notNull().default(0),
+    blocked: integer("blocked").notNull().default(0),
+    tier: text("tier").notNull().default("guest"),
+    dailyLimit: integer("dailyLimit").notNull().default(0),
+    updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.subject, t.day] })],
+)
+
+export const aiUpgradeClicks = pgTable("ai_upgrade_clicks", {
+  id: serial("id").primaryKey(),
+  userId: text("userId"),
+  sessionId: text("sessionId"),
+  tier: text("tier").notNull().default("guest"),
+  target: text("target").notNull(), // plans | status | signin
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
+// One row per budget threshold notification per period, so each alert is sent once.
+export const aiBudgetAlerts = pgTable(
+  "ai_budget_alerts",
+  {
+    period: text("period").notNull(), // e.g. month:2026-11 or day:2026-11-11
+    threshold: integer("threshold").notNull(),
+    spentMicroUsd: integer("spentMicroUsd").notNull().default(0),
+    sentAt: timestamp("sentAt").notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.period, t.threshold] })],
+)
+
+// Admin-reviewed replacement answers. Only `approved` rows are retrieved by the assistant.
+export const aiAnswerCorrections = pgTable("ai_answer_corrections", {
+  id: serial("id").primaryKey(),
+  usageLogId: integer("usageLogId"),
+  question: text("question").notNull(),
+  originalAnswer: text("originalAnswer").notNull().default(""),
+  correctedAnswer: text("correctedAnswer").notNull(),
+  keywords: text("keywords").notNull().default(""),
+  // Model-generated English / Urdu / Roman Urdu paraphrases used for retrieval, one per line.
+  variants: text("variants").notNull().default(""),
+  indexedAt: timestamp("indexedAt"),
+  useCount: integer("useCount").notNull().default(0),
+  lastUsedAt: timestamp("lastUsedAt"),
+  topic: text("topic").notNull().default("general"),
+  status: text("status").notNull().default("draft"), // draft | pending | approved | rejected | withdrawn
+  version: integer("version").notNull().default(1),
+  createdBy: text("createdBy"),
+  createdByName: text("createdByName").notNull().default(""),
+  reviewedBy: text("reviewedBy"),
+  reviewedAt: timestamp("reviewedAt"),
+  reviewNote: text("reviewNote").notNull().default(""),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+})
+
+export const aiCorrectionVersions = pgTable("ai_correction_versions", {
+  id: serial("id").primaryKey(),
+  correctionId: integer("correctionId")
+    .notNull()
+    .references(() => aiAnswerCorrections.id, { onDelete: "cascade" }),
+  version: integer("version").notNull(),
+  action: text("action").notNull(), // created | edited | submitted | approved | rejected | withdrawn
+  correctedAnswer: text("correctedAnswer").notNull().default(""),
+  note: text("note").notNull().default(""),
+  changedBy: text("changedBy"),
+  changedByName: text("changedByName").notNull().default(""),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
+export const aiFeedback = pgTable("ai_feedback", {
+  id: serial("id").primaryKey(),
+  requestId: text("requestId"),
+  conversationId: text("conversationId"),
+  messageId: text("messageId").notNull().unique(),
+  rating: integer("rating").notNull(), // 1 helpful, -1 not helpful
+  comment: text("comment").notNull().default(""),
+  question: text("question").notNull().default(""),
+  userId: text("userId"),
+  sessionId: text("sessionId").notNull(),
+  resolved: boolean("resolved").notNull().default(false),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})

@@ -7,7 +7,8 @@ import { ArrowRight, Plus, Minus } from "lucide-react"
 export type MembershipFaq = {
   id: number
   question: string
-  answer: string
+  /** Sanitized HTML produced on the server by renderRichContent. */
+  answerHtml: string
 }
 
 export type MembershipFaqHeader = {
@@ -105,10 +106,9 @@ function FaqItem({ faq }: { faq: MembershipFaq }) {
         role="region"
         aria-labelledby={buttonId}
         hidden={!open}
-        className="pb-5 pr-10 text-body leading-relaxed"
-      >
-        {faq.answer}
-      </div>
+        className="pb-5 pr-10 text-body leading-relaxed [&>*:last-child]:mb-0 [&_a]:font-medium [&_a]:text-green [&_a]:underline [&_h2]:mb-2 [&_h2]:mt-4 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:text-heading [&_h3]:mb-2 [&_h3]:mt-3 [&_h3]:font-semibold [&_h3]:text-heading [&_h4]:mb-1 [&_h4]:font-semibold [&_li]:mb-1 [&_ol]:mb-3 [&_ol]:list-decimal [&_ol]:ps-6 [&_p]:mb-3 [&_strong]:font-semibold [&_strong]:text-heading [&_ul]:mb-3 [&_ul]:list-disc [&_ul]:ps-6"
+        dangerouslySetInnerHTML={{ __html: faq.answerHtml }}
+      />
     </li>
   )
 }

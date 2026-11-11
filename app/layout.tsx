@@ -8,6 +8,7 @@ import { getSession } from '@/lib/session'
 import { isElevated } from '@/lib/permissions'
 import { isLaunchExempt } from '@/lib/launch-gate'
 import { SiteGate } from '@/components/site-gate'
+import { AssistantWidget } from '@/components/assistant/assistant-widget'
 import { getSeoGlobals } from '@/lib/seo/config'
 import { absoluteUrl } from '@/lib/seo/resolve'
 import './globals.css'
@@ -96,6 +97,7 @@ gtag('js', new Date());`,
         <SiteGate comingSoon={comingSoon} elevated={elevated}>
           {children}
         </SiteGate>
+        <AssistantWidget />
         {/* vaap.org.pk is proxied through Cloudflare, where /_vercel/insights 404s and logs console errors. */}
         {process.env.VERCEL === '1' && <Analytics />}
       </body>

@@ -130,7 +130,7 @@ export default async function AdminOverview() {
   const stats: StatCard[] = isSuper ? [
     { label: "Total Registered Users", value: totalMembers, hint: `${paidMembers} active paid`, href: "/admin/members", icon: Users, tone: "green" },
     { label: "Active Paid Members", value: paidMembers, hint: `${totalMembers ? Math.round((paidMembers / totalMembers) * 100) : 0}% of users`, href: "/admin/members?stage=active", icon: Layers, tone: "teal" },
-    { label: "Not Paid Users", value: pendingPayments, hint: "Submitted, payment unverified", hintTone: "warn", href: "/admin/members?stage=not-paid", icon: CreditCard, tone: "amber" },
+    { label: "Not Paid Users", value: pendingPayments, hint: "Started application, payment unverified", hintTone: "warn", href: "/admin/members?stage=not-paid", icon: CreditCard, tone: "amber" },
     { label: "Pending Approvals", value: s.pendingApproval + c.rsvpsPending + c.articlesPending + c.kolsPending, hint: `${s.pendingApproval} paid memberships`, href: "/admin/applications", icon: History, tone: "indigo" },
   ] : [
     { label: "Total Registered Users", value: totalMembers, hint: `${paidMembers} active paid`, href: "/admin/members", icon: Users, tone: "green" },

@@ -191,7 +191,7 @@ function insertCleanPaste(e: React.ClipboardEvent<HTMLDivElement>) {
 // ChatGPT's copy button, Notion and many chat apps put only Markdown on the
 // clipboard; some apps also add an HTML version that is just the raw Markdown
 // wrapped in <p>/<pre>, which would leave the ** and # symbols visible.
-function pasteToHtml(html: string, text: string) {
+export function pasteToHtml(html: string, text: string) {
   const htmlHasStructure = /<(h[1-6]|ul|ol|li|strong|b|em|i|a|table|blockquote)\b/i.test(html)
   if (text && looksLikeMarkdown(text) && !htmlHasStructure) {
     return cleanPastedHtml(marked.parse(text, { async: false, gfm: true, breaks: true }))
@@ -457,7 +457,7 @@ export function RichTextField({
   )
 }
 
-function ToolbarButton({
+export function ToolbarButton({
   label,
   onClick,
   disabled = false,
