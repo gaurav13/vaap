@@ -39,7 +39,37 @@ export function publicSpaceUrl(key: string) {
   return `${base}/${key}`
 }
 
-const IMAGE_FOLDERS = new Set(["pages", "news", "articles", "events", "publications", "governance", "kol"])
+const IMAGE_FOLDERS = new Set(["pages", "news", "articles", "events", "publications", "governance", "kol", "media-coverage"])
+// Folders that also accept SVG logos (sanitised, served with an image content type).
+const SVG_FOLDERS = new Set(["media-coverage"])
+const MAX_SVG_BYTES = 512 * 1024
+
+/** Returns the SVG text when it is a plain, script-free vector image; null otherwise. */
+function safeSvgText(bytes: Uint8Array): string | null {
+  if (bytes.byteLength === 0 || bytes.byteLength > MAX_SVG_BYTES) return null
+  let text: string
+  try {
+    text = new TextDecoder("utf-8", { fatal: true }).decode(bytes)
+  } catch {
+    return null
+  }
+  const head = text.replace(/^\uFEFF/, "").trimStart()
+  if (!/^(<\?xml[^>]*>\s*)?(<!--[\s\S]*?-->\s*)*(<!DOCTYPE svg[^>]*>\s*)?<svg[\s>]/i.test(head)) return null
+  const lower = text.toLowerCase()
+  const forbidden = [
+    /<script/,
+    /<foreignobject/,
+    /<iframe/,
+    /<embed/,
+    /<object/,
+    /<!entity/,
+    /\son[a-z]+\s*=/,
+    /javascript:/,
+    /data:text\/html/,
+    /(?:xlink:)?href\s*=\s*["']\s*(?!#|data:image\/)/,
+  ]
+  return forbidden.some((pattern) => pattern.test(lower)) ? null : text
+}
 
 export const DOCUMENT_TYPES = new Map([
   ["application/pdf", "pdf"],
@@ -140,6 +170,25 @@ export async function uploadPageImage(file: {
   folder?: string
   fileName?: string
 }) {
+  if (SVG_FOLDERS.has(file.folder ?? "") && !sniffedType(file.bytes)) {
+    if (!safeSvgText(file.bytes)) {
+      throw new Error("Upload a PNG, JPG, WebP, or a plain SVG logo (no scripts or external links, max 512KB).")
+    }
+    const svgKey = `${file.folder}/${randomUUID()}.svg`
+    await spacesClient().send(
+      new PutObjectCommand({
+        Bucket: requiredEnv("SPACES_BUCKET"),
+        Key: svgKey,
+        Body: file.bytes,
+        ContentType: "image/svg+xml",
+        ContentDisposition: "inline",
+        ACL: "public-read",
+        CacheControl: "public, max-age=31536000",
+      }),
+    )
+    return publicSpaceUrl(svgKey)
+  }
+
   const detected = sniffedType(file.bytes)
   const extension = detected ? FILE_TYPES.get(detected) : undefined
   if (!detected || !extension) throw new Error("Upload a JPEG, PNG, WebP, GIF, AVIF image, or a PDF.")

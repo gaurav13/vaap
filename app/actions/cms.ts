@@ -8,6 +8,7 @@ import {
   committees,
   partners,
   mediaHighlights,
+  mediaCoverage,
   officialStatus,
   pages,
   members,
@@ -28,6 +29,7 @@ const TABLES = {
   committees,
   partners,
   mediaHighlights,
+  mediaCoverage,
   officialStatus,
   pages,
   members,
@@ -37,6 +39,18 @@ const TABLES = {
 
 // Membership fees and the member directory stay Super Admin only.
 const SUPER_ADMIN_ONLY_ENTITIES = new Set<string>(["membershipPlans", "members"])
+// Entities an Admin ("manager") may also delete, not just Super Admin.
+const MANAGER_DELETABLE_ENTITIES = new Set<string>(["mediaCoverage"])
+
+function isHttpUrl(value: unknown) {
+  if (typeof value !== "string" || value.length > 2048) return false
+  try {
+    const url = new URL(value)
+    return url.protocol === "https:" || url.protocol === "http:"
+  } catch {
+    return false
+  }
+}
 
 /**
  * Super Admin: everything. Admin ("manager"): create/edit/reorder public content,
@@ -47,7 +61,8 @@ async function requireStaff(opts: { key?: string; destructive?: boolean } = {}) 
   if (!session?.user) throw new Error("Unauthorized")
   const role = session.user.role
   if (role === "admin") return session.user
-  if (role === "manager" && !opts.destructive && !(opts.key && SUPER_ADMIN_ONLY_ENTITIES.has(opts.key))) {
+  const destructiveBlocked = opts.destructive && !(opts.key && MANAGER_DELETABLE_ENTITIES.has(opts.key))
+  if (role === "manager" && !destructiveBlocked && !(opts.key && SUPER_ADMIN_ONLY_ENTITIES.has(opts.key))) {
     return session.user
   }
   throw new Error("Forbidden")
@@ -69,7 +84,9 @@ function parseField(field: FieldDef, formData: FormData) {
   }
   if (field.type === "datetime") {
     const raw = String(formData.get(field.name) ?? "").trim()
-    return raw ? new Date(raw) : new Date()
+    if (!raw) return field.nullable ? null : new Date()
+    const date = new Date(raw)
+    return Number.isNaN(date.getTime()) ? (field.nullable ? null : new Date()) : date
   }
   const raw = String(formData.get(field.name) ?? "").trim()
   if (!raw && field.nullable) return null
@@ -116,6 +133,12 @@ export async function saveEntity(key: EntityKey, id: number | null, formData: Fo
     if (field.required && !values[field.name]) {
       return { ok: false, error: `${field.label} is required.` }
     }
+  }
+
+  if (key === "mediaCoverage") {
+    values.name = String(values.name).slice(0, 120)
+    if (!isHttpUrl(values.url)) return { ok: false, error: "Coverage link must be a full http(s):// URL." }
+    if (!isHttpUrl(values.logo)) return { ok: false, error: "Upload the logo again; it must be a stored image URL." }
   }
 
   try {
@@ -184,7 +207,24 @@ function adminSlug(key: EntityKey) {
   if (key === "membershipPlans") return "membership-plans"
   if (key === "membershipFaqs") return "membership-faqs"
   if (key === "mediaHighlights") return "media-highlights"
+  if (key === "mediaCoverage") return "media-coverage"
   return key
+}
+
+export type PublicMediaCoverage = { id: number; name: string; logo: string; url: string }
+
+/** Active entries for the home page slider; never breaks the page if the table is unavailable. */
+export async function getMediaCoverage(): Promise<PublicMediaCoverage[]> {
+  try {
+    const rows = await db
+      .select({ id: mediaCoverage.id, name: mediaCoverage.name, logo: mediaCoverage.logo, url: mediaCoverage.url })
+      .from(mediaCoverage)
+      .where(eq(mediaCoverage.published, true))
+      .orderBy(mediaCoverage.sortOrder, mediaCoverage.id)
+    return rows.filter((row) => row.logo && row.url)
+  } catch {
+    return []
+  }
 }
 
 export async function getMediaHighlights(limit = 3) {

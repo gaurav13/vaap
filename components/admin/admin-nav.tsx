@@ -37,6 +37,7 @@ import {
   Users,
   UsersRound,
   Vote,
+  Tv,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { VaapLogo } from "@/components/vaap-logo"
@@ -57,6 +58,7 @@ const GROUPS: { heading: string; links: { href: string; label: string; icon: typ
       { href: "/admin/events", label: "Events", icon: CalendarDays },
       { href: "/admin/participants", label: "Event Participants", icon: Users },
       { href: "/admin/media-highlights", label: "Media Highlights", icon: Clapperboard },
+      { href: "/admin/media-coverage", label: "As Seen On (TV & Media)", icon: Tv },
       { href: "/admin/publications", label: "Publications", icon: BookOpen },
       { href: "/admin/documents", label: "Documents", icon: FolderOpen },
     ],

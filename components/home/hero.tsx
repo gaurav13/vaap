@@ -2,6 +2,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { ArrowRight, Users, ShieldCheck, TrendingUp, Building2, Globe } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
+import { MediaCoverageSlider, type MediaCoverageItem } from "@/components/home/media-coverage-slider"
 
 const FEATURES: { icon: LucideIcon; label: string }[] = [
   { icon: Users, label: "A United\nIndustry Voice" },
@@ -16,7 +17,7 @@ const STATS: { icon: LucideIcon; value: string; title: string; caption: string }
   { icon: TrendingUp, value: "$100B+", title: "Economic Opportunity", caption: "Pakistan's digital economy" },
 ]
 
-export function Hero() {
+export function Hero({ media = [] }: { media?: MediaCoverageItem[] }) {
   return (
     <section className="relative isolate overflow-hidden bg-navy">
       {/* Full-bleed hero with directional teal overlay (governance style) */}
@@ -153,6 +154,8 @@ export function Hero() {
               </div>
             ))}
           </dl>
+
+          <MediaCoverageSlider items={media} />
 
           <div className="mt-12 flex items-center gap-4 border-t border-white/10 pt-8">
             <span className="hidden h-px flex-1 bg-gradient-to-r from-transparent to-gold/40 sm:block" aria-hidden="true" />

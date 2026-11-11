@@ -26,6 +26,7 @@ export type EntityKey =
   | "committees"
   | "partners"
   | "mediaHighlights"
+  | "mediaCoverage"
   | "officialStatus"
   | "pages"
   | "members"
@@ -181,6 +182,36 @@ export const ENTITIES: Record<EntityKey, EntityConfig> = {
       { name: "published", label: "Published", type: "checkbox" },
     ],
     list: { title: "title", subtitle: "description", badge: "kind" },
+    viewUrl: () => "/",
+  },
+  mediaCoverage: {
+    label: "Media Coverage",
+    singular: "Media Entry",
+    description:
+      "Media house logos for the \"As Seen on National TV & Media\" slider below the home page statistics. Only active entries are shown publicly.",
+    revalidate: ["/"],
+    orderable: true,
+    fields: [
+      { name: "name", label: "Media house name", type: "text", required: true, placeholder: "Dawn News" },
+      {
+        name: "logo",
+        label: "Logo",
+        type: "image",
+        required: true,
+        help: "PNG, JPG, SVG or WebP. A transparent or white background works best; it is centred in a white card without stretching.",
+      },
+      {
+        name: "url",
+        label: "Coverage link",
+        type: "text",
+        required: true,
+        placeholder: "https://www.dawn.com/news/…",
+        help: "Original news article or TV segment. Opens in a new tab.",
+      },
+      { name: "coverageDate", label: "Publication date (optional)", type: "datetime", nullable: true },
+      { name: "published", label: "Active (shown on the home page)", type: "checkbox" },
+    ],
+    list: { title: "name", subtitle: "url" },
     viewUrl: () => "/",
   },
   officialStatus: {
