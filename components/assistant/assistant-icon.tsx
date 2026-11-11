@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils"
 export function AssistantIcon({ className, priority }: { className?: string; priority?: boolean }) {
   return (
     <Image
-      src="/images/assistant-bot.png"
+      src="/images/vaap-ai-mascot.png"
       alt=""
       aria-hidden
       width={128}
