@@ -1416,6 +1416,11 @@ export const aiAnswerCorrections = pgTable("ai_answer_corrections", {
   originalAnswer: text("originalAnswer").notNull().default(""),
   correctedAnswer: text("correctedAnswer").notNull(),
   keywords: text("keywords").notNull().default(""),
+  // Model-generated English / Urdu / Roman Urdu paraphrases used for retrieval, one per line.
+  variants: text("variants").notNull().default(""),
+  indexedAt: timestamp("indexedAt"),
+  useCount: integer("useCount").notNull().default(0),
+  lastUsedAt: timestamp("lastUsedAt"),
   topic: text("topic").notNull().default("general"),
   status: text("status").notNull().default("draft"), // draft | pending | approved | rejected | withdrawn
   version: integer("version").notNull().default(1),

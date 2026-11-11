@@ -26,6 +26,7 @@ import {
 import { getAiSettings } from "@/lib/ai-assistant/settings"
 import { checkBudgetAlerts, releaseBudget, reserveBudget } from "@/lib/ai-assistant/budget"
 import { reconcileCosts } from "@/lib/ai-assistant/reconcile"
+import { markCorrectionsUsed, searchCorrections } from "@/lib/ai-assistant/corrections"
 import { assistantTools, checkQuota, freeAnswer, systemPrompt } from "@/lib/ai-assistant/server"
 
 export const maxDuration = 30
@@ -113,7 +114,21 @@ export async function POST(req: Request) {
     topic: classifyTopic(question),
   }
 
-  const system = await systemPrompt(language, viewer)
+  const [basePrompt, matchedCorrections] = await Promise.all([
+    systemPrompt(language, viewer),
+    searchCorrections(question, 2).catch(() => []),
+  ])
+  const system = matchedCorrections.length
+    ? `${basePrompt}
+
+Approved VAAP corrections that may match this question (highest priority source, written by VAAP administrators):
+${matchedCorrections
+  .map((c, i) => `[Correction ${i + 1}] Approved question: ${c.question}\nApproved answer:\n${c.answer.slice(0, 1500)}`)
+  .join("\n\n")}
+
+If one of these asks for the same information as the user (even in different words or another language), base your answer on it, translated into the user's language, ahead of any other source. If it only shares words but asks something different, ignore it. If another source contradicts an approved correction, use the correction and tell the user that VAAP staff will confirm the details.`
+    : basePrompt
+  if (matchedCorrections.length) after(() => markCorrectionsUsed(matchedCorrections.map((c) => c.id)))
   const promptChars = system.length + messages.reduce((n, m) => n + textOf(m).length, 0)
   const price = modelPrice(settings.defaultModel)
   const inputTokensPerStep = Math.ceil(promptChars / 3) + TOOL_RESULT_TOKENS_PER_STEP

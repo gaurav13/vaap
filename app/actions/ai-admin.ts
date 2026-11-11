@@ -7,6 +7,7 @@ import { db } from "@/lib/db"
 import { aiAnswerCorrections, aiCorrectionVersions, aiKnowledgeSources, aiUsageLogs } from "@/lib/db/schema"
 import { logActivity, requireManager, requireSuperAdmin, type AdminActor } from "@/lib/rbac"
 import { saveAiSettings } from "@/lib/ai-assistant/settings"
+import { indexCorrection } from "@/lib/ai-assistant/corrections"
 import { TOPICS, aiSettingsSchema, type AiSettings } from "@/lib/ai-assistant/config"
 
 const PATH = "/admin/ai"
@@ -79,6 +80,7 @@ export async function createCorrection(_: ActionResult | null, form: FormData): 
       entityId: row.id,
       target: data.question.slice(0, 120),
     })
+    if (status === "approved") await indexCorrection(row.id)
     revalidatePath(PATH)
     return {
       ok: true,
@@ -112,6 +114,7 @@ export async function updateCorrection(id: number, input: { correctedAnswer: str
       .where(eq(aiAnswerCorrections.id, id))
     await recordVersion(actor, id, version, "edited", data.correctedAnswer, input.note)
     await logActivity(actor, "ai_correction.edit", { entityType: "ai_answer_corrections", entityId: id, details: input.note })
+    if (status === "approved") await indexCorrection(id)
     revalidatePath(PATH)
     return { ok: true, message: status === "pending" && cur.status === "approved" ? "Saved. Waiting for re-approval." : "Saved." }
   } catch (e) {
@@ -147,6 +150,7 @@ export async function reviewCorrection(id: number, decision: "approve" | "reject
       .where(eq(aiAnswerCorrections.id, id))
     await recordVersion(actor, id, cur.version, status, cur.correctedAnswer, note)
     await logActivity(actor, `ai_correction.${decision}`, { entityType: "ai_answer_corrections", entityId: id, details: note })
+    if (status === "approved") await indexCorrection(id)
     revalidatePath(PATH)
     return { ok: true, message: `Correction ${status}.` }
   } catch (e) {
@@ -172,6 +176,7 @@ export async function restoreCorrectionVersion(id: number, versionId: number): P
       .where(eq(aiAnswerCorrections.id, id))
     await recordVersion(actor, id, version, "restored", ver.correctedAnswer, `Restored version ${ver.version}`)
     await logActivity(actor, "ai_correction.restore", { entityType: "ai_answer_corrections", entityId: id, details: `v${ver.version}` })
+    if (cur.status === "approved") await indexCorrection(id)
     revalidatePath(PATH)
     return { ok: true, message: `Restored version ${ver.version}.` }
   } catch (e) {
