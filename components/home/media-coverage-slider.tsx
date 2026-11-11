@@ -137,14 +137,14 @@ export function MediaCoverageSlider({ items }: { items: MediaCoverageItem[] }) {
   const rendered = Array.from({ length: copies }, (_, copy) => items.map((item) => ({ item, copy }))).flat()
 
   return (
-    <section aria-labelledby="media-coverage-heading" className="mt-12 border-t border-white/10 pt-10">
+    <section aria-labelledby="media-coverage-heading" className="mt-8 border-t border-white/10 pt-6 sm:mt-10 sm:pt-8">
       <div className="flex items-center justify-center gap-4">
         <span className="hidden h-px flex-1 bg-gradient-to-r from-transparent to-gold/60 sm:block" aria-hidden="true" />
         <h2
           id="media-coverage-heading"
-          className="flex max-w-full items-center gap-3 font-sans text-xl font-bold tracking-tight text-white sm:text-2xl lg:text-[1.75rem]"
+          className="flex max-w-full items-center gap-3 font-sans text-lg font-bold tracking-tight text-white sm:text-xl lg:text-2xl"
         >
-          <Tv className="size-7 shrink-0 text-gold sm:size-8" strokeWidth={1.75} aria-hidden="true" />
+          <Tv className="size-6 shrink-0 text-gold sm:size-7" strokeWidth={1.75} aria-hidden="true" />
           <span className="text-balance">
             As Seen On <span className="text-gold">National TV &amp; Media</span>
           </span>
@@ -153,7 +153,7 @@ export function MediaCoverageSlider({ items }: { items: MediaCoverageItem[] }) {
       </div>
 
       <div
-        className="mt-6 flex items-center gap-2 rounded-[12px] border border-gold/50 bg-white/[0.03] p-2 shadow-[0_0_24px_-12px] shadow-gold/40 sm:gap-3 sm:p-3"
+        className="mt-4 flex items-center gap-2 rounded-[12px] border border-gold/50 bg-white/[0.03] p-1.5 shadow-[0_0_24px_-12px] shadow-gold/40 sm:mt-5 sm:gap-2.5 sm:p-2"
         onMouseEnter={() => (paused.current = true)}
         onMouseLeave={() => (paused.current = false)}
       >
@@ -172,7 +172,7 @@ export function MediaCoverageSlider({ items }: { items: MediaCoverageItem[] }) {
             {rendered.map(({ item, copy }) => {
               const duplicate = copy > 0
               return (
-                <li key={`${copy}-${item.id}`} className="shrink-0 pr-4" aria-hidden={duplicate || undefined}>
+                <li key={`${copy}-${item.id}`} className="shrink-0 pr-2.5 sm:pr-3" aria-hidden={duplicate || undefined}>
                   <a
                     href={item.url}
                     target="_blank"
@@ -180,7 +180,7 @@ export function MediaCoverageSlider({ items }: { items: MediaCoverageItem[] }) {
                     tabIndex={duplicate ? -1 : undefined}
                     draggable={false}
                     title={`Read VAAP coverage on ${item.name}`}
-                    className="group flex h-16 w-32 items-center justify-center rounded-[8px] bg-card px-3 py-2 shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-gold sm:h-20 sm:w-40 sm:px-4 lg:w-44"
+                    className="group flex h-12 w-24 items-center justify-center rounded-[6px] bg-card px-2.5 py-1.5 shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-gold sm:h-14 sm:w-28 sm:px-3 lg:h-16 lg:w-32"
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element -- admin-uploaded logos (incl. SVG) from object storage */}
                     <img
