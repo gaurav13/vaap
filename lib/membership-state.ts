@@ -82,15 +82,36 @@ type CardCheckable = Pick<Application, "id" | "completed" | "status" | "paymentM
  * marked verified, and records the result. Mutates `paymentVerifiedAt` on the
  * passed rows so callers can classify them without re-querying.
  */
+// Abandoned checkouts stay "pending" forever, so without this every admin page
+// load re-asked Stripe about the same sessions. Expired sessions can never be
+// paid and are skipped for the life of the instance; open ones are re-checked
+// at most once per recheck window.
+const STRIPE_RECHECK_MS = 2 * 60 * 1000
+const nextStripeCheckAt = new Map<string, number>()
+
 export async function syncCardPaymentVerifications<T extends CardCheckable>(apps: T[]) {
+  const now = Date.now()
   const unchecked = apps
-    .filter((a) => a.completed && a.status === "pending" && a.paymentMethod === "card" && !a.paymentVerifiedAt && a.txid?.startsWith("cs_"))
+    .filter(
+      (a) =>
+        a.completed &&
+        a.status === "pending" &&
+        a.paymentMethod === "card" &&
+        !a.paymentVerifiedAt &&
+        a.txid?.startsWith("cs_") &&
+        (nextStripeCheckAt.get(a.txid) ?? 0) <= now,
+    )
     .slice(0, 25)
   await Promise.all(
     unchecked.map(async (a) => {
+      const txid = a.txid as string
       try {
-        const session = await stripe.checkout.sessions.retrieve(a.txid as string)
-        if (session.payment_status !== "paid") return
+        const session = await stripe.checkout.sessions.retrieve(txid)
+        if (session.payment_status !== "paid") {
+          nextStripeCheckAt.set(txid, session.status === "expired" ? Number.POSITIVE_INFINITY : now + STRIPE_RECHECK_MS)
+          return
+        }
+        nextStripeCheckAt.delete(txid)
         const verifiedAt = new Date()
         await db
           .update(membershipApplications)

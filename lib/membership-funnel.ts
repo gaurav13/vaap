@@ -1,4 +1,5 @@
 import "server-only"
+import { cache } from "react"
 import { desc, inArray, isNull } from "drizzle-orm"
 import { db } from "@/lib/db"
 import {
@@ -66,7 +67,8 @@ function isActivatedMember(m: { membershipId: string; deletedAt: Date | null }) 
   return !m.deletedAt && !m.membershipId.startsWith("PENDING-")
 }
 
-async function loadRaw() {
+// Deduplicated per request: the dashboard needs both the funnel and the directory.
+const loadRaw = cache(async function loadRaw() {
   const [users, memberRows, applications, attributions, invitations, suppressions] = await Promise.all([
     db
       .select({
@@ -114,7 +116,7 @@ async function loadRaw() {
       .where(inArray(emailSuppressions.topic, [INVITE_TOPIC, "all"])),
   ])
   return { users, memberRows, applications, attributions, invitations, suppressions }
-}
+})
 
 type Raw = Awaited<ReturnType<typeof loadRaw>>
 

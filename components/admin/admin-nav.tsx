@@ -82,6 +82,7 @@ const GROUPS: { heading: string; links: { href: string; label: string; icon: typ
       { href: "/admin/membership-faqs", label: "Membership FAQs", icon: HelpCircle },
       { href: "/admin/ai", label: "AI Assistant Admin", icon: LayoutDashboard },
       { href: "/admin/ai-knowledge", label: "AI Knowledge Center", icon: BookOpen },
+      { href: "/admin/social-agent", label: "AI Social Media Agent", icon: Share2, adminOnly: true },
       { href: "/admin/applications", label: "Applications", icon: FileText },
       { href: "/admin/invitations", label: "Invitations & Enrolment", icon: KeyRound, adminOnly: true },
       { href: "/admin/kols", label: "KOL Verification", icon: BadgeCheck },

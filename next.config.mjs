@@ -15,6 +15,11 @@ const nextConfig = {
     ],
   },
   poweredByHeader: false,
+  // The social banner renderer loads this font from disk, so it must ship with the server bundles that render.
+  outputFileTracingIncludes: {
+    "/admin/social-agent": ["./lib/social-agent/fonts/**"],
+    "/api/cron/email-automations": ["./lib/social-agent/fonts/**"],
+  },
   experimental: {
     serverActions: { bodySizeLimit: "9mb" },
   },
