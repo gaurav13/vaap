@@ -1,16 +1,16 @@
 export const ASSISTANT_LANGUAGES = ["en", "ur", "roman-ur"] as const
 export type AssistantLanguage = (typeof ASSISTANT_LANGUAGES)[number]
 
-// Chosen from the live AI Gateway catalog as the lowest-cost model with solid
-// English/Urdu quality and reliable tool calling.
-export const ASSISTANT_MODEL = process.env.AI_ASSISTANT_MODEL || "google/gemini-2.5-flash-lite"
+// gemini-2.5-flash-lite was cheaper but leaked tool calls as plain "tool_code"
+// text; gpt-4.1-mini is low-cost, non-reasoning (fast) and calls tools reliably.
+export const ASSISTANT_MODEL = process.env.AI_ASSISTANT_MODEL || "openai/gpt-4.1-mini"
 
 // USD per 1M tokens for ASSISTANT_MODEL. Stored with each usage row.
 export const PRICING = {
-  version: "gemini-2.5-flash-lite@2026-11",
-  inputPerMillion: 0.1,
-  cachedInputPerMillion: 0.025,
-  outputPerMillion: 0.4,
+  version: "gpt-4.1-mini@2026-11",
+  inputPerMillion: 0.4,
+  cachedInputPerMillion: 0.1,
+  outputPerMillion: 1.6,
 }
 
 export const BUDGET = {
