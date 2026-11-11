@@ -146,15 +146,24 @@ export type TemplateLayer = {
   maxLines: number
   maxChars: number
   uppercase: boolean
-  fit: "cover" | "contain"
+  /** preserve = whole image on white padding, never cropped (newspaper clippings). */
+  fit: "cover" | "contain" | "preserve"
   shape: "rect" | "circle"
 }
+
+/** Per-post manual placement for one image area. zoom 1–3, x/y pan from -1 to 1. */
+export type ImageAdjust = { fit: "auto" | "preserve" | "fill"; zoom: number; x: number; y: number }
+export const DEFAULT_ADJUST: ImageAdjust = { fit: "auto", zoom: 1, x: 0, y: 0 }
+
+/** Image areas that must show the whole source (newspaper and article clippings). */
+export const preservesWholeImage = (category: string, field: string) => (category === "news" || category === "articles") && field === "image"
 
 export const POST_STATUSES = {
   needs_review: "Needs review",
   pending_approval: "Awaiting approval",
   approved: "Approved",
   scheduled: "Scheduled",
+  publishing: "Publishing",
   published: "Published",
   rejected: "Rejected",
 } as const

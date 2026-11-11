@@ -12,6 +12,7 @@ import {
   categoryLabel,
   type CategoryKey,
   type CategoryRules,
+  type ImageAdjust,
   type PlatformKey,
 } from "@/lib/social-agent/config"
 import { renderBanner, renderVariants } from "@/lib/social-agent/render"
@@ -68,8 +69,13 @@ async function upload(bytes: Buffer, contentType: string) {
   return uploadPageImage({ bytes: new Uint8Array(bytes), contentType, folder: "social-agent" })
 }
 
-async function renderAndUpload(template: typeof socialTemplates.$inferSelect, fields: Record<string, string>, platforms: string[]) {
-  const { banner, issues } = await renderBanner(template, fields)
+async function renderAndUpload(
+  template: typeof socialTemplates.$inferSelect,
+  fields: Record<string, string>,
+  platforms: string[],
+  adjust: Record<string, ImageAdjust> = {},
+) {
+  const { banner, issues } = await renderBanner(template, fields, adjust)
   const bannerUrl = await upload(banner, "image/png")
   const variants: Record<string, string> = {}
   for (const [platform, bytes] of Object.entries(await renderVariants(banner, platforms))) {
@@ -124,15 +130,16 @@ export async function generateDraft(category: CategoryKey, record: SourceRecord,
 }
 
 /** Re-renders an existing draft after the Super Admin edits its fields or replaces the template. */
-export async function rerenderPost(postId: number, fields: Record<string, string>) {
+export async function rerenderPost(postId: number, fields: Record<string, string>, imageAdjust?: Record<string, ImageAdjust>) {
   const [post] = await db.select().from(socialPosts).where(eq(socialPosts.id, postId)).limit(1)
   if (!post) throw new Error("Post not found")
   const template = (await getActiveTemplate(post.category as CategoryKey)) ?? null
   if (!template) throw new Error("This category has no active template.")
-  const { bannerUrl, variants, issues } = await renderAndUpload(template, fields, post.platforms)
+  const adjust = (imageAdjust ?? post.imageAdjust) as Record<string, ImageAdjust>
+  const { bannerUrl, variants, issues } = await renderAndUpload(template, fields, post.platforms, adjust)
   await db
     .update(socialPosts)
-    .set({ fields, bannerUrl, variants, issues, templateId: template.id, status: statusFor(issues), updatedAt: new Date() })
+    .set({ fields, imageAdjust: adjust, bannerUrl, variants, issues, templateId: template.id, status: statusFor(issues), updatedAt: new Date() })
     .where(eq(socialPosts.id, postId))
   return { issues }
 }

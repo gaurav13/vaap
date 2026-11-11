@@ -48,6 +48,7 @@ const TONES: Record<PostStatus, string> = {
   pending_approval: "bg-blue-tint text-indigo",
   approved: "bg-mint text-green",
   scheduled: "bg-gold-tint text-amber",
+  publishing: "bg-blue-tint text-indigo",
   published: "bg-green text-primary-foreground",
   rejected: "bg-muted text-muted-foreground",
 }

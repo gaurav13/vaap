@@ -1617,6 +1617,8 @@ export const socialPosts = pgTable(
     scheduledAt: timestamp("scheduledAt"),
     publishedAt: timestamp("publishedAt"),
     publishedLinks: jsonb("publishedLinks").$type<Record<string, string>>().notNull().default({}),
+    publishErrors: jsonb("publishErrors").$type<Record<string, string>>().notNull().default({}),
+    imageAdjust: jsonb("imageAdjust").$type<Record<string, { fit: string; zoom: number; x: number; y: number }>>().notNull().default({}),
     reviewNote: text("reviewNote").notNull().default(""),
     createdBy: text("createdBy"),
     reviewedBy: text("reviewedBy"),
@@ -1631,6 +1633,12 @@ export const socialAccounts = pgTable("social_accounts", {
   handle: text("handle").notNull().default(""),
   profileUrl: text("profileUrl").notNull().default(""),
   notes: text("notes").notNull().default(""),
+  /** AES-256-GCM encrypted JSON of API credentials. Never sent to the browser. */
+  credentials: text("credentials").notNull().default(""),
+  connectionStatus: text("connectionStatus").notNull().default("not_connected"),
+  accountName: text("accountName").notNull().default(""),
+  lastError: text("lastError").notNull().default(""),
+  lastCheckedAt: timestamp("lastCheckedAt"),
   updatedBy: text("updatedBy"),
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 })

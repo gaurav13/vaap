@@ -1,14 +1,22 @@
 "use client"
 
 import { useState } from "react"
-import { AlertTriangle, Download, ExternalLink } from "lucide-react"
+import { AlertTriangle, Download, ExternalLink, Send } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { PLATFORMS, categoryLabel, getCategory, platformLabel } from "@/lib/social-agent/config"
-import { approvePost, deletePost, markPublished, regenerateCaptions, rejectPost, updatePost } from "@/app/actions/social-agent"
+import {
+  DEFAULT_ADJUST,
+  PLATFORMS,
+  categoryLabel,
+  getCategory,
+  platformLabel,
+  preservesWholeImage,
+  type ImageAdjust,
+} from "@/lib/social-agent/config"
+import { approvePost, deletePost, markPublished, publishNow, regenerateCaptions, rejectPost, updatePost } from "@/app/actions/social-agent"
 import { Notice, StatusBadge, useAgentAction } from "./ui"
 
 export type AgentPost = {
@@ -27,8 +35,87 @@ export type AgentPost = {
   scheduledAt: string | null
   publishedAt: string | null
   publishedLinks: Record<string, string>
+  publishErrors: Record<string, string>
+  imageAdjust: Record<string, { fit: string; zoom: number; x: number; y: number }>
   reviewNote: string
   updatedAt: string
+}
+
+type PublishResult = { published: string[]; failed: string[]; manual: string[]; done: boolean }
+
+function publishSummary(r: PublishResult | null) {
+  if (!r) return "No platforms are connected yet, so publish it by hand and mark it as published."
+  const parts = []
+  if (r.published.length) parts.push(`Published to ${r.published.map(platformLabel).join(", ")}.`)
+  if (r.failed.length) parts.push(`Failed on ${r.failed.map(platformLabel).join(", ")}; see the errors below.`)
+  if (r.manual.length) parts.push(`${r.manual.map(platformLabel).join(", ")} not connected; post by hand.`)
+  return parts.join(" ") || "Nothing left to publish."
+}
+
+const FIT_OPTIONS: { value: ImageAdjust["fit"]; label: string }[] = [
+  { value: "auto", label: "Auto" },
+  { value: "preserve", label: "Show whole image" },
+  { value: "fill", label: "Fill frame" },
+]
+
+function ImageAdjustControls({
+  idPrefix,
+  preserve,
+  value,
+  onChange,
+}: {
+  idPrefix: string
+  preserve: boolean
+  value: ImageAdjust
+  onChange: (v: ImageAdjust) => void
+}) {
+  const slider = (key: "zoom" | "x" | "y", label: string, min: number, max: number) => (
+    <div className="flex items-center gap-2">
+      <Label htmlFor={`${idPrefix}-${key}`} className="w-16 shrink-0 text-xs font-normal">{label}</Label>
+      <input
+        id={`${idPrefix}-${key}`}
+        type="range"
+        min={min}
+        max={max}
+        step={0.05}
+        value={value[key]}
+        onChange={(e) => onChange({ ...value, [key]: Number(e.target.value) })}
+        className="w-full accent-[var(--green)]"
+      />
+      <span className="w-10 text-right font-mono text-xs text-muted-2">{value[key].toFixed(2)}</span>
+    </div>
+  )
+  return (
+    <div className="flex flex-col gap-2 rounded-md border border-line bg-surface p-2">
+      <div role="radiogroup" aria-label="Image fit" className="flex flex-wrap gap-1">
+        {FIT_OPTIONS.map((o) => (
+          <button
+            key={o.value}
+            type="button"
+            role="radio"
+            aria-checked={value.fit === o.value}
+            onClick={() => onChange({ ...value, fit: o.value })}
+            className={`rounded px-2 py-1 text-xs font-medium ${value.fit === o.value ? "bg-green text-primary-foreground" : "border border-line bg-card text-body"}`}
+          >
+            {o.label}
+          </button>
+        ))}
+        <button type="button" onClick={() => onChange(DEFAULT_ADJUST)} className="ml-auto px-2 py-1 text-xs text-muted-2 hover:text-heading">
+          Reset
+        </button>
+      </div>
+      {value.fit === "auto" && (
+        <p className="text-xs text-muted-2">
+          {preserve
+            ? "Newspaper-safe: the whole clipping stays visible with a blurred backdrop, never cropped."
+            : "Smart crop with no stretching; switches to whole-image when cropping would cut too much."}
+        </p>
+      )}
+      {slider("zoom", "Zoom", 1, 3)}
+      {slider("x", "Left/right", -1, 1)}
+      {slider("y", "Up/down", -1, 1)}
+    </div>
+  )
 }
 
 export function PostCard({ post, defaultOpen = false }: { post: AgentPost; defaultOpen?: boolean }) {
@@ -39,9 +126,10 @@ export function PostCard({ post, defaultOpen = false }: { post: AgentPost; defau
   const [videoUrl, setVideoUrl] = useState(post.videoUrl)
   const [scheduleAt, setScheduleAt] = useState("")
   const [links, setLinks] = useState<Record<string, string>>(post.publishedLinks)
+  const [adjust, setAdjust] = useState<Record<string, ImageAdjust>>((post.imageAdjust ?? {}) as Record<string, ImageAdjust>)
   const { pending, message, run } = useAgentAction()
   const category = getCategory(post.category)
-  const editable = post.status !== "published"
+  const editable = post.status !== "published" && post.status !== "publishing"
   const canPublish = post.status === "approved" || post.status === "scheduled"
   const id = (s: string) => `post-${post.id}-${s}`
 
@@ -104,8 +192,17 @@ export function PostCard({ post, defaultOpen = false }: { post: AgentPost; defau
                 <div key={f.key} className="flex flex-col gap-1">
                   <Label htmlFor={id(f.key)} className="text-xs">{f.label}</Label>
                   <Input id={id(f.key)} value={fields[f.key] ?? ""} onChange={(e) => setFields({ ...fields, [f.key]: e.target.value })} placeholder={f.kind === "image" ? "Image URL" : undefined} />
+                  {f.kind === "image" && fields[f.key] ? (
+                    <ImageAdjustControls
+                      idPrefix={id(`adj-${f.key}`)}
+                      preserve={preservesWholeImage(post.category, f.key)}
+                      value={adjust[f.key] ?? DEFAULT_ADJUST}
+                      onChange={(v) => setAdjust({ ...adjust, [f.key]: v })}
+                    />
+                  ) : null}
                 </div>
               ))}
+              <p className="text-xs text-muted-2">Adjust the image, then Save changes to re-render every platform size.</p>
             </fieldset>
           </div>
 
@@ -145,7 +242,7 @@ export function PostCard({ post, defaultOpen = false }: { post: AgentPost; defau
 
           {editable && (
             <div className="flex flex-wrap items-end gap-2 border-t border-line pt-4">
-              <Button size="sm" variant="outline" disabled={pending} onClick={() => run(() => updatePost({ id: post.id, fields, captions, platforms, videoUrl }), (r) => ("issues" in r && (r.issues as string[]).length ? "Saved. Some issues remain." : "Saved and re-rendered."))}>
+              <Button size="sm" variant="outline" disabled={pending} onClick={() => run(() => updatePost({ id: post.id, fields, captions, platforms, videoUrl, imageAdjust: adjust }), (r) => ("issues" in r && (r.issues as string[]).length ? "Saved. Some issues remain." : "Saved and re-rendered."))}>
                 Save changes
               </Button>
               <Button size="sm" variant="outline" disabled={pending} onClick={() => run(() => regenerateCaptions(post.id), "Captions regenerated.")}>
@@ -155,7 +252,7 @@ export function PostCard({ post, defaultOpen = false }: { post: AgentPost; defau
                 <Label htmlFor={id("schedule")} className="text-xs">Schedule (optional)</Label>
                 <Input id={id("schedule")} type="datetime-local" className="h-9" value={scheduleAt} onChange={(e) => setScheduleAt(e.target.value)} />
               </div>
-              <Button size="sm" disabled={pending || post.issues.length > 0} onClick={() => run(() => approvePost({ id: post.id, scheduledAt: scheduleAt ? new Date(scheduleAt).toISOString() : null }), scheduleAt ? "Approved and scheduled." : "Approved.")}>
+              <Button size="sm" disabled={pending || post.issues.length > 0} onClick={() => run(() => approvePost({ id: post.id, scheduledAt: scheduleAt ? new Date(scheduleAt).toISOString() : null }), (r) => scheduleAt ? "Approved and scheduled. It will publish automatically at that time." : `Approved. ${publishSummary("publish" in r ? (r.publish as PublishResult | null) : null)}`)}>
                 {scheduleAt ? "Approve and schedule" : "Approve"}
               </Button>
               <Button size="sm" variant="outline" disabled={pending} onClick={() => { const note = prompt("Reason for rejection (optional)") ; if (note !== null) run(() => rejectPost({ id: post.id, note }), "Rejected.") }}>
@@ -170,8 +267,29 @@ export function PostCard({ post, defaultOpen = false }: { post: AgentPost; defau
           {canPublish && (
             <div className="flex flex-col gap-3 rounded-md border border-line bg-surface p-3">
               <p className="text-sm text-body">
-                Post the approved banner and caption on each platform, then paste the live links and mark the post as published.
+                Connected platforms publish automatically. For any platform that is not connected or failed, post the banner by hand and paste
+                the live link below.
               </p>
+              {Object.entries(post.publishErrors ?? {}).filter(([p]) => post.platforms.includes(p)).length > 0 && (
+                <ul role="alert" className="flex flex-col gap-1 rounded-md border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive">
+                  {Object.entries(post.publishErrors)
+                    .filter(([p]) => post.platforms.includes(p))
+                    .map(([p, e]) => (
+                      <li key={p}>
+                        <span className="font-semibold">{platformLabel(p)}:</span> {e}
+                      </li>
+                    ))}
+                </ul>
+              )}
+              <Button
+                size="sm"
+                variant="outline"
+                className="self-start"
+                disabled={pending}
+                onClick={() => run(() => publishNow(post.id), (r) => publishSummary("publish" in r ? (r.publish as PublishResult) : null))}
+              >
+                <Send className="size-4" aria-hidden="true" /> Publish to connected platforms now
+              </Button>
               <div className="grid gap-2 md:grid-cols-2">
                 {post.platforms.map((p) => (
                   <div key={p} className="flex flex-col gap-1">

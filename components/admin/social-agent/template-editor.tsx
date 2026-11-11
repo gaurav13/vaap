@@ -277,6 +277,7 @@ function LayerProperties({
             <select id="layer-fit" className={selectClass} value={layer.fit} onChange={(e) => onChange({ fit: e.target.value as TemplateLayer["fit"] })}>
               <option value="cover">Fill (smart crop)</option>
               <option value="contain">Fit whole image</option>
+              <option value="preserve">Preserve clipping (white padding, never crop)</option>
             </select>
           </div>
           <div className="flex flex-col gap-1.5">

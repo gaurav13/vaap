@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils"
 import { CATEGORIES, POST_STATUSES, categoryLabel, isCategoryKey, type CategoryKey } from "@/lib/social-agent/config"
 import { getAllRules, getAutomation } from "@/lib/social-agent/service"
 import { getSourceRecords } from "@/lib/social-agent/sources"
+import { getConnectionViews } from "@/lib/social-agent/publishing"
 import { TemplateLibrary } from "@/components/admin/social-agent/template-library"
 import { TemplateEditor } from "@/components/admin/social-agent/template-editor"
 import { CategoryRulesList } from "@/components/admin/social-agent/category-rules"
@@ -138,7 +139,7 @@ async function TabContent({ tab, params, focusPost }: { tab: Tab; params: Record
     case "published":
       return <PostList posts={await postsWith(["published"])} focusPost={focusPost} empty="Nothing has been published yet." />
     case "accounts":
-      return <AccountsPanel accounts={await db.select().from(socialAccounts)} />
+      return <AccountsPanel accounts={await getConnectionViews()} />
     case "automation":
       return <AutomationPanel initial={await getAutomation()} />
     case "activity": {

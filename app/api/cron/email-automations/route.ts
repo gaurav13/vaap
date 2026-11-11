@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { runDueAutomations } from "@/lib/email-automations/engine"
 import { runKolMaintenance } from "@/lib/kol"
 import { getAutomation, runAutomationScan } from "@/lib/social-agent/service"
+import { publishDueScheduled } from "@/lib/social-agent/publishing"
 
 export const maxDuration = 300
 export const dynamic = "force-dynamic"
@@ -17,9 +18,10 @@ export async function GET(request: Request) {
   }
   const results = await runDueAutomations()
   const kol = await runKolMaintenance().catch((error) => ({ error: error instanceof Error ? error.message : "failed" }))
-  // AI Social Media Agent: drafts only, never publishes. Skipped unless the Super Admin turned automation on.
+  // AI Social Media Agent: the scan only drafts. Publishing happens solely for posts a Super Admin approved and scheduled.
   const social = await getAutomation()
     .then(async (a): Promise<object> => (a.enabled ? runAutomationScan() : { skipped: true }))
     .catch((error) => ({ error: error instanceof Error ? error.message : "failed" }))
-  return NextResponse.json({ ok: true, results, kol, social })
+  const scheduled = await publishDueScheduled().catch((error) => ({ error: error instanceof Error ? error.message : "failed" }))
+  return NextResponse.json({ ok: true, results, kol, social, scheduled })
 }

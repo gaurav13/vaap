@@ -2,7 +2,7 @@ import "server-only"
 import { readFile } from "node:fs/promises"
 import path from "node:path"
 import sharp, { type OverlayOptions } from "sharp"
-import { PLATFORMS, getCategory, type TemplateLayer } from "@/lib/social-agent/config"
+import { DEFAULT_ADJUST, PLATFORMS, getCategory, preservesWholeImage, type ImageAdjust, type TemplateLayer } from "@/lib/social-agent/config"
 
 const FONT_FILE = path.join(process.cwd(), "lib/social-agent/fonts/Inter.ttf")
 const MAX_REMOTE_BYTES = 12 * 1024 * 1024
@@ -72,16 +72,64 @@ async function renderText(layer: TemplateLayer, value: string, b: ReturnType<typ
   return { input, left: b.left + offset, top: b.top }
 }
 
-async function renderImage(layer: TemplateLayer, src: string, b: ReturnType<typeof box>) {
-  // "attention" cropping keeps the most salient region (faces, skin tones) inside the frame without distortion.
-  let img = sharp(await loadImage(src), { failOn: "none" })
-    .rotate()
-    .resize(b.width, b.height, {
-      fit: layer.fit === "contain" ? "contain" : "cover",
-      position: layer.fit === "contain" ? "centre" : sharp.strategy.attention,
-      background: { r: 0, g: 0, b: 0, alpha: 0 },
+const WHITE = { r: 255, g: 255, b: 255, alpha: 1 }
+const CLEAR = { r: 0, g: 0, b: 0, alpha: 0 }
+const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, Number.isFinite(v) ? v : 0))
+
+/**
+ * Proportional placement: scales to fit (or fill) the area, then applies zoom and pan.
+ * Never stretches; anything outside the area is clipped only when the Super Admin zooms or picks "fill".
+ */
+async function placeImage(input: Buffer, b: ReturnType<typeof box>, mode: "preserve" | "contain" | "cover", adj: ImageAdjust) {
+  const meta = await sharp(input).metadata()
+  const sw = meta.width ?? 1
+  const sh = meta.height ?? 1
+  const base = mode === "cover" ? Math.max(b.width / sw, b.height / sh) : Math.min(b.width / sw, b.height / sh)
+  const scale = base * clamp(adj.zoom, 1, 3)
+  const rw = Math.max(1, Math.round(sw * scale))
+  const rh = Math.max(1, Math.round(sh * scale))
+  const left = Math.round(((b.width - rw) * (1 + clamp(adj.x, -1, 1))) / 2)
+  const top = Math.round(((b.height - rh) * (1 + clamp(adj.y, -1, 1))) / 2)
+  const cropL = Math.max(0, -left)
+  const cropT = Math.max(0, -top)
+  const visW = Math.min(rw - cropL, b.width - Math.max(0, left))
+  const visH = Math.min(rh - cropT, b.height - Math.max(0, top))
+  const piece = await sharp(input).resize(rw, rh, { fit: "fill" }).extract({ left: cropL, top: cropT, width: visW, height: visH }).png().toBuffer()
+  const buffer = await sharp({ create: { width: b.width, height: b.height, channels: 4, background: mode === "contain" ? CLEAR : WHITE } })
+    .composite([{ input: piece, left: Math.max(0, left), top: Math.max(0, top) }])
+    .png()
+    .toBuffer()
+  return { buffer, clipped: visW < rw || visH < rh }
+}
+
+async function renderImage(
+  layer: TemplateLayer,
+  src: string,
+  b: ReturnType<typeof box>,
+  opts: { preserve: boolean; adjust?: ImageAdjust; label: string; issues: string[] },
+) {
+  let source = await sharp(await loadImage(src), { failOn: "none" }).rotate().toBuffer()
+  const adj = { ...DEFAULT_ADJUST, ...opts.adjust }
+  const mode = adj.fit === "preserve" ? "preserve" : adj.fit === "fill" ? "cover" : opts.preserve || layer.fit === "preserve" ? "preserve" : layer.fit
+  let img: ReturnType<typeof sharp>
+
+  if (mode === "preserve") {
+    // Strip scanner margins around a clipping so the article itself gets the space; keep the original if trimming fails.
+    source = await sharp(source).trim({ threshold: 18 }).toBuffer().catch(() => source)
+    const { buffer, clipped } = await placeImage(source, b, "preserve", adj)
+    if (clipped && adj.zoom <= 1) opts.issues.push(`${opts.label} could not be placed without cropping. Check the preview.`)
+    img = sharp(buffer)
+  } else if (adj.zoom === 1 && adj.x === 0 && adj.y === 0) {
+    // "attention" cropping keeps the most salient region (faces, skin tones) inside the frame without distortion.
+    img = sharp(source).resize(b.width, b.height, {
+      fit: mode === "contain" ? "contain" : "cover",
+      position: mode === "contain" ? "centre" : sharp.strategy.attention,
+      background: CLEAR,
     })
-    .ensureAlpha()
+  } else {
+    img = sharp((await placeImage(source, b, mode, adj)).buffer)
+  }
+  img = img.ensureAlpha()
   if (layer.shape === "circle") {
     const mask = Buffer.from(
       `<svg width="${b.width}" height="${b.height}"><ellipse cx="${b.width / 2}" cy="${b.height / 2}" rx="${b.width / 2}" ry="${b.height / 2}" fill="#fff"/></svg>`,
@@ -95,7 +143,7 @@ async function renderImage(layer: TemplateLayer, src: string, b: ReturnType<type
  * Places record values into the template's fixed areas. The uploaded banner itself is never recolored,
  * resized or rearranged. Anything missing or overflowing is reported as an issue for Super Admin review.
  */
-export async function renderBanner(template: Template, fields: Record<string, string>) {
+export async function renderBanner(template: Template, fields: Record<string, string>, adjust: Record<string, ImageAdjust> = {}) {
   const issues: string[] = []
   const cat = getCategory(template.category)
   const labelOf = (key: string) => cat?.fields.find((f) => f.key === key)?.label ?? key
@@ -111,7 +159,11 @@ export async function renderBanner(template: Template, fields: Record<string, st
     }
     const b = box(layer, template)
     try {
-      composites.push(layer.kind === "image" ? await renderImage(layer, value, b) : await renderText(layer, value, b, label, issues))
+      composites.push(
+        layer.kind === "image"
+          ? await renderImage(layer, value, b, { preserve: preservesWholeImage(template.category, layer.field), adjust: adjust[layer.field], label, issues })
+          : await renderText(layer, value, b, label, issues),
+      )
     } catch (error) {
       issues.push(`${label} could not be loaded (${error instanceof Error ? error.message : "unknown error"}).`)
     }

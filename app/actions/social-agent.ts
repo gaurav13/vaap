@@ -7,7 +7,9 @@ import { db } from "@/lib/db"
 import { socialAccounts, socialCategorySettings, socialPosts, socialTemplates } from "@/lib/db/schema"
 import { logActivity, requireSuperAdmin } from "@/lib/rbac"
 import { uploadPageImage } from "@/lib/spaces"
-import { CATEGORY_KEYS, PLATFORM_KEYS, getCategory, type CategoryKey } from "@/lib/social-agent/config"
+import { CATEGORY_KEYS, PLATFORM_KEYS, getCategory, type CategoryKey, type PlatformKey } from "@/lib/social-agent/config"
+import { CONNECTIONS } from "@/lib/social-agent/connections"
+import { connectedPlatforms, disconnect, publishPost, saveCredentials, testConnection } from "@/lib/social-agent/publishing"
 import { imageSize, renderBanner } from "@/lib/social-agent/render"
 import { generateCaptions } from "@/lib/social-agent/captions"
 import { generateDraft, getAllRules, getAutomation, rerenderPost, runAutomationScan, saveAutomation } from "@/lib/social-agent/service"
@@ -32,6 +34,12 @@ const log = (actor: Awaited<ReturnType<typeof requireSuperAdmin>>, action: strin
   logActivity(actor, action, { entityType: "social_agent", entityId: id, target })
 
 const categorySchema = z.enum(CATEGORY_KEYS as [CategoryKey, ...CategoryKey[]])
+const adjustSchema = z.object({
+  fit: z.enum(["auto", "preserve", "fill"]),
+  zoom: z.number().min(1).max(3),
+  x: z.number().min(-1).max(1),
+  y: z.number().min(-1).max(1),
+})
 const platformsSchema = z.array(z.enum(PLATFORM_KEYS as [string, ...string[]])).max(PLATFORM_KEYS.length)
 
 async function readTemplateFile(formData: FormData) {
@@ -94,7 +102,7 @@ const layerSchema = z.object({
   maxLines: z.number().int().min(0).max(20),
   maxChars: z.number().int().min(0).max(2000),
   uppercase: z.boolean(),
-  fit: z.enum(["cover", "contain"]),
+  fit: z.enum(["cover", "contain", "preserve"]),
   shape: z.enum(["rect", "circle"]),
 })
 
@@ -233,10 +241,15 @@ export async function updatePost(input: {
   captions: Record<string, string>
   platforms: string[]
   videoUrl: string
+  imageAdjust?: Record<string, unknown>
 }) {
   return guarded(async (actor) => {
     const post = await loadPost(input.id)
-    if (post.status === "published") throw new Error("Published posts cannot be edited.")
+    if (post.status === "published" || post.status === "publishing") throw new Error("Published posts cannot be edited.")
+    const imageKeys = getCategory(post.category)?.fields.filter((f) => f.kind === "image").map((f) => f.key) ?? []
+    const imageAdjust = Object.fromEntries(
+      imageKeys.filter((k) => input.imageAdjust?.[k]).map((k) => [k, adjustSchema.parse(input.imageAdjust?.[k])]),
+    )
     const allowed = getCategory(post.category)?.fields.map((f) => f.key) ?? []
     const fields = Object.fromEntries(
       allowed.map((k) => [k, z.string().max(2000).parse(input.fields[k] ?? "")]),
@@ -247,8 +260,12 @@ export async function updatePost(input: {
 
     await db.update(socialPosts).set({ captions, platforms, videoUrl, updatedAt: new Date() }).where(eq(socialPosts.id, post.id))
     let issues = post.issues
-    if (JSON.stringify(fields) !== JSON.stringify(post.fields) || platforms.some((p) => !post.variants[p])) {
-      issues = (await rerenderPost(post.id, fields)).issues
+    if (
+      JSON.stringify(fields) !== JSON.stringify(post.fields) ||
+      JSON.stringify(imageAdjust) !== JSON.stringify(post.imageAdjust) ||
+      platforms.some((p) => !post.variants[p])
+    ) {
+      issues = (await rerenderPost(post.id, fields, imageAdjust)).issues
     }
     await log(actor, "social.post.edit", post.sourceTitle, post.id)
     return { issues }
@@ -284,7 +301,22 @@ export async function approvePost(input: { id: number; scheduledAt?: string | nu
       .set({ status: scheduledAt ? "scheduled" : "approved", scheduledAt, reviewedBy: actor.id, updatedAt: new Date() })
       .where(eq(socialPosts.id, post.id))
     await log(actor, scheduledAt ? "social.post.schedule" : "social.post.approve", post.sourceTitle, post.id)
-    return {}
+    // Immediate approval publishes straight away to every connected platform; scheduled posts wait for the cron.
+    if (scheduledAt) return { publish: null }
+    const connected = await connectedPlatforms()
+    if (!post.platforms.some((p) => connected.includes(p))) return { publish: null }
+    const publish = await publishPost(post.id)
+    await log(actor, "social.post.autopublish", post.sourceTitle, post.id)
+    return { publish }
+  })
+}
+
+export async function publishNow(id: number) {
+  return guarded(async (actor) => {
+    const post = await loadPost(id)
+    const publish = await publishPost(id)
+    await log(actor, "social.post.autopublish", post.sourceTitle, id)
+    return { publish }
   })
 }
 
@@ -305,12 +337,13 @@ export async function markPublished(input: { id: number; links: Record<string, s
   return guarded(async (actor) => {
     const post = await loadPost(input.id)
     if (post.status !== "approved" && post.status !== "scheduled") throw new Error("Only approved posts can be marked as published.")
-    const links = Object.fromEntries(
-      post.platforms
+    const links = Object.fromEntries([
+      ...Object.entries(post.publishedLinks),
+      ...post.platforms
         .map((p) => [p, (input.links[p] ?? "").trim()] as const)
         .filter(([, v]) => v)
         .map(([p, v]) => [p, z.string().url().max(500).parse(v)]),
-    )
+    ])
     await db.update(socialPosts).set({ status: "published", publishedAt: new Date(), publishedLinks: links, updatedAt: new Date() }).where(eq(socialPosts.id, post.id))
     await log(actor, "social.post.publish", post.sourceTitle, post.id)
     return {}
@@ -341,6 +374,42 @@ export async function saveAccount(input: { platform: string; handle: string; pro
       .values({ platform, ...values })
       .onConflictDoUpdate({ target: socialAccounts.platform, set: { ...values, updatedAt: new Date() } })
     await log(actor, "social.account.update", platform)
+    return {}
+  })
+}
+
+// --- API connections (credentials never leave the server) ---------------------
+
+const platformKeySchema = z.enum(PLATFORM_KEYS as [PlatformKey, ...PlatformKey[]])
+
+export async function saveConnection(input: { platform: string; values: Record<string, string> }) {
+  return guarded(async (actor) => {
+    const platform = platformKeySchema.parse(input.platform)
+    const allowed = CONNECTIONS[platform].fields.map((f) => f.key)
+    const values = Object.fromEntries(allowed.map((k) => [k, z.string().max(4000).parse(input.values[k] ?? "")]))
+    await saveCredentials(platform, values, actor.id)
+    const test = await testConnection(platform)
+    await log(actor, "social.connection.save", platform)
+    if (!test.ok) throw new Error(`Saved, but the connection test failed: ${test.error}`)
+    return { accountName: test.accountName }
+  })
+}
+
+export async function testPlatformConnection(platform: string) {
+  return guarded(async (actor) => {
+    const key = platformKeySchema.parse(platform)
+    const test = await testConnection(key)
+    await log(actor, "social.connection.test", key)
+    if (!test.ok) throw new Error(test.error)
+    return { accountName: test.accountName }
+  })
+}
+
+export async function disconnectPlatform(platform: string) {
+  return guarded(async (actor) => {
+    const key = platformKeySchema.parse(platform)
+    await disconnect(key)
+    await log(actor, "social.connection.remove", key)
     return {}
   })
 }
