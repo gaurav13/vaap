@@ -1,5 +1,6 @@
 import { getApplications } from "@/app/actions/admin"
 import { getSession } from "@/lib/session"
+import { isPaymentConfirmed } from "@/lib/rbac"
 import { ApplicationsManager } from "@/components/admin/applications-manager"
 
 export default async function AdminApplicationsPage() {
@@ -35,6 +36,7 @@ export default async function AdminApplicationsPage() {
           totalAmount: r.totalAmount,
           status: r.status as "pending" | "approved" | "rejected",
           completed: r.completed,
+          paymentConfirmed: isPaymentConfirmed(r),
           createdAt: r.createdAt.toISOString(),
         }))}
       />

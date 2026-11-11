@@ -4,7 +4,7 @@ import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { Building2, Check, ChevronDown, CreditCard, Mail, Phone, Trash2, TriangleAlert, X } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { setApplicationStatus, deleteApplication } from "@/app/actions/admin"
+import { setApplicationStatus, deleteApplication, verifyApplicationPayment } from "@/app/actions/admin"
 
 type Application = {
   id: number
@@ -29,6 +29,7 @@ type Application = {
   totalAmount: string | null
   status: "pending" | "approved" | "rejected"
   completed: boolean
+  paymentConfirmed: boolean
   createdAt: string
 }
 
@@ -47,10 +48,42 @@ export function ApplicationsManager({ items, isAdmin = false }: { items: Applica
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>("all")
   const [expanded, setExpanded] = useState<number | null>(null)
   const [pending, startTransition] = useTransition()
+  const [errors, setErrors] = useState<Record<number, string>>({})
+
+  function setError(id: number, message: string | null) {
+    setErrors((prev) => {
+      const next = { ...prev }
+      if (message) next[id] = message
+      else delete next[id]
+      return next
+    })
+  }
 
   function update(id: number, status: "pending" | "approved" | "rejected") {
+    setError(id, null)
     startTransition(async () => {
-      await setApplicationStatus(id, status)
+      try {
+        const res = await setApplicationStatus(id, status)
+        if (!res.ok) {
+          setError(id, res.error)
+          return
+        }
+        router.refresh()
+      } catch {
+        setError(id, "Something went wrong while updating this application. Please try again.")
+      }
+    })
+  }
+
+  function verifyPayment(id: number) {
+    if (!window.confirm("Confirm you have verified this payment was received?")) return
+    setError(id, null)
+    startTransition(async () => {
+      const res = await verifyApplicationPayment(id, true)
+      if (!res.ok) {
+        setError(id, res.error ?? "Unable to verify payment.")
+        return
+      }
       router.refresh()
     })
   }
@@ -225,6 +258,31 @@ export function ApplicationsManager({ items, isAdmin = false }: { items: Applica
               )}
 
               {a.message && <p className="mt-3 rounded-lg bg-muted/50 p-3 text-sm text-body">{a.message}</p>}
+
+              {a.completed && !a.paymentConfirmed && a.status === "pending" && (
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
+                  <p className="flex items-center gap-1.5 text-xs font-semibold text-amber-900">
+                    <TriangleAlert className="size-3.5" />
+                    Payment not yet verified. Approval is blocked until payment is confirmed.
+                  </p>
+                  {isAdmin && (
+                    <button
+                      type="button"
+                      disabled={pending}
+                      onClick={() => verifyPayment(a.id)}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-card px-3 py-1.5 text-xs font-semibold text-amber-900 transition-colors hover:bg-amber-100 disabled:opacity-40"
+                    >
+                      <CreditCard className="size-3.5" /> Mark payment verified
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {errors[a.id] && (
+                <p role="alert" className="mt-3 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm font-medium text-destructive">
+                  {errors[a.id]}
+                </p>
+              )}
 
               <div className="mt-4 flex gap-2">
                 <button
