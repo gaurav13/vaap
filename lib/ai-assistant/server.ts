@@ -7,7 +7,7 @@ import { db } from "@/lib/db"
 import { aiUsageLogs, complaints, events, membershipFaqs } from "@/lib/db/schema"
 import { getAllCoreRoutes, getHiddenCoreRoutes } from "@/lib/core-routes"
 import { getMembershipStanding, type MembershipState } from "@/lib/membership-state"
-import { BUDGET, type AssistantLanguage } from "./config"
+import type { AiSettings, AssistantLanguage } from "./config"
 import { KNOWLEDGE_CATEGORIES, searchKnowledge } from "./knowledge"
 
 type Viewer = { id: string; name: string; email: string } | null
@@ -177,23 +177,60 @@ export function assistantTools(viewer: Viewer) {
   }
 }
 
-export async function checkAllowance(userId: string | null, sessionId: string) {
-  const [[month], [today]] = await Promise.all([
-    db
-      .select({ micro: sql<number>`coalesce(sum(${aiUsageLogs.costMicroUsd}), 0)::int` })
-      .from(aiUsageLogs)
-      .where(sql`${aiUsageLogs.createdAt} >= date_trunc('month', now())`),
-    db
-      .select({ n: sql<number>`count(*)::int` })
-      .from(aiUsageLogs)
-      .where(
-        and(
-          sql`${aiUsageLogs.createdAt} >= now() - interval '1 day'`,
-          userId ? eq(aiUsageLogs.userId, userId) : eq(aiUsageLogs.sessionId, sessionId),
-        ),
-      ),
-  ])
-  if (month.micro >= BUDGET.monthlyHardLimitUsd * 1_000_000) return "budget" as const
-  if (today.n >= (userId ? BUDGET.userDailyRequests : BUDGET.guestDailyRequests)) return "quota" as const
+/** Per-user / per-guest request quotas. Only paid answers count; free fallback answers are unlimited. */
+export async function checkQuota(userId: string | null, sessionId: string, s: AiSettings) {
+  const who = userId ? eq(aiUsageLogs.userId, userId) : eq(aiUsageLogs.sessionId, sessionId)
+  const [row] = await db
+    .select({
+      day: sql<number>`count(*) filter (where ${aiUsageLogs.createdAt} >= now() - interval '1 day')::int`,
+      month: sql<number>`count(*)::int`,
+    })
+    .from(aiUsageLogs)
+    .where(and(who, sql`${aiUsageLogs.status} in ('ok', 'error')`, sql`${aiUsageLogs.createdAt} >= date_trunc('month', now())`))
+  if (row.day >= (userId ? s.userDailyRequests : s.guestDailyRequests)) return "daily" as const
+  if (userId && row.month >= s.userMonthlyRequests) return "monthly" as const
   return "ok" as const
+}
+
+function plain(text: string) {
+  return text.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()
+}
+
+/** Zero-cost answer from approved FAQs, knowledge excerpts and site pages, used when paid AI is unavailable. */
+export async function freeAnswer(question: string, notice: string) {
+  const words = question
+    .toLowerCase()
+    .split(/[^\p{L}\p{N}]+/u)
+    .filter((w) => w.length > 3)
+    .slice(0, 8)
+  const [faqs, knowledge, pages] = await Promise.all([
+    db
+      .select({ q: membershipFaqs.question, a: membershipFaqs.answer })
+      .from(membershipFaqs)
+      .where(eq(membershipFaqs.published, true))
+      .orderBy(asc(membershipFaqs.sortOrder))
+      .limit(60),
+    searchKnowledge(question, undefined, 2).catch(() => []),
+    siteDirectory(),
+  ])
+  const score = (text: string) => words.reduce((n, w) => n + (text.toLowerCase().includes(w) ? 1 : 0), 0)
+  const faq = faqs
+    .map((f) => ({ ...f, s: score(f.q) * 2 + score(f.a) }))
+    .filter((f) => f.s > 1)
+    .sort((a, b) => b.s - a.s)
+    .slice(0, 2)
+  const links = pages
+    .map((p) => ({ ...p, s: score(`${p.label} ${p.href}`) }))
+    .filter((p) => p.s > 0)
+    .sort((a, b) => b.s - a.s)
+    .slice(0, 3)
+
+  const parts = [notice]
+  for (const f of faq) parts.push(`**${plain(f.q)}**\n${plain(f.a).slice(0, 500)}`)
+  for (const k of knowledge) parts.push(`**${k.title}**\n${plain(k.content).slice(0, 400)}...`)
+  const found = faq.length + knowledge.length > 0
+  if (!found) parts.push("I could not find a saved answer for that question.")
+  const fallbackLinks = links.length ? links : pages.filter((p) => ["/membership", "/events", "/support"].includes(p.href))
+  parts.push(`Helpful pages:\n${fallbackLinks.map((l) => `- [${l.label}](${l.href})`).join("\n")}`)
+  return { text: parts.join("\n\n"), answered: found }
 }

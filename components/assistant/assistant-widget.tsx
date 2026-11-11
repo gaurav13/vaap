@@ -19,7 +19,10 @@ import {
 } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react"
+import useSWR from "swr"
+import type { PublicAssistantConfig } from "@/lib/ai-assistant/config"
 import { cn } from "@/lib/utils"
+import { AssistantFeedback } from "./assistant-feedback"
 import { AssistantMessageText } from "./assistant-message-text"
 import { ASSISTANT_ASK_EVENT } from "./assistant-events"
 import { AssistantIcon } from "./assistant-icon"
@@ -59,7 +62,26 @@ const COPY: Record<Lang, { hello: string; intro: string; ask: string; placeholde
   },
 }
 
-type QuickAction = { icon: LucideIcon; tone: "green" | "gold"; label: Record<Lang, string>; prompt: Record<Lang, string> }
+type QuickAction = {
+  key?: PublicAssistantConfig["quickActions"][number]
+  icon: LucideIcon
+  tone: "green" | "gold"
+  label: Record<Lang, string>
+  prompt: Record<Lang, string>
+}
+
+const ACTION_KEYS: Record<string, QuickAction["key"]> = {
+  "Membership & Benefits": "membership",
+  "Blockchain Knowledge": "blockchain",
+  "Events & Programs": "events",
+  "Voting & Governance": "voting",
+  "Business Opportunities": "business",
+  "Regulatory Insights": "regulatory",
+}
+
+const fetchConfig = (url: string) => fetch(url).then((r) => r.json() as Promise<PublicAssistantConfig>)
+
+type MessageMeta = { requestId?: string; free?: boolean }
 
 const QUICK_ACTIONS: QuickAction[] = [
   {
@@ -143,16 +165,32 @@ export function AssistantWidget() {
   const scrollRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
+  const { data: config } = useSWR(open ? "/api/assistant/config" : null, fetchConfig, { revalidateOnFocus: false })
+  const languages = LANGS.filter((l) => !config || config.languages.includes(l.id))
+  const quickActions = QUICK_ACTIONS.filter((a) => {
+    const key = ACTION_KEYS[a.label.en]
+    return !key || !config || config.quickActions.includes(key)
+  })
+
   const langRef = useRef(lang)
   langRef.current = lang
+  const conversationRef = useRef("")
   const transport = useMemo(
-    () => new DefaultChatTransport({ api: "/api/assistant", body: () => ({ language: langRef.current }) }),
+    () =>
+      new DefaultChatTransport({
+        api: "/api/assistant",
+        body: () => {
+          if (!conversationRef.current) conversationRef.current = crypto.randomUUID()
+          return { language: langRef.current, conversationId: conversationRef.current }
+        },
+      }),
     [],
   )
   const { messages, sendMessage, status, error, setMessages, stop, clearError } = useChat({ transport })
 
   const busy = status === "submitted" || status === "streaming"
-  const copy = COPY[lang]
+  const welcome = config?.welcome?.[lang]?.trim()
+  const copy = { ...COPY[lang], ...(welcome ? { intro: welcome } : {}) }
   const rtl = lang === "ur"
 
   useEffect(() => {
@@ -193,6 +231,7 @@ export function AssistantWidget() {
     stop()
     clearError()
     setMessages([])
+    conversationRef.current = ""
     setInput("")
     inputRef.current?.focus()
   }
@@ -267,7 +306,7 @@ export function AssistantWidget() {
                   </div>
                 </div>
                 <ul className="grid grid-cols-2 gap-3">
-                  {QUICK_ACTIONS.map((a) => (
+                  {quickActions.map((a) => (
                     <li key={a.label.en}>
                       <button
                         type="button"
@@ -283,11 +322,14 @@ export function AssistantWidget() {
               </div>
             ) : (
               <ol className="flex flex-col gap-3">
-                {messages.map((m) => {
+                {messages.map((m, i) => {
                   const text = textOf(m)
                   if (!text.trim()) return null
+                  const requestId = (m.metadata as MessageMeta | undefined)?.requestId
+                  const settled = !busy || i < messages.length - 1
                   return (
-                    <li key={m.id} className={cn("flex gap-2", m.role === "user" ? "justify-end" : "justify-start")}>
+                    <li key={m.id} className="flex flex-col gap-1">
+                    <div className={cn("flex gap-2", m.role === "user" ? "justify-end" : "justify-start")}>
                       {m.role === "assistant" && (
                         <span className="mt-1 flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-lg">
                           <AssistantIcon className="size-full" />
@@ -302,6 +344,8 @@ export function AssistantWidget() {
                       >
                         {m.role === "user" ? <p className="whitespace-pre-wrap">{text}</p> : <AssistantMessageText text={text} />}
                       </div>
+                    </div>
+                    {m.role === "assistant" && requestId && settled && <AssistantFeedback requestId={requestId} />}
                     </li>
                   )
                 })}
@@ -358,7 +402,7 @@ export function AssistantWidget() {
             </form>
             <div className="flex items-center justify-center" role="radiogroup" aria-label="Assistant language">
               <div className="flex items-center rounded-full border border-line-light bg-surface p-1">
-                {LANGS.map((l) => (
+                {languages.map((l) => (
                   <button
                     key={l.id}
                     type="button"

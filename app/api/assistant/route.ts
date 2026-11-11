@@ -1,43 +1,95 @@
 import { randomUUID } from "node:crypto"
-import { convertToModelMessages, createUIMessageStreamResponse, isStepCount, streamText, toUIMessageStream, type UIMessage } from "ai"
+import {
+  convertToModelMessages,
+  createUIMessageStream,
+  createUIMessageStreamResponse,
+  isStepCount,
+  streamText,
+  toUIMessageStream,
+  type UIMessage,
+} from "ai"
 import { cookies } from "next/headers"
+import { after } from "next/server"
 import { db } from "@/lib/db"
 import { aiUsageLogs } from "@/lib/db/schema"
 import { getSession } from "@/lib/session"
-import { ASSISTANT_LANGUAGES, ASSISTANT_MODEL, BUDGET, PRICING, costMicroUsd, type AssistantLanguage } from "@/lib/ai-assistant/config"
-import { assistantTools, checkAllowance, systemPrompt } from "@/lib/ai-assistant/server"
+import {
+  ASSISTANT_LANGUAGES,
+  MAX_HISTORY_MESSAGES,
+  MAX_STEPS,
+  PRICING_VERSION,
+  classifyTopic,
+  costMicroUsd,
+  modelPrice,
+  type AssistantLanguage,
+} from "@/lib/ai-assistant/config"
+import { getAiSettings } from "@/lib/ai-assistant/settings"
+import { checkBudgetAlerts, releaseBudget, reserveBudget } from "@/lib/ai-assistant/budget"
+import { reconcileCosts } from "@/lib/ai-assistant/reconcile"
+import { assistantTools, checkQuota, freeAnswer, systemPrompt } from "@/lib/ai-assistant/server"
 
 export const maxDuration = 30
 
 const SESSION_COOKIE = "vaap_ai_sid"
+// Rough upper bound for tool results added to the prompt on each step.
+const TOOL_RESULT_TOKENS_PER_STEP = 1500
+const UNANSWERED = /(don'?t|do not) have (that|this|any|specific)|could ?n[o']t find|no information|not (sure|available in)|unable to (find|answer)/i
 
-const LIMIT_COPY = {
-  budget:
-    "The AI assistant has reached its monthly usage limit. You can still browse membership, events and support pages, or contact VAAP via /support.",
-  quota: "You have reached today's question limit for the AI assistant. Please try again tomorrow or visit /support for help.",
+const NOTICES = {
+  disabled: "The AI assistant is currently paused. Here is what I found in VAAP's saved answers:",
+  budget: "AI answers are paused because this period's AI budget has been reached. Here is what I found in VAAP's saved answers:",
+  daily: "You have reached today's AI question limit. Here is what I found in VAAP's saved answers:",
+  monthly: "You have reached this month's AI question limit. Here is what I found in VAAP's saved answers:",
+  cost: "That question is too long for an AI answer. Please shorten it. Meanwhile, here is what I found in VAAP's saved answers:",
+} as const
+const STATUS_FOR: Record<keyof typeof NOTICES, string> = {
+  disabled: "disabled",
+  budget: "blocked_budget",
+  daily: "blocked_quota",
+  monthly: "blocked_quota",
+  cost: "blocked_cost",
 }
 
 function textOf(message: UIMessage) {
   return message.parts.map((p) => (p.type === "text" ? p.text : "")).join("")
 }
 
+type LogBase = {
+  requestId: string
+  userId: string | null
+  sessionId: string
+  conversationId: string | null
+  language: AssistantLanguage
+  question: string
+  topic: string
+}
+
+async function writeLog(base: LogBase, values: Partial<typeof aiUsageLogs.$inferInsert>) {
+  try {
+    await db.insert(aiUsageLogs).values({ ...base, messageId: base.requestId, model: "", ...values })
+  } catch (error) {
+    console.error("[assistant] usage log failed:", (error as Error).message)
+  }
+}
+
 export async function POST(req: Request) {
-  let body: { messages?: UIMessage[]; language?: string }
+  let body: { messages?: UIMessage[]; language?: string; conversationId?: string }
   try {
     body = await req.json()
   } catch {
     return new Response("Invalid request.", { status: 400 })
   }
 
-  const language: AssistantLanguage = ASSISTANT_LANGUAGES.includes(body.language as AssistantLanguage)
-    ? (body.language as AssistantLanguage)
-    : "en"
+  const settings = await getAiSettings()
+  const requested = ASSISTANT_LANGUAGES.find((l) => l === body.language)
+  const language: AssistantLanguage = requested && settings.languages.includes(requested) ? requested : settings.languages[0]
 
   const messages = (Array.isArray(body.messages) ? body.messages : [])
     .filter((m) => m && (m.role === "user" || m.role === "assistant") && Array.isArray(m.parts))
-    .slice(-BUDGET.maxHistoryMessages)
+    .slice(-MAX_HISTORY_MESSAGES)
   const last = messages.at(-1)
-  if (!last || last.role !== "user" || !textOf(last).trim() || textOf(last).length > 2000) {
+  const question = last ? textOf(last).trim() : ""
+  if (!last || last.role !== "user" || !question || question.length > 2000) {
     return new Response("Please enter a question (up to 2000 characters).", { status: 400 })
   }
 
@@ -50,51 +102,128 @@ export async function POST(req: Request) {
 
   const session = await getSession().catch(() => null)
   const viewer = session?.user ? { id: session.user.id, name: session.user.name, email: session.user.email } : null
-
-  const allowance = await checkAllowance(viewer?.id ?? null, sessionId)
-  if (allowance !== "ok") return new Response(LIMIT_COPY[allowance], { status: 429 })
-
   const requestId = randomUUID()
+  const base: LogBase = {
+    requestId,
+    userId: viewer?.id ?? null,
+    sessionId,
+    conversationId: typeof body.conversationId === "string" ? body.conversationId.slice(0, 64) : null,
+    language,
+    question: question.slice(0, 1000),
+    topic: classifyTopic(question),
+  }
+
+  const system = await systemPrompt(language, viewer)
+  const promptChars = system.length + messages.reduce((n, m) => n + textOf(m).length, 0)
+  const price = modelPrice(settings.defaultModel)
+  const inputTokensPerStep = Math.ceil(promptChars / 3) + TOOL_RESULT_TOKENS_PER_STEP
+  const worstCaseMicroUsd = Math.ceil(
+    inputTokensPerStep * MAX_STEPS * price.input + settings.maxOutputTokens * MAX_STEPS * price.output,
+  )
+
+  let blocked: keyof typeof NOTICES | null = null
+  if (!settings.enabled || settings.emergencyShutdown) blocked = "disabled"
+  else if (worstCaseMicroUsd > settings.maxCostPerRequestUsd * 1_000_000) blocked = "cost"
+  else {
+    const quota = await checkQuota(base.userId, sessionId, settings)
+    if (quota !== "ok") blocked = quota
+    else if (!(await reserveBudget(requestId, worstCaseMicroUsd, settings)).ok) blocked = "budget"
+  }
+
+  if (blocked) {
+    const reason = blocked
+    const free = await freeAnswer(question, NOTICES[reason])
+    await writeLog(base, { status: STATUS_FOR[reason], answered: free.answered, provider: "faq" })
+    const stream = createUIMessageStream({
+      execute({ writer }) {
+        writer.write({ type: "start", messageMetadata: { requestId, free: true } })
+        writer.write({ type: "text-start", id: requestId })
+        writer.write({ type: "text-delta", id: requestId, delta: free.text })
+        writer.write({ type: "text-end", id: requestId })
+        writer.write({ type: "finish" })
+      },
+    })
+    return createUIMessageStreamResponse({ stream })
+  }
+
   const startedAt = Date.now()
   let toolCalls = 0
+  let knowledgeMissed = false
+  let provider = ""
+  let servedModel: string = settings.defaultModel
+  const generationIds: string[] = []
+
+  const finalize = async (values: Partial<typeof aiUsageLogs.$inferInsert>) => {
+    await writeLog(base, {
+      model: servedModel,
+      provider,
+      toolCalls,
+      pricingVersion: PRICING_VERSION,
+      latencyMs: Date.now() - startedAt,
+      generationIds: generationIds.join(","),
+      ...values,
+    })
+    await releaseBudget(requestId)
+    after(async () => {
+      await checkBudgetAlerts(settings)
+      // Generation details are available a few seconds after the response completes.
+      await new Promise((r) => setTimeout(r, 5000))
+      await reconcileCosts(5).catch(() => {})
+    })
+  }
 
   const result = streamText({
-    model: ASSISTANT_MODEL,
-    system: await systemPrompt(language, viewer),
+    model: settings.defaultModel,
+    system,
     messages: await convertToModelMessages(messages),
     tools: assistantTools(viewer),
-    stopWhen: isStepCount(4),
-    maxOutputTokens: BUDGET.maxOutputTokens,
+    stopWhen: isStepCount(MAX_STEPS),
+    maxOutputTokens: settings.maxOutputTokens,
+    providerOptions: settings.fallbackModel ? { gateway: { models: [settings.fallbackModel] } } : undefined,
     onStepFinish: (step) => {
       toolCalls += step.toolCalls?.length ?? 0
+      for (const r of step.toolResults ?? []) {
+        const output = (r as { toolName?: string; output?: { found?: boolean } }).output
+        if ((r as { toolName?: string }).toolName === "searchKnowledge" && output?.found === false) knowledgeMissed = true
+      }
+      const meta = step.providerMetadata?.gateway as
+        | { generationId?: string; routing?: { finalProvider?: string; resolvedProvider?: string } }
+        | undefined
+      if (meta?.generationId) generationIds.push(meta.generationId)
+      provider = meta?.routing?.finalProvider ?? meta?.routing?.resolvedProvider ?? provider
+      if (step.response?.modelId) servedModel = step.response.modelId
     },
-    onFinish: async ({ totalUsage }) => {
+    onFinish: async ({ totalUsage, text }) => {
       const input = totalUsage.inputTokens ?? 0
       const output = totalUsage.outputTokens ?? 0
       const cached = totalUsage.inputTokenDetails?.cacheReadTokens ?? 0
-      try {
-        await db.insert(aiUsageLogs).values({
-          requestId,
-          userId: viewer?.id ?? null,
-          sessionId,
-          model: ASSISTANT_MODEL,
-          inputTokens: input,
-          outputTokens: output,
-          cachedInputTokens: cached,
-          reasoningTokens: totalUsage.outputTokenDetails?.reasoningTokens ?? 0,
-          toolCalls,
-          costMicroUsd: costMicroUsd(input, cached, output),
-          pricingVersion: PRICING.version,
-          language,
-          latencyMs: Date.now() - startedAt,
-        })
-      } catch (error) {
-        console.error("[assistant] usage log failed:", (error as Error).message)
-      }
+      await finalize({
+        status: "ok",
+        inputTokens: input,
+        outputTokens: output,
+        cachedInputTokens: cached,
+        reasoningTokens: totalUsage.outputTokenDetails?.reasoningTokens ?? 0,
+        costMicroUsd: costMicroUsd(servedModel, input, cached, output),
+        answered: !(knowledgeMissed && UNANSWERED.test(text)) && !UNANSWERED.test(text.slice(0, 300)),
+      })
+    },
+    onError: async ({ error }) => {
+      console.error("[assistant] generation failed:", error instanceof Error ? error.message : error)
+      // Charge the worst case until reconciliation replaces it with the actual gateway cost.
+      await finalize({
+        status: "error",
+        costMicroUsd: generationIds.length ? worstCaseMicroUsd : 0,
+        answered: false,
+        errorMessage: (error instanceof Error ? error.message : String(error)).slice(0, 500),
+      })
     },
   })
 
   return createUIMessageStreamResponse({
-    stream: toUIMessageStream({ stream: result.stream }),
+    stream: toUIMessageStream({
+      stream: result.stream,
+      messageMetadata: ({ part }) => (part.type === "start" ? { requestId } : undefined),
+      onError: () => "The assistant could not answer right now. Please try again in a moment.",
+    }),
   })
 }
