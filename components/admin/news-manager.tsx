@@ -29,7 +29,15 @@ type CommitteeOption = { id: number; name: string }
 
 const CATEGORIES = NEWS_CATEGORIES
 
-export function NewsManager({ items, committees = [] }: { items: NewsItem[]; committees?: CommitteeOption[] }) {
+export function NewsManager({
+  items,
+  committees = [],
+  canDelete = true,
+}: {
+  items: NewsItem[]
+  committees?: CommitteeOption[]
+  canDelete?: boolean
+}) {
   const router = useRouter()
   const [editing, setEditing] = useState<NewsItem | null>(null)
   const [creating, setCreating] = useState(false)
@@ -299,15 +307,17 @@ export function NewsManager({ items, committees = [] }: { items: NewsItem[]; com
                   >
                     <Pencil className="size-4" />
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => onDelete(item.id)}
-                    disabled={pending}
-                    className="flex size-9 items-center justify-center rounded-md text-muted-2 transition-colors hover:bg-destructive/10 hover:text-destructive"
-                    aria-label="Delete"
-                  >
-                    <Trash2 className="size-4" />
-                  </button>
+                  {canDelete && (
+                    <button
+                      type="button"
+                      onClick={() => onDelete(item.id)}
+                      disabled={pending}
+                      className="flex size-9 items-center justify-center rounded-md text-muted-2 transition-colors hover:bg-destructive/10 hover:text-destructive"
+                      aria-label="Delete"
+                    >
+                      <Trash2 className="size-4" />
+                    </button>
+                  )}
                 </div>
               </li>
             ))}

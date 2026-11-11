@@ -3,7 +3,21 @@
 import { db } from "@/lib/db"
 import { EVENT_CATEGORIES, EVENT_CITIES, EVENT_FORMATS, pickOption } from "@/lib/event-options"
 import { normalizeUrl } from "@/lib/news-options"
-import { news, events, membershipApplications, contactMessages, user, members, account, referralPartners } from "@/lib/db/schema"
+import {
+  news,
+  events,
+  membershipApplications,
+  contactMessages,
+  contactMessageReplies,
+  user,
+  members,
+  account,
+  referralPartners,
+  session as sessionTable,
+  auditLogs,
+} from "@/lib/db/schema"
+import { canSeeContacts, HIDDEN, isPaymentConfirmed, logActivity, requireOperator, requireSuperAdmin, saveRevision } from "@/lib/rbac"
+import { brandedEmail, sendEmail } from "@/lib/mailer"
 import { getSession } from "@/lib/session"
 import { auth } from "@/lib/auth"
 import { computeExpiry } from "@/lib/membership"
@@ -11,26 +25,28 @@ import { processMembershipApproval } from "@/lib/referral-engine"
 import { canOwnReferralCode } from "@/lib/permissions"
 import { isVerifiedKolUser } from "@/lib/kol"
 import { notify, notifyCommunity } from "@/lib/notifications"
-import { and, desc, eq, sql } from "drizzle-orm"
+import { and, desc, eq, isNull, sql } from "drizzle-orm"
+import { isIssuedMembership } from "@/lib/membership-state"
 import { randomUUID } from "crypto"
 import { revalidatePath } from "next/cache"
 import { after } from "next/server"
 import { announceEventIfEnabled } from "@/lib/email-automations/engine"
 import { uniqueEventSlug } from "@/lib/event-slug-server"
 
-async function requireStaff() {
-  const session = await getSession()
-  if (!session?.user) throw new Error("Unauthorized")
-  // Staff are read-only in the admin area; these actions are super-admin only.
-  if (session.user.role !== "admin") throw new Error("Forbidden")
-  return session.user
-}
+// Staff and Super Admins: daily operations (content, approvals, messages).
+const requireStaff = requireOperator
+// Super Admin only: deletes, payments, users, roles.
+const requireAdmin = requireSuperAdmin
 
-async function requireAdmin() {
-  const session = await getSession()
-  if (!session?.user) throw new Error("Unauthorized")
-  if (session.user.role !== "admin") throw new Error("Forbidden")
-  return session.user
+// Applicant fields a Staff user must never receive (contact, identity, payment trail).
+const SENSITIVE_APPLICATION_FIELD = /^(email|phone|cnic|registrationNumber|website)$|tx|hash|wallet|address/i
+
+function maskApplication<T extends Record<string, unknown>>(row: T): T {
+  const out: Record<string, unknown> = { ...row }
+  for (const key of Object.keys(out)) {
+    if (SENSITIVE_APPLICATION_FIELD.test(key) && out[key]) out[key] = HIDDEN
+  }
+  return out as T
 }
 
 function slugify(input: string) {
@@ -77,7 +93,7 @@ export async function createNews(formData: FormData) {
   if (!title) return { ok: false, error: "Title is required." }
   if (publisher.error) return { ok: false, error: publisher.error }
 
-  await db.insert(news).values({
+  const [createdNews] = await db.insert(news).values({
     title,
     category,
     excerpt,
@@ -91,7 +107,8 @@ export async function createNews(formData: FormData) {
     committeeId: committeeId && !Number.isNaN(committeeId) ? committeeId : null,
     published,
     authorId: author.id,
-  })
+  }).returning({ id: news.id })
+  await logActivity(author, "news.create", { entityType: "news", entityId: createdNews?.id, target: title })
   if (published) {
     await notifyCommunity({
       type: publisher.sourceType === "external" ? "media" : "news",
@@ -108,7 +125,7 @@ export async function createNews(formData: FormData) {
 }
 
 export async function updateNews(id: number, formData: FormData) {
-  await requireStaff()
+  const actor = await requireStaff()
   const title = String(formData.get("title") ?? "").trim()
   const category = String(formData.get("category") ?? "Industry Update")
   const excerpt = String(formData.get("excerpt") ?? "").trim()
@@ -121,6 +138,16 @@ export async function updateNews(id: number, formData: FormData) {
 
   if (!title) return { ok: false, error: "Title is required." }
   if (publisher.error) return { ok: false, error: publisher.error }
+
+  const [before] = await db.select().from(news).where(eq(news.id, id)).limit(1)
+  if (!before) return { ok: false, error: "News post not found." }
+  await saveRevision(actor, "news", id, before)
+  await logActivity(actor, "news.update", {
+    entityType: "news",
+    entityId: id,
+    target: title,
+    details: before.published !== published ? (published ? "Published" : "Unpublished") : "",
+  })
 
   await db
     .update(news)
@@ -147,8 +174,11 @@ export async function updateNews(id: number, formData: FormData) {
 }
 
 export async function deleteNews(id: number) {
-  await requireStaff()
+  const actor = await requireAdmin()
+  const [before] = await db.select().from(news).where(eq(news.id, id)).limit(1)
+  await saveRevision(actor, "news", id, before, "delete")
   await db.delete(news).where(eq(news.id, id))
+  await logActivity(actor, "news.delete", { entityType: "news", entityId: id, target: before?.title ?? "" })
   revalidatePath("/admin/news")
   revalidatePath("/news")
   revalidatePath("/working-groups")
@@ -169,7 +199,7 @@ function scheduleEventAnnouncement(eventId: number) {
 }
 
 export async function createEvent(formData: FormData) {
-  await requireStaff()
+  const actor = await requireStaff()
   const title = String(formData.get("title") ?? "").trim()
   const description = String(formData.get("description") ?? "").trim()
   const location = String(formData.get("location") ?? "").trim()
@@ -200,6 +230,7 @@ export async function createEvent(formData: FormData) {
     published,
     status: "approved",
   }).returning({ id: events.id })
+  await logActivity(actor, "event.create", { entityType: "event", entityId: created.id, target: title })
   if (published) {
     scheduleEventAnnouncement(created.id)
     await notifyCommunity({ type: "event", title: "New event announced", body: title, link: "/events" })
@@ -211,7 +242,7 @@ export async function createEvent(formData: FormData) {
 }
 
 export async function updateEvent(id: number, formData: FormData) {
-  await requireStaff()
+  const actor = await requireStaff()
   const title = String(formData.get("title") ?? "").trim()
   const description = String(formData.get("description") ?? "").trim()
   const location = String(formData.get("location") ?? "").trim()
@@ -223,6 +254,12 @@ export async function updateEvent(id: number, formData: FormData) {
   const category = pickOption(EVENT_CATEGORIES, formData.get("category"))
   const city = pickOption(EVENT_CITIES, formData.get("city"))
   const format = pickOption(EVENT_FORMATS, formData.get("format"))
+
+  if (!title) return { ok: false, error: "Title is required." }
+  const [before] = await db.select().from(events).where(eq(events.id, id)).limit(1)
+  if (!before) return { ok: false, error: "Event not found." }
+  await saveRevision(actor, "event", id, before)
+  await logActivity(actor, "event.update", { entityType: "event", entityId: id, target: title })
 
   await db
     .update(events)
@@ -250,8 +287,16 @@ export async function updateEvent(id: number, formData: FormData) {
 }
 
 export async function setEventStatus(id: number, status: "approved" | "pending" | "rejected") {
-  await requireStaff()
+  const actor = await requireStaff()
+  if (!["approved", "pending", "rejected"].includes(status)) return { ok: false, error: "Invalid status." }
+  const [before] = await db.select({ title: events.title }).from(events).where(eq(events.id, id)).limit(1)
+  if (!before) return { ok: false, error: "Event not found." }
   await db.update(events).set({ status }).where(eq(events.id, id))
+  await logActivity(actor, `event.${status === "pending" ? "reopen" : status === "approved" ? "approve" : "reject"}`, {
+    entityType: "event",
+    entityId: id,
+    target: before.title,
+  })
   if (status === "approved") scheduleEventAnnouncement(id)
   revalidatePath("/admin/events")
   revalidatePath("/events")
@@ -260,8 +305,11 @@ export async function setEventStatus(id: number, status: "approved" | "pending" 
 }
 
 export async function deleteEvent(id: number) {
-  await requireStaff()
+  const actor = await requireAdmin()
+  const [before] = await db.select().from(events).where(eq(events.id, id)).limit(1)
+  await saveRevision(actor, "event", id, before, "delete")
   await db.delete(events).where(eq(events.id, id))
+  await logActivity(actor, "event.delete", { entityType: "event", entityId: id, target: before?.title ?? "" })
   revalidatePath("/admin/events")
   revalidatePath("/events")
   revalidatePath("/")
@@ -270,13 +318,32 @@ export async function deleteEvent(id: number) {
 // --- Membership applications ----------------------------------------------
 
 export async function getApplications() {
-  await requireStaff()
-  return db.select().from(membershipApplications).orderBy(desc(membershipApplications.createdAt))
+  const actor = await requireStaff()
+  const rows = await db.select().from(membershipApplications).orderBy(desc(membershipApplications.createdAt))
+  return rows.map((row) => {
+    const withPayment = { ...row, paymentConfirmed: isPaymentConfirmed(row) }
+    return canSeeContacts(actor) ? withPayment : maskApplication(withPayment)
+  })
 }
 
-export async function setApplicationStatus(id: number, status: "pending" | "approved" | "rejected") {
-  await requireStaff()
+export async function setApplicationStatus(
+  id: number,
+  status: "pending" | "approved" | "rejected",
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const actor = await requireStaff()
+  if (!["pending", "approved", "rejected"].includes(status)) return { ok: false, error: "Invalid status." }
+  const [current] = await db.select().from(membershipApplications).where(eq(membershipApplications.id, id)).limit(1)
+  if (!current) return { ok: false, error: "Application not found." }
+  // Staff may only decide on applications whose payment the system has confirmed.
+  if (actor.role !== "admin" && status !== "pending" && !isPaymentConfirmed(current)) {
+    return { ok: false, error: "Payment is not confirmed yet. A Super Admin must verify payment before this can be decided." }
+  }
   await db.update(membershipApplications).set({ status }).where(eq(membershipApplications.id, id))
+  await logActivity(actor, `application.${status === "pending" ? "reopen" : status === "approved" ? "approve" : "reject"}`, {
+    entityType: "application",
+    entityId: id,
+    target: `${current.name} · ${current.category}`,
+  })
 
   // Notify the applicant of the status change (email + in-app if they have an
   // account). Approval details are enriched further down after promotion.
@@ -425,13 +492,73 @@ export async function setApplicationStatus(id: number, status: "pending" | "appr
   }
 
   revalidatePath("/admin/applications")
+  return { ok: true }
+}
+
+/** Super Admin confirms a manual (crypto) payment after checking it on-chain. */
+export async function verifyApplicationPayment(id: number, verified: boolean) {
+  const actor = await requireAdmin()
+  const [app] = await db.select().from(membershipApplications).where(eq(membershipApplications.id, id)).limit(1)
+  if (!app) return { ok: false, error: "Application not found." }
+  await db
+    .update(membershipApplications)
+    .set({ paymentVerifiedAt: verified ? new Date() : null, paymentVerifiedBy: verified ? actor.id : null })
+    .where(eq(membershipApplications.id, id))
+  await logActivity(actor, verified ? "payment.verify" : "payment.unverify", {
+    entityType: "application",
+    entityId: id,
+    target: app.name,
+  })
+  revalidatePath("/admin/applications")
+  return { ok: true }
+}
+
+const REMINDER_COOLDOWN_MS = 24 * 60 * 60 * 1000
+
+/** Fixed-template payment reminder. Staff never see or edit the recipient address. */
+export async function sendPaymentReminder(id: number): Promise<{ ok: true } | { ok: false; error: string }> {
+  const actor = await requireStaff()
+  const [app] = await db.select().from(membershipApplications).where(eq(membershipApplications.id, id)).limit(1)
+  if (!app) return { ok: false, error: "Application not found." }
+  if (isPaymentConfirmed(app)) return { ok: false, error: "Payment is already confirmed for this application." }
+  if (app.status !== "pending") return { ok: false, error: "Reminders can only be sent for pending applications." }
+
+  const [recent] = await db
+    .select({ createdAt: auditLogs.createdAt })
+    .from(auditLogs)
+    .where(and(eq(auditLogs.action, "application.payment_reminder"), eq(auditLogs.entityId, String(id))))
+    .orderBy(desc(auditLogs.createdAt))
+    .limit(1)
+  if (recent && Date.now() - recent.createdAt.getTime() < REMINDER_COOLDOWN_MS) {
+    return { ok: false, error: "A reminder was already sent in the last 24 hours." }
+  }
+
+  const email = brandedEmail({
+    subject: "Complete your VAAP membership payment",
+    heading: `Dear ${escapeHtml(app.name)},`,
+    intro: [
+      `Thank you for applying for <strong>${escapeHtml(app.category)}</strong> membership with VAAP.`,
+      "We have not yet been able to confirm your membership payment. Please sign in to your dashboard to complete payment so the team can review your application.",
+    ],
+    ctaLabel: "Complete payment",
+    ctaUrl: `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://vaap.org.pk"}/dashboard/applications`,
+    footnote: "If you have already paid, please reply to this email with your payment reference and we will confirm it.",
+  })
+  try {
+    await sendEmail({ to: app.email, subject: email.subject, html: email.html, templateKey: "payment-reminder" })
+  } catch (err) {
+    return { ok: false, error: `Reminder could not be sent: ${err instanceof Error ? err.message : "unknown error"}` }
+  }
+  await logActivity(actor, "application.payment_reminder", { entityType: "application", entityId: id, target: app.name })
+  return { ok: true }
 }
 
 // Super-admin deletes an application record. Only permitted for applications
 // that are rejected, or incomplete (never completed the payment stage). This
 // guards against accidental removal of pending or approved applications.
 export async function deleteApplication(id: number) {
-  await requireAdmin()
+  const actor = await requireAdmin()
+  await logActivity(actor, "application.delete", { entityType: "application", entityId: id })
 
   const [application] = await db
     .select({
@@ -461,39 +588,219 @@ export async function deleteApplication(id: number) {
 // --- Contact messages ------------------------------------------------------
 
 export async function getContactMessages() {
-  await requireStaff()
-  return db.select().from(contactMessages).orderBy(desc(contactMessages.createdAt))
+  const actor = await requireStaff()
+  const rows = await db.select().from(contactMessages).orderBy(desc(contactMessages.createdAt))
+  if (canSeeContacts(actor)) return rows
+  return rows.map((m) => ({ ...m, email: HIDDEN, phone: m.phone ? HIDDEN : null }))
+}
+
+export type MessageStatus = "pending" | "in_progress" | "resolved"
+const MESSAGE_STATUSES: MessageStatus[] = ["pending", "in_progress", "resolved"]
+
+export async function setMessageStatus(id: number, status: MessageStatus) {
+  const actor = await requireStaff()
+  if (!MESSAGE_STATUSES.includes(status)) return { ok: false, error: "Invalid status." }
+  const [msg] = await db.select({ subject: contactMessages.subject }).from(contactMessages).where(eq(contactMessages.id, id)).limit(1)
+  if (!msg) return { ok: false, error: "Message not found." }
+  await db.update(contactMessages).set({ status, handled: status === "resolved" }).where(eq(contactMessages.id, id))
+  await logActivity(actor, "message.status", { entityType: "message", entityId: id, target: msg.subject, details: status })
+  revalidatePath("/admin/messages")
+  revalidatePath("/admin")
+  return { ok: true }
 }
 
 export async function setMessageHandled(id: number, handled: boolean) {
+  return setMessageStatus(id, handled ? "resolved" : "pending")
+}
+
+/** Staff and Super Admins a message can be assigned to (names only). */
+export async function getAssignableOperators() {
   await requireStaff()
-  await db.update(contactMessages).set({ handled }).where(eq(contactMessages.id, id))
+  return db
+    .select({ id: user.id, name: user.name, role: user.role })
+    .from(user)
+    .where(sql`${user.role} in ('staff', 'admin')`)
+    .orderBy(user.name)
+}
+
+export async function assignMessage(id: number, assigneeId: string | null) {
+  const actor = await requireStaff()
+  let assigneeName = ""
+  if (assigneeId) {
+    const [assignee] = await db.select({ name: user.name, role: user.role }).from(user).where(eq(user.id, assigneeId)).limit(1)
+    if (!assignee || (assignee.role !== "staff" && assignee.role !== "manager" && assignee.role !== "admin")) return { ok: false, error: "Choose a staff member." }
+    assigneeName = assignee.name ?? ""
+  }
+  const [msg] = await db.select({ subject: contactMessages.subject, status: contactMessages.status }).from(contactMessages).where(eq(contactMessages.id, id)).limit(1)
+  if (!msg) return { ok: false, error: "Message not found." }
+  await db
+    .update(contactMessages)
+    .set({
+      assignedToId: assigneeId,
+      assignedToName: assigneeName,
+      ...(assigneeId && msg.status === "pending" ? { status: "in_progress" } : {}),
+    })
+    .where(eq(contactMessages.id, id))
+  await logActivity(actor, "message.assign", {
+    entityType: "message",
+    entityId: id,
+    target: msg.subject,
+    details: assigneeName ? `Assigned to ${assigneeName}` : "Unassigned",
+  })
   revalidatePath("/admin/messages")
+  return { ok: true }
+}
+
+export async function getContactMessageReplies() {
+  await requireStaff()
+  return db.select().from(contactMessageReplies).orderBy(contactMessageReplies.createdAt)
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;")
+}
+
+const MAX_REPLY_LENGTH = 10000
+
+export async function replyToContactMessage(
+  id: number,
+  input: { body: string; markHandled: boolean },
+): Promise<{ ok: true; emailStatus: "sent" | "skipped" } | { ok: false; error: string }> {
+  const staff = await requireStaff()
+  const body = String(input.body ?? "").trim()
+  if (!Number.isInteger(id) || id <= 0) return { ok: false, error: "Invalid message." }
+  if (body.length < 2) return { ok: false, error: "Write a reply before sending." }
+  if (body.length > MAX_REPLY_LENGTH) return { ok: false, error: `Replies are limited to ${MAX_REPLY_LENGTH} characters.` }
+
+  const [msg] = await db.select().from(contactMessages).where(eq(contactMessages.id, id)).limit(1)
+  if (!msg) return { ok: false, error: "Message not found." }
+
+  const subjectBase = msg.subject?.trim() || "Your VAAP inquiry"
+  const subject = /^re:/i.test(subjectBase) ? subjectBase : `Re: ${subjectBase}`
+  const paragraphs = body.split(/\n{2,}/).map((p) => escapeHtml(p).replace(/\n/g, "<br>"))
+  const quoted = escapeHtml(msg.message.length > 1500 ? `${msg.message.slice(0, 1500)}…` : msg.message).replace(/\n/g, "<br>")
+  const email = brandedEmail({
+    subject,
+    heading: `Dear ${escapeHtml(msg.name)},`,
+    intro: paragraphs,
+    footnote: `<strong>Your original message (${msg.createdAt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}):</strong><br>${quoted}`,
+  })
+
+  let emailStatus: "sent" | "skipped"
+  try {
+    const sent = await sendEmail({
+      to: msg.email,
+      subject: email.subject,
+      html: email.html,
+      text: `Dear ${msg.name},\n\n${body}\n\n---\nYour original message:\n${msg.message}`,
+      templateKey: "contact-reply",
+    })
+    emailStatus = sent ? "sent" : "skipped"
+  } catch (err) {
+    await db.insert(contactMessageReplies).values({
+      messageId: id,
+      body,
+      sentById: staff.id,
+      sentByName: staff.name,
+      emailStatus: "failed",
+    })
+    revalidatePath("/admin/messages")
+    return { ok: false, error: `Email could not be delivered: ${err instanceof Error ? err.message : "unknown error"}. The draft was saved to the thread.` }
+  }
+
+  await db.insert(contactMessageReplies).values({
+    messageId: id,
+    body,
+    sentById: staff.id,
+    sentByName: staff.name,
+    emailStatus,
+  })
+  const resolve = input.markHandled && emailStatus === "sent"
+  await db
+    .update(contactMessages)
+    .set(resolve ? { handled: true, status: "resolved" } : msg.status === "pending" ? { status: "in_progress" } : {})
+    .where(eq(contactMessages.id, id))
+  await logActivity(staff, "message.reply", {
+    entityType: "message",
+    entityId: id,
+    target: msg.subject,
+    details: `Email ${emailStatus}${resolve ? " · resolved" : ""}`,
+  })
+  revalidatePath("/admin/messages")
+  revalidatePath("/admin")
+  return { ok: true, emailStatus }
 }
 
 // --- User & role management (admin only) -----------------------------------
 
 export async function getUsers() {
   await requireAdmin()
-  return db
-    .select({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      createdAt: user.createdAt,
-    })
-    .from(user)
-    .orderBy(desc(user.createdAt))
-}
+  const [users, memberRows] = await Promise.all([
+    db
+      .select({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        createdAt: user.createdAt,
+      })
+      .from(user)
+      .orderBy(desc(user.createdAt)),
+    db
+      .select({
+        userId: members.userId,
+        email: members.email,
+        status: members.status,
+        membershipId: members.membershipId,
+        goodStanding: members.goodStanding,
+        expiresAt: members.expiresAt,
+      })
+      .from(members)
+      .where(isNull(members.deletedAt)),
+  ])
 
-export async function setUserRole(userId: string, role: "member" | "staff" | "admin") {
+  // Same rule as getMembershipStanding: paid means an issued, active, in-good-standing,
+  // unexpired membership. Checkout alone never counts.
+  const now = Date.now()
+  const paidByUserId = new Map<string, string>()
+  const paidByEmail = new Map<string, string>()
+  for (const m of memberRows) {
+    if (!isIssuedMembership(m)) continue
+    if (m.status !== "active" || !m.goodStanding) continue
+    if (m.expiresAt && m.expiresAt.getTime() < now) continue
+    if (m.userId) paidByUserId.set(m.userId, m.membershipId)
+    if (m.email) paidByEmail.set(m.email.toLowerCase(), m.membershipId)
+  }
+
+  return users.map((u) => {
+    const membershipId = paidByUserId.get(u.id) ?? paidByEmail.get(u.email.toLowerCase()) ?? null
+    return { ...u, isPaid: Boolean(membershipId), membershipId }
+  })
+  }
+
+export async function setUserRole(userId: string, role: "member" | "staff" | "manager" | "admin") {
   const admin = await requireAdmin()
   // Prevent an admin from demoting themselves and losing access.
   if (admin.id === userId && role !== "admin") {
     return { ok: false, error: "You cannot change your own admin role." }
   }
+  if (!["member", "staff", "manager", "admin"].includes(role)) return { ok: false, error: "Invalid role." }
+  const [target] = await db.select({ name: user.name, role: user.role }).from(user).where(eq(user.id, userId)).limit(1)
+  if (!target) return { ok: false, error: "User not found." }
   await db.update(user).set({ role }).where(eq(user.id, userId))
+  // Sign the user out everywhere so lost access takes effect immediately.
+  if (target.role !== role) await db.delete(sessionTable).where(eq(sessionTable.userId, userId))
+  await logActivity(admin, "user.role", {
+    entityType: "user",
+    entityId: userId,
+    target: target.name ?? "",
+    details: `${target.role} → ${role}`,
+  })
   revalidatePath("/admin/users")
   return { ok: true }
 }
@@ -502,7 +809,8 @@ export async function setUserRole(userId: string, role: "member" | "staff" | "ad
 // hashed with Better Auth's own hasher and written to the credential account
 // row so the user can immediately sign in with email + the new password.
 export async function setUserPassword(userId: string, password: string) {
-  await requireAdmin()
+  const actor = await requireAdmin()
+  await logActivity(actor, "user.password_reset", { entityType: "user", entityId: userId })
 
   const pwd = String(password ?? "")
   if (pwd.length < 8) {
@@ -549,6 +857,7 @@ export async function deleteUser(userId: string) {
     const [target] = await db.select({ id: user.id }).from(user).where(eq(user.id, userId)).limit(1)
     if (!target) return { ok: false, error: "User not found." }
     await db.delete(user).where(eq(user.id, userId))
+    await logActivity(admin, "user.delete", { entityType: "user", entityId: userId })
     revalidatePath("/admin/users")
     return { ok: true }
   } catch (err) {

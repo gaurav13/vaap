@@ -2,17 +2,20 @@ import { db } from "@/lib/db"
 import { news, committees } from "@/lib/db/schema"
 import { desc } from "drizzle-orm"
 import { NewsManager } from "@/components/admin/news-manager"
+import { getSession } from "@/lib/session"
 
 export default async function AdminNewsPage() {
-  const [rows, committeeRows] = await Promise.all([
+  const [rows, committeeRows, session] = await Promise.all([
     db.select().from(news).orderBy(desc(news.createdAt)),
     db.select({ id: committees.id, name: committees.name }).from(committees).orderBy(committees.sortOrder),
+    getSession(),
   ])
   return (
     <div>
       <h1 className="font-serif text-2xl font-bold text-heading">News</h1>
       <p className="mt-1 text-muted-2">Create, edit, and publish news articles.</p>
       <NewsManager
+        canDelete={session?.user?.role === "admin"}
         committees={committeeRows}
         items={rows.map((r) => ({
           id: r.id,

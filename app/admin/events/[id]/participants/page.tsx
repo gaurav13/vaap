@@ -4,6 +4,7 @@ import { ArrowLeft, CalendarDays, ExternalLink, MapPin } from "lucide-react"
 import { getEventParticipants } from "@/app/actions/event-participants"
 import { ParticipantsManager } from "@/components/admin/participants-manager"
 import { AutoRefresh } from "@/components/admin/auto-refresh"
+import { getSession } from "@/lib/session"
 
 export default async function EventParticipantsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -73,6 +74,7 @@ export default async function EventParticipantsPage({ params }: { params: Promis
       </dl>
 
       <ParticipantsManager
+        canDelete={(await getSession())?.user?.role === "admin"}
         eventId={event.id}
         participants={participants.map((p) => ({
           id: p.id,

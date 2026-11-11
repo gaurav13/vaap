@@ -35,12 +35,22 @@ const TABLES = {
   membershipFaqs,
 } as const
 
-async function requireStaff() {
+// Membership fees and the member directory stay Super Admin only.
+const SUPER_ADMIN_ONLY_ENTITIES = new Set<string>(["membershipPlans", "members"])
+
+/**
+ * Super Admin: everything. Admin ("manager"): create/edit/reorder public content,
+ * never fees, the member directory, or deletes. Staff: no CMS writes.
+ */
+async function requireStaff(opts: { key?: string; destructive?: boolean } = {}) {
   const session = await getSession()
   if (!session?.user) throw new Error("Unauthorized")
-  // Staff are read-only in the admin area; these actions are super-admin only.
-  if (session.user.role !== "admin") throw new Error("Forbidden")
-  return session.user
+  const role = session.user.role
+  if (role === "admin") return session.user
+  if (role === "manager" && !opts.destructive && !(opts.key && SUPER_ADMIN_ONLY_ENTITIES.has(opts.key))) {
+    return session.user
+  }
+  throw new Error("Forbidden")
 }
 
 async function log(actor: { id: string; name?: string | null }, action: string, target: string) {
@@ -75,7 +85,7 @@ function slugify(input: string) {
 }
 
 export async function saveEntity(key: EntityKey, id: number | null, formData: FormData) {
-  const actor = await requireStaff()
+  const actor = await requireStaff({ key })
   const config = ENTITIES[key]
   const table = TABLES[key] as any
 
@@ -140,7 +150,7 @@ export async function saveEntity(key: EntityKey, id: number | null, formData: Fo
 }
 
 export async function deleteEntity(key: EntityKey, id: number) {
-  const actor = await requireStaff()
+  const actor = await requireStaff({ key, destructive: true })
   const config = ENTITIES[key]
   const table = TABLES[key] as any
   await db.delete(table).where(eq(table.id, id))
@@ -151,7 +161,7 @@ export async function deleteEntity(key: EntityKey, id: number) {
 }
 
 export async function reorderEntity(key: EntityKey, ids: number[]) {
-  const actor = await requireStaff()
+  const actor = await requireStaff({ key })
   const config = ENTITIES[key]
   if (!config.orderable) return { ok: false, error: "This list cannot be reordered." }
   if (!Array.isArray(ids) || ids.length === 0 || ids.some((id) => !Number.isInteger(id) || id <= 0)) {
@@ -239,7 +249,7 @@ export async function getMembershipFaqs() {
 }
 
 export async function getMembersDirectory() {
-  await requireStaff()
+  await requireStaff({ key: "members" })
   return db
     .select()
     .from(members)
@@ -375,7 +385,7 @@ export async function createPageForMenu(label: string, parentPath?: string | nul
 // Deletes the CMS page whose clean URL matches the given href. Used when an
 // admin removes a menu item and chooses to also delete its linked page.
 export async function deletePageByHref(href: string) {
-  const actor = await requireStaff()
+  const actor = await requireStaff({ destructive: true })
   const parts = String(href || "")
     .replace(/^\/+|\/+$/g, "")
     .split("/")

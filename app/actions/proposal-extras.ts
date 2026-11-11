@@ -25,6 +25,7 @@ function refresh(proposalId: number) {
 export async function deleteProposalDocumentAction(documentId: number): Promise<Result> {
   const session = await getSession()
   if (!session?.user || !isStaff(session.user.role)) return { ok: false, error: "Unauthorized" }
+  if (session.user.role !== "admin") return { ok: false, error: "Only a Super Admin can delete documents." }
 
   const [doc] = await db
     .delete(governanceProposalDocuments)

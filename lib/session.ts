@@ -8,6 +8,8 @@ export type UserRole =
   | "committee_head"
   | "committee_member"
   | "kol"
+  // Operational "Admin" (stored as "manager" so existing "admin" = Super Admin checks stay intact).
+  | "manager"
   | "admin"
 
 export type SessionUser = {
@@ -33,7 +35,7 @@ export const getSession = cache(async function getSession() {
 })
 
 export function isStaff(role: string | undefined | null) {
-  return role === "staff" || role === "admin"
+  return role === "staff" || role === "manager" || role === "admin"
 }
 
 export function isAdmin(role: string | undefined | null) {

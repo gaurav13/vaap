@@ -40,7 +40,7 @@ function toInputValue(iso: string) {
   return local.toISOString().slice(0, 16)
 }
 
-export function EventsManager({ items }: { items: EventItem[] }) {
+export function EventsManager({ items, canDelete = true }: { items: EventItem[]; canDelete?: boolean }) {
   const router = useRouter()
   const [editing, setEditing] = useState<EventItem | null>(null)
   const [creating, setCreating] = useState(false)
@@ -291,15 +291,17 @@ export function EventsManager({ items }: { items: EventItem[] }) {
                   >
                     <Pencil className="size-4" />
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => onDelete(item.id)}
-                    disabled={pending}
-                    className="flex size-9 items-center justify-center rounded-md text-muted-2 transition-colors hover:bg-destructive/10 hover:text-destructive"
-                    aria-label="Delete"
-                  >
-                    <Trash2 className="size-4" />
-                  </button>
+                  {canDelete && (
+                    <button
+                      type="button"
+                      onClick={() => onDelete(item.id)}
+                      disabled={pending}
+                      className="flex size-9 items-center justify-center rounded-md text-muted-2 transition-colors hover:bg-destructive/10 hover:text-destructive"
+                      aria-label="Delete"
+                    >
+                      <Trash2 className="size-4" />
+                    </button>
+                  )}
                 </div>
               </li>
             ))}

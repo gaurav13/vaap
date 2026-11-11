@@ -65,7 +65,15 @@ const TABS = [
   { key: "rejected", label: "Rejected" },
 ] as const
 
-export function ArticleReview({ initial, readOnly = false }: { initial: Article[]; readOnly?: boolean }) {
+export function ArticleReview({
+  initial,
+  readOnly = false,
+  canDelete = true,
+}: {
+  initial: Article[]
+  readOnly?: boolean
+  canDelete?: boolean
+}) {
   const [articles, setArticles] = useState<Article[]>(initial)
   const [tab, setTab] = useState<(typeof TABS)[number]["key"]>("submitted")
   const [active, setActive] = useState<Article | null>(null)
@@ -404,13 +412,15 @@ export function ArticleReview({ initial, readOnly = false }: { initial: Article[
                   <Globe className="size-4" /> View live
                 </a>
               )}
-              <button
-                onClick={() => doDelete(active)}
-                disabled={pending}
-                className="ml-auto inline-flex items-center gap-2 rounded-lg border border-red-200 bg-card px-4 py-2.5 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
-              >
-                <Trash2 className="size-4" /> Delete
-              </button>
+              {canDelete && (
+                <button
+                  onClick={() => doDelete(active)}
+                  disabled={pending}
+                  className="ml-auto inline-flex items-center gap-2 rounded-lg border border-red-200 bg-card px-4 py-2.5 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
+                >
+                  <Trash2 className="size-4" /> Delete
+                </button>
+              )}
             </div>
           </div>
           )}
@@ -498,7 +508,7 @@ export function ArticleReview({ initial, readOnly = false }: { initial: Article[
                   </div>
                   <StatusBadge status={a.status} />
                 </button>
-                {!readOnly && (
+                {!readOnly && canDelete && (
                   <button
                     onClick={() => doDelete(a)}
                     disabled={pending}

@@ -3,6 +3,8 @@ import { db } from "@/lib/db"
 import { kolAuditLog, kolProfiles, members, referralCodes } from "@/lib/db/schema"
 import { ensureKolReferralCode, ownershipCode } from "@/lib/kol"
 import { KolAdminManager, type AdminKolRow } from "@/components/kol/kol-admin-manager"
+import { getSession } from "@/lib/session"
+import { canSeeContacts, currentOperator, HIDDEN } from "@/lib/rbac"
 
 export const dynamic = "force-dynamic"
 
@@ -64,7 +66,10 @@ export default async function AdminKolsPage() {
     .orderBy(members.name)
     .limit(1000)
 
-  const items: AdminKolRow[] = rows.map(({ kol, memberName, memberEmail, memberStatus, userId }) => ({
+  const superAdmin = canSeeContacts(await currentOperator())
+  const items: AdminKolRow[] = rows.map(({ kol, memberName, memberEmail: rawEmail, memberStatus, userId }) => {
+    const memberEmail = superAdmin ? rawEmail : HIDDEN
+    return {
     memberId: kol.memberId,
     referralCode: (userId && codeByUser.get(userId)?.code) || null,
     referralActive: (userId && codeByUser.get(userId)?.active) || false,
@@ -113,7 +118,8 @@ export default async function AdminKolsPage() {
         actor: a.actor,
         createdAt: a.createdAt.toISOString(),
       })),
-  }))
+    }
+  })
 
   return (
     <div className="flex flex-col gap-6">

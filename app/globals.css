@@ -41,6 +41,10 @@
   --color-gold: var(--gold);
   --color-gold-tint: var(--gold-tint);
   --color-blue-tint: var(--blue-tint);
+  --color-amber: var(--amber);
+  --color-amber-tint: var(--amber-tint);
+  --color-indigo: var(--indigo);
+  --color-indigo-tint: var(--indigo-tint);
 
   --font-sans: var(--font-miranda), system-ui, -apple-system, BlinkMacSystemFont,
     'Segoe UI', sans-serif;
@@ -96,6 +100,10 @@
   --gold: #b89146;
   --gold-tint: #f7f1e3;
   --blue-tint: #eef4f6;
+  --amber: #e8862a;
+  --amber-tint: #fdf0e2;
+  --indigo: #4f46a5;
+  --indigo-tint: #eeedf8;
 }
 
 @layer base {

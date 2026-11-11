@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation"
 import Link from "next/link"
-import { CalendarDays, MapPin, ChevronRight, Plus } from "lucide-react"
+import { CalendarDays, MapPin, ChevronRight, Lock, Plus } from "lucide-react"
 import { getSession } from "@/lib/session"
 import { getPublishedEvents } from "@/app/actions/public"
 import { getMySubmittedEvents, canPublishEvents } from "@/app/actions/member"
@@ -34,6 +34,26 @@ export default async function EventsPage() {
           </Link>
         )}
       </div>
+
+      {!allowed && (
+        <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-line bg-card p-5 sm:flex-row sm:items-center">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-mint text-green">
+            <Lock className="size-5" aria-hidden="true" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold text-heading">Event submission is for paid members</p>
+            <p className="mt-0.5 text-pretty text-sm leading-relaxed text-muted-2">
+              Only paid VAAP members are allowed to submit their events. You can still browse and join upcoming events.
+            </p>
+          </div>
+          <Link
+            href="/dashboard/membership"
+            className="inline-flex shrink-0 items-center justify-center rounded-lg bg-green px-4 py-2.5 text-sm font-bold text-white transition hover:bg-green/90"
+          >
+            Become a Paid Member
+          </Link>
+        </div>
+      )}
 
       {mySubmissions.length > 0 && (
         <section className="mb-8">

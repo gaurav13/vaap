@@ -10,6 +10,9 @@ import {
   CalendarDays,
   Clapperboard,
   Coins,
+  Crown,
+  ExternalLink,
+  Globe,
   FileText,
   FolderOpen,
   Handshake,
@@ -38,7 +41,7 @@ import {
 import { cn } from "@/lib/utils"
 import { VaapLogo } from "@/components/vaap-logo"
 import { authClient } from "@/lib/auth-client"
-import { isStaffAdminRoute } from "@/lib/permissions"
+import { ADMIN_AREA_LABELS, canOpenAdminRoute, type AdminAreaRole } from "@/lib/permissions"
 
 const GROUPS: { heading: string; links: { href: string; label: string; icon: typeof Home; adminOnly?: boolean }[] }[] = [
   {
@@ -81,6 +84,7 @@ const GROUPS: { heading: string; links: { href: string; label: string; icon: typ
       { href: "/admin/messages", label: "Messages", icon: Inbox },
       { href: "/admin/reports", label: "Reports", icon: ShieldCheck, adminOnly: true },
       { href: "/admin/users", label: "Users & Roles", icon: Users, adminOnly: true },
+      { href: "/admin/activity", label: "Activity & Restore", icon: ShieldCheck, adminOnly: true },
     ],
   },
   {
@@ -113,7 +117,7 @@ const GROUPS: { heading: string; links: { href: string; label: string; icon: typ
   },
 ]
 
-export function AdminNav({ role, name }: { role: "staff" | "admin"; name: string }) {
+export function AdminNav({ role, name }: { role: AdminAreaRole; name: string }) {
   const pathname = usePathname()
   const router = useRouter()
 
@@ -124,23 +128,36 @@ export function AdminNav({ role, name }: { role: "staff" | "admin"; name: string
   }
 
   return (
-    <aside className="flex shrink-0 flex-col border-b border-line bg-navy text-white lg:min-h-screen lg:w-64 lg:border-b-0 lg:border-r lg:border-navy/40">
-      <div className="flex items-center justify-between px-5 py-5 lg:block">
-        <Link href="/">
-          <VaapLogo onDark height={52} />
+    <aside className="flex shrink-0 flex-col border-b border-line bg-navy-dark text-white lg:sticky lg:top-0 lg:h-screen lg:w-64 lg:overflow-y-auto lg:border-b-0">
+      <div className="flex items-center justify-between gap-3 px-5 py-5 lg:flex-col lg:items-stretch">
+        <Link href="/" className="flex items-center justify-center rounded-2xl bg-card px-4 py-3 shadow-sm">
+          <VaapLogo height={44} />
         </Link>
-        <span className="mt-1 hidden text-xs text-white/60 lg:block">Administration</span>
+  {role === "admin" ? (
+  <span className="inline-flex items-center justify-center gap-1.5 self-center rounded-full bg-green px-4 py-1.5 text-sm font-semibold text-primary-foreground">
+  <Crown className="size-4 text-gold-tint" aria-hidden />
+  {ADMIN_AREA_LABELS[role]}
+  </span>
+  ) : (
+  <div className="hidden items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-3.5 py-3 lg:flex">
+  <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-green text-primary-foreground">
+  <ShieldCheck className="size-5" aria-hidden />
+  </span>
+  <div className="min-w-0">
+  <p className="truncate text-sm font-semibold text-white">{ADMIN_AREA_LABELS[role]}</p>
+  <p className="text-xs text-white/70">Operational Access</p>
+  </div>
+  </div>
+  )}
       </div>
 
       <nav className="flex gap-1 overflow-x-auto px-3 pb-3 lg:flex-col lg:gap-0 lg:overflow-visible lg:px-3 lg:py-2">
         {GROUPS.map((group) => {
-          const links = group.links.filter((l) =>
-            role === "admin" ? true : isStaffAdminRoute(l.href),
-          )
+          const links = group.links.filter((l) => canOpenAdminRoute(role, l.href))
           if (links.length === 0) return null
           return (
             <div key={group.heading} className="flex gap-1 lg:mt-3 lg:flex-col lg:gap-0.5 lg:first:mt-0">
-              <span className="hidden px-3.5 pb-1 text-[10px] font-bold uppercase tracking-wider text-white/40 lg:block">
+              <span className="hidden px-3.5 pb-1.5 pt-2 text-xs font-semibold uppercase tracking-wider text-white/50 lg:block">
                 {group.heading}
               </span>
               {links.map((l) => {
@@ -151,11 +168,11 @@ export function AdminNav({ role, name }: { role: "staff" | "admin"; name: string
                     key={l.href}
                     href={l.href}
                     className={cn(
-                      "flex items-center gap-2.5 whitespace-nowrap rounded-lg px-3.5 py-2.5 text-sm font-medium transition-colors",
-                      active ? "bg-green text-white" : "text-white/75 hover:bg-white/10 hover:text-white",
+                      "flex items-center gap-3 whitespace-nowrap rounded-xl px-3.5 py-2.5 text-sm font-medium transition-colors",
+                      active ? "bg-green font-semibold text-white shadow-sm" : "text-white/80 hover:bg-white/10 hover:text-white",
                     )}
                   >
-                    <Icon className="size-4" />
+                    <Icon className="size-[18px]" aria-hidden />
                     {l.label}
                   </Link>
                 )
@@ -168,13 +185,13 @@ export function AdminNav({ role, name }: { role: "staff" | "admin"; name: string
       <div className="mt-auto hidden flex-col gap-1 border-t border-white/10 p-3 lg:flex">
         <div className="px-3.5 py-2">
           <p className="truncate text-sm font-semibold text-white">{name}</p>
-          <span className="text-[10px] font-bold uppercase tracking-wide text-green-light">{role}</span>
+          <span className="text-[10px] font-bold uppercase tracking-wide text-green-light">{ADMIN_AREA_LABELS[role]}</span>
         </div>
         <Link
           href="/"
-          className="flex items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-sm text-white/75 transition-colors hover:bg-white/10 hover:text-white"
+          className="flex items-center gap-2.5 rounded-xl border border-white/20 px-3.5 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10"
         >
-          <Home className="size-4" /> View site
+          <Globe className="size-4" aria-hidden /> View Website <ExternalLink className="ml-auto size-3.5" aria-hidden />
         </Link>
         <button
           type="button"

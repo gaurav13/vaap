@@ -192,6 +192,9 @@ export const membershipApplications = pgTable("membership_applications", {
   completed: boolean("completed").notNull().default(false),
   // Invitation code redeemed for invite-only categories (Academic & Research).
   invitationCode: text("invitationCode"),
+  // Set by a Super Admin after checking a manual (crypto) payment on-chain.
+  paymentVerifiedAt: timestamp("paymentVerifiedAt"),
+  paymentVerifiedBy: text("paymentVerifiedBy"),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 })
 
@@ -234,6 +237,20 @@ export const contactMessages = pgTable("contact_messages", {
   subject: text("subject").notNull().default(""),
   message: text("message").notNull(),
   handled: boolean("handled").notNull().default(false),
+  // pending | in_progress | resolved. `handled` mirrors status === "resolved".
+  status: text("status").notNull().default("pending"),
+  assignedToId: text("assignedToId"),
+  assignedToName: text("assignedToName").notNull().default(""),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
+export const contactMessageReplies = pgTable("contact_message_replies", {
+  id: serial("id").primaryKey(),
+  messageId: integer("messageId").notNull(),
+  body: text("body").notNull(),
+  sentById: text("sentById"),
+  sentByName: text("sentByName"),
+  emailStatus: text("emailStatus").notNull().default("sent"), // sent | failed | skipped
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 })
 
@@ -466,6 +483,45 @@ export const auditLogs = pgTable("audit_logs", {
   actorName: text("actorName").notNull().default(""),
   action: text("action").notNull(),
   target: text("target").notNull().default(""),
+  actorRole: text("actorRole").notNull().default(""),
+  entityType: text("entityType").notNull().default(""),
+  entityId: text("entityId").notNull().default(""),
+  details: text("details").notNull().default(""),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
+// Point-in-time snapshot taken before every staff/admin content edit so any
+// change can be reviewed and restored by a Super Admin.
+export const contentRevisions = pgTable("content_revisions", {
+  id: serial("id").primaryKey(),
+  entityType: text("entityType").notNull(),
+  entityId: text("entityId").notNull(),
+  snapshot: jsonb("snapshot").$type<Record<string, unknown>>().notNull(),
+  action: text("action").notNull().default("update"),
+  actorId: text("actorId"),
+  actorName: text("actorName").notNull().default(""),
+  actorRole: text("actorRole").notNull().default(""),
+  restoredAt: timestamp("restoredAt"),
+  restoredBy: text("restoredBy"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
+// Staff cannot edit the homepage directly; they file a change request that a
+// Super Admin approves (and applies) or rejects.
+export const contentChangeRequests = pgTable("content_change_requests", {
+  id: serial("id").primaryKey(),
+  section: text("section").notNull(),
+  title: text("title").notNull(),
+  details: text("details").notNull().default(""),
+  proposedText: text("proposedText").notNull().default(""),
+  proposedImage: text("proposedImage"),
+  status: text("status").notNull().default("pending"), // pending | approved | rejected
+  submittedById: text("submittedById"),
+  submittedByName: text("submittedByName").notNull().default(""),
+  reviewedById: text("reviewedById"),
+  reviewedByName: text("reviewedByName").notNull().default(""),
+  reviewNote: text("reviewNote").notNull().default(""),
+  reviewedAt: timestamp("reviewedAt"),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 })
 

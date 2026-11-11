@@ -23,6 +23,7 @@ import { getPublishedNews, getPublishedEvents } from "@/app/actions/public"
 import { getPublishedArticles } from "@/app/actions/articles"
 import { MISSION_TAGLINE } from "@/lib/member/content"
 import { effectiveExpiry } from "@/lib/membership"
+import { getMembershipStanding, MEMBERSHIP_STATE_LABEL } from "@/lib/membership-state"
 import { MembershipCta } from "@/components/member/membership-cta"
 import { LatestUpdates } from "@/components/member/latest-updates"
 
@@ -35,19 +36,34 @@ export default async function DashboardPage() {
   if (!session?.user) redirect("/sign-in")
   const user = session.user
 
-  const [membership, news, articles, events] = await Promise.all([
-    getMyMembership(user.id),
+  // Claims an email-only member row for this account before resolving standing.
+  await getMyMembership(user.id)
+  const [standing, news, articles, events] = await Promise.all([
+    getMembershipStanding(user.id, user.email),
     getPublishedNews(24),
     getPublishedArticles(),
     getPublishedEvents(3),
   ])
 
-  const memberId = membership?.membershipId ?? "Pending assignment"
-  const category = membership?.category ? `${membership.category} Member` : "Under review"
-  const isActive = membership?.status === "active"
+  const membership = standing.member
+  const isActive = standing.state === "active"
+  const notMember = standing.state === "not-member"
+  const memberId = membership?.membershipId ?? "Not Assigned"
+  const category = membership?.category
+    ? `${membership.category} Member`
+    : standing.application && !notMember && standing.state !== "rejected"
+      ? `${standing.application.category} (applied)`
+      : "You are not a paid member"
   const validExpiry = isActive ? effectiveExpiry(membership?.joinedAt, membership?.expiresAt) : null
   const validTill = validExpiry ? fmtDate(validExpiry) : null
-  const votingEligible = membership?.votingEligible ?? false
+  const votingEligible = isActive && (membership?.votingEligible ?? false)
+  const statusTone: "green" | "amber" | "red" | "neutral" = isActive
+    ? "green"
+    : standing.state === "payment-pending" || standing.state === "under-review"
+      ? "amber"
+      : standing.state === "not-member"
+        ? "neutral"
+        : "red"
 
   return (
     <div className="flex w-full flex-col gap-6">
@@ -76,24 +92,37 @@ export default async function DashboardPage() {
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatusCard icon={IdCard} label="Member ID" value={memberId} />
-        <StatusCard icon={BadgeCheck} label="Membership Category" value={category} />
+        <StatusCard
+          icon={IdCard}
+          label="Member ID"
+          value={memberId}
+          valueTone={membership ? undefined : "neutral"}
+          hint={membership ? undefined : "Issued once your membership is approved"}
+        />
+        <StatusCard
+          icon={BadgeCheck}
+          label="Membership Category"
+          value={category}
+          valueTone={membership ? undefined : "neutral"}
+          action={notMember ? { label: "Become a Paid Member", href: "/membership/apply" } : undefined}
+        />
         <StatusCard
           icon={CheckCircle2}
           label="Membership Status"
-          value={isActive ? "Active" : membership ? "Inactive" : "Pending"}
-          valueTone={isActive ? "green" : "amber"}
+          value={MEMBERSHIP_STATE_LABEL[standing.state]}
+          valueTone={statusTone}
           hint={validTill ? `Valid till ${validTill}` : undefined}
         />
         <StatusCard
           icon={Users}
           label="Voting Status"
           value={votingEligible ? "Eligible" : "Non-Voting"}
+          hint={votingEligible ? undefined : "Voting eligibility depends on your approved membership category."}
           action={{ label: "View Details", href: "/dashboard/voting" }}
         />
       </section>
 
-      {!isActive && <MembershipCta pending={Boolean(membership)} />}
+      {!isActive && <MembershipCta pending={!notMember && standing.state !== "rejected"} />}
 
       <section className="grid gap-4 lg:grid-cols-2 xl:grid-cols-12">
         <div className="rounded-2xl border border-line bg-card p-5 lg:col-span-2 xl:col-span-6">
@@ -233,10 +262,16 @@ function StatusCard({
   label: string
   value: string
   hint?: string
-  valueTone?: "green" | "amber"
+  valueTone?: "green" | "amber" | "red" | "neutral"
   action?: { label: string; href: string }
 }) {
-  const valueClass = valueTone === "green" ? "text-green" : valueTone === "amber" ? "text-amber-700" : "text-heading"
+  const toneClass = {
+    green: "text-green",
+    amber: "text-amber-700",
+    red: "text-red-700",
+    neutral: "text-body",
+  } as const
+  const valueClass = valueTone ? toneClass[valueTone] : "text-heading"
   return (
     <div className="flex items-center gap-4 rounded-2xl border border-line bg-card p-5">
       <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-mint text-green">
@@ -244,8 +279,8 @@ function StatusCard({
       </span>
       <div className="min-w-0">
         <p className="text-xs font-medium text-muted-2">{label}</p>
-        <p className={`mt-0.5 truncate text-base font-bold ${valueClass}`}>{value}</p>
-        {hint && <p className="text-xs text-muted-2">{hint}</p>}
+        <p className={`mt-0.5 text-pretty text-base font-bold leading-snug ${valueClass}`}>{value}</p>
+        {hint && <p className="mt-0.5 text-pretty text-xs leading-relaxed text-muted-2">{hint}</p>}
         {action && (
           <Link
             href={action.href}

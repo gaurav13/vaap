@@ -19,6 +19,7 @@ export default async function AdminArticlesPage() {
   return (
     <ArticleReview
       readOnly={!canPublish}
+      canDelete={session.user.role === "admin"}
       initial={queue.map((a) => ({
         id: a.id,
         title: a.title,

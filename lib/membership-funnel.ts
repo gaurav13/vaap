@@ -15,7 +15,7 @@ const DAY = 24 * 60 * 60 * 1000
 export const INVITE_TOPIC = "membership-invitation"
 
 /** Staff and admin accounts are internal and never counted as registered users. */
-const INTERNAL_ROLES = new Set(["admin", "staff"])
+const INTERNAL_ROLES = new Set(["admin", "manager", "staff"])
 
 export type RegisteredUserStatus = "not-subscribed" | "application-started" | "payment-pending"
 
