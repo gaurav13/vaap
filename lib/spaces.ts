@@ -44,6 +44,27 @@ const IMAGE_FOLDERS = new Set(["pages", "news", "articles", "events", "publicati
 const SVG_FOLDERS = new Set(["media-coverage"])
 const MAX_SVG_BYTES = 512 * 1024
 
+/**
+ * Skips an optional XML declaration, comments and an SVG doctype, then checks for
+ * the `<svg` root. Done with indexOf scanning rather than one regex so crafted
+ * input cannot trigger catastrophic backtracking.
+ */
+function startsWithSvgRoot(text: string): boolean {
+  let rest = text.replace(/^\uFEFF/, "").trimStart()
+  const skipPast = (terminator: string) => {
+    const end = rest.indexOf(terminator)
+    if (end === -1) return false
+    rest = rest.slice(end + terminator.length).trimStart()
+    return true
+  }
+  if (rest.startsWith("<?xml") && !skipPast(">")) return false
+  while (rest.startsWith("<!--")) {
+    if (!skipPast("-->")) return false
+  }
+  if (rest.slice(0, 13).toLowerCase() === "<!doctype svg" && !skipPast(">")) return false
+  return /^<svg[\s>]/i.test(rest)
+}
+
 /** Returns the SVG text when it is a plain, script-free vector image; null otherwise. */
 function safeSvgText(bytes: Uint8Array): string | null {
   if (bytes.byteLength === 0 || bytes.byteLength > MAX_SVG_BYTES) return null
@@ -53,8 +74,7 @@ function safeSvgText(bytes: Uint8Array): string | null {
   } catch {
     return null
   }
-  const head = text.replace(/^\uFEFF/, "").trimStart()
-  if (!/^(<\?xml[^>]*>\s*)?(<!--[\s\S]*?-->\s*)*(<!DOCTYPE svg[^>]*>\s*)?<svg[\s>]/i.test(head)) return null
+  if (!startsWithSvgRoot(text)) return null
   const lower = text.toLowerCase()
   const forbidden = [
     /<script/,
