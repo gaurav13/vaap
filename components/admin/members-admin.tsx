@@ -1,6 +1,6 @@
 "use client"
 
-import { useLayoutEffect, useMemo, useRef, useState, useTransition, type ReactNode } from "react"
+import { Fragment, useLayoutEffect, useMemo, useRef, useState, useTransition, type ReactNode } from "react"
 import {
   Ban,
   BookUser,
@@ -56,12 +56,70 @@ type Member = {
   deletedAt?: string | null
 }
 
+export type Stage = "incomplete" | "not-paid" | "pending-approval" | "active" | "expired" | "suspended"
+
+export type Person = {
+  key: string
+  memberId: number | null
+  name: string
+  email: string
+  organization: string | null
+  category: string | null
+  stage: Stage
+  payment: "not-started" | "unpaid" | "verified" | "not-required"
+  application: "not-started" | "draft" | "submitted" | "approved" | "rejected" | "manual"
+  applicationReference: string | null
+  paymentMethod: string | null
+  amount: string | null
+  registeredAt: string
+  submittedAt: string | null
+  expiresAt: string | null
+  emailVerified: boolean | null
+}
+
 type Stats = {
-  total: number
-  pending: number
-  active: number
-  expiringSoon: number
-  newThisMonth: number
+  totalRegistered: number
+  incomplete: number
+  notPaid: number
+  pendingApproval: number
+  activePaid: number
+  expired: number
+}
+
+type StageTab = "all" | Stage
+
+const STAGE_TABS: { value: StageTab; label: string; stat: keyof Stats }[] = [
+  { value: "all", label: "All Users", stat: "totalRegistered" },
+  { value: "incomplete", label: "Incomplete", stat: "incomplete" },
+  { value: "not-paid", label: "Not Paid", stat: "notPaid" },
+  { value: "pending-approval", label: "Pending Approval", stat: "pendingApproval" },
+  { value: "active", label: "Active", stat: "activePaid" },
+  { value: "expired", label: "Expired", stat: "expired" },
+]
+
+const STAGE_BADGE: Record<Stage, { label: string; className: string }> = {
+  incomplete: { label: "Incomplete", className: "bg-slate-100 text-slate-600 ring-1 ring-slate-200" },
+  "not-paid": { label: "Not Paid", className: "bg-red-50 text-red-600 ring-1 ring-red-200" },
+  "pending-approval": { label: "Pending Approval", className: "bg-amber-50 text-amber-700 ring-1 ring-amber-200" },
+  active: { label: "Active", className: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200" },
+  expired: { label: "Expired", className: "bg-slate-200 text-slate-700 ring-1 ring-slate-300" },
+  suspended: { label: "Suspended", className: "bg-red-50 text-red-600 ring-1 ring-red-200" },
+}
+
+const PAYMENT_LABEL: Record<Person["payment"], string> = {
+  "not-started": "Not started",
+  unpaid: "Not paid",
+  verified: "Verified",
+  "not-required": "Not required",
+}
+
+const APPLICATION_LABEL: Record<Person["application"], string> = {
+  "not-started": "Not started",
+  draft: "Draft",
+  submitted: "Submitted",
+  approved: "Approved",
+  rejected: "Rejected",
+  manual: "Added by admin",
 }
 
 const CATEGORIES = ENTITIES.members.fields.find((f) => f.name === "category")?.options ?? []
@@ -105,48 +163,53 @@ function fmtInput(iso: string | null) {
 
 export function MembersAdmin({
   items,
+  people,
   trashed = [],
   stats,
+  initialStage = "all",
   readOnly = false,
 }: {
   items: Member[]
+  people: Person[]
   trashed?: Member[]
   stats: Stats
+  initialStage?: StageTab
   readOnly?: boolean
 }) {
   const [query, setQuery] = useState("")
   const [showTrash, setShowTrash] = useState(false)
-  const [tab, setTab] = useState("All")
+  const [tab, setTab] = useState<StageTab>(initialStage)
   const [categoryFilter, setCategoryFilter] = useState("")
-  const [statusFilter, setStatusFilter] = useState("")
   const [votingFilter, setVotingFilter] = useState("")
   const [page, setPage] = useState(1)
   const [selected, setSelected] = useState<Set<number>>(new Set())
+  const [expanded, setExpanded] = useState<string | null>(null)
   const [editing, setEditing] = useState<Member | null | undefined>(undefined) // undefined = closed, null = new
   const [importOpen, setImportOpen] = useState(false)
   const [pending, startTransition] = useTransition()
 
-  const categoryCounts = useMemo(() => {
-    const map: Record<string, number> = {}
-    for (const m of items) map[m.category] = (map[m.category] ?? 0) + 1
-    return map
-  }, [items])
+  const memberById = useMemo(() => new Map(items.map((m) => [m.id, m])), [items])
+  const categoryOptions = useMemo(
+    () => [...new Set([...CATEGORIES, ...people.map((p) => p.category).filter((c): c is string => Boolean(c))])],
+    [people],
+  )
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
-    return items.filter((m) => {
-      if (tab !== "All" && m.category !== tab) return false
-      if (categoryFilter && m.category !== categoryFilter) return false
-      if (statusFilter && m.status !== statusFilter) return false
-      if (votingFilter === "eligible" && !m.votingEligible) return false
-      if (votingFilter === "non" && m.votingEligible) return false
+    return people.filter((p) => {
+      if (tab !== "all" && p.stage !== tab) return false
+      if (categoryFilter && p.category !== categoryFilter) return false
+      const voting = p.memberId ? memberById.get(p.memberId)?.votingEligible : false
+      if (votingFilter === "eligible" && !voting) return false
+      if (votingFilter === "non" && voting) return false
       if (q) {
-        const hay = `${m.name} ${m.email} ${m.organization ?? ""} ${m.membershipId}`.toLowerCase()
+        const memberId = p.memberId ? memberById.get(p.memberId)?.membershipId : ""
+        const hay = `${p.name} ${p.email} ${p.organization ?? ""} ${memberId ?? ""} ${p.applicationReference ?? ""}`.toLowerCase()
         if (!hay.includes(q)) return false
       }
       return true
     })
-  }, [items, tab, query, categoryFilter, statusFilter, votingFilter])
+  }, [people, memberById, tab, query, categoryFilter, votingFilter])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const currentPage = Math.min(page, totalPages)
@@ -166,8 +229,10 @@ export function MembersAdmin({
     })
   }
 
+  const pageMemberIds = pageRows.map((r) => r.memberId).filter((id): id is number => id !== null)
+
   function toggleSelectPage() {
-    const ids = pageRows.map((r) => r.id)
+    const ids = pageMemberIds
     const allSelected = ids.every((id) => selected.has(id))
     setSelected((prev) => {
       const next = new Set(prev)
@@ -184,23 +249,25 @@ export function MembersAdmin({
   }
 
   function exportCsv() {
-    const header = ["membershipId", "name", "email", "organization", "category", "status", "votingEligible", "goodStanding", "joinedAt", "expiresAt"]
-    const lines = filtered.map((m) =>
-      [
-        m.membershipId,
-        m.name,
-        m.email,
-        m.organization ?? "",
-        m.category,
-        m.status,
-        m.votingEligible,
-        m.goodStanding,
-        fmtInput(m.joinedAt),
-        fmtInput(m.expiresAt),
+    const header = ["membershipId", "name", "email", "organization", "category", "stage", "payment", "application", "votingEligible", "registeredAt", "expiresAt"]
+    const lines = filtered.map((p) => {
+      const m = p.memberId ? memberById.get(p.memberId) : undefined
+      return [
+        m?.membershipId ?? "",
+        p.name,
+        p.email,
+        p.organization ?? "",
+        p.category ?? "",
+        STAGE_BADGE[p.stage].label,
+        PAYMENT_LABEL[p.payment],
+        APPLICATION_LABEL[p.application],
+        m?.votingEligible ?? false,
+        fmtInput(p.registeredAt),
+        fmtInput(p.expiresAt),
       ]
         .map((v) => `"${String(v).replace(/"/g, '""')}"`)
-        .join(","),
-    )
+        .join(",")
+    })
     const csv = [header.join(","), ...lines].join("\n")
     const blob = new Blob([csv], { type: "text/csv" })
     const url = URL.createObjectURL(blob)
@@ -272,24 +339,21 @@ export function MembersAdmin({
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
-        <StatCard icon={<Users className="size-5" />} tone="green" label="Total Members" value={stats.total} sub="All registered" />
-        <StatCard icon={<FileText className="size-5" />} tone="blue" label="Pending Applications" value={stats.pending} sub="Awaiting review" />
-        <StatCard icon={<CheckCircle2 className="size-5" />} tone="green" label="Active Members" value={stats.active} sub="Current members" />
-        <StatCard icon={<Clock className="size-5" />} tone="amber" label="Expiring Soon" value={stats.expiringSoon} sub="Next 30 days" />
-        <StatCard icon={<UserPlus className="size-5" />} tone="green" label="New This Month" value={stats.newThisMonth} sub="New members" />
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+        <StatCard onClick={() => { setTab("all"); resetToFirstPage() }} active={tab === "all"} icon={<Users className="size-5" />} tone="green" label="Total Registered Users" value={stats.totalRegistered} sub="All registered accounts" />
+        <StatCard onClick={() => { setTab("incomplete"); resetToFirstPage() }} active={tab === "incomplete"} icon={<FileText className="size-5" />} tone="slate" label="Incomplete Profiles" value={stats.incomplete} sub="Application not submitted" />
+        <StatCard onClick={() => { setTab("not-paid"); resetToFirstPage() }} active={tab === "not-paid"} icon={<Ban className="size-5" />} tone="red" label="Not Paid Users" value={stats.notPaid} sub="Submitted, payment unverified" />
+        <StatCard onClick={() => { setTab("pending-approval"); resetToFirstPage() }} active={tab === "pending-approval"} icon={<Clock className="size-5" />} tone="amber" label="Pending Approval" value={stats.pendingApproval} sub="Paid, awaiting review" />
+        <StatCard onClick={() => { setTab("active"); resetToFirstPage() }} active={tab === "active"} icon={<CheckCircle2 className="size-5" />} tone="green" label="Active Paid Members" value={stats.activePaid} sub="Approved & current" />
+        <StatCard onClick={() => { setTab("expired"); resetToFirstPage() }} active={tab === "expired"} icon={<UserPlus className="size-5" />} tone="slate" label="Expired Members" value={stats.expired} sub="Renewal needed" />
       </div>
 
       {/* Card: tabs + filters + table */}
       <div className="overflow-hidden rounded-xl border border-line bg-white">
-        {/* Category tabs */}
-        <div className="flex gap-1 overflow-x-auto border-b border-line px-3 pt-2">
-          <TabButton active={tab === "All"} onClick={() => { setTab("All"); resetToFirstPage() }}>
-            All Members ({items.length})
-          </TabButton>
-          {CATEGORIES.map((c) => (
-            <TabButton key={c} active={tab === c} onClick={() => { setTab(c); resetToFirstPage() }}>
-              {c} ({categoryCounts[c] ?? 0})
+        <div role="tablist" aria-label="Filter by membership stage" className="flex gap-1 overflow-x-auto border-b border-line px-3 pt-2">
+          {STAGE_TABS.map((t) => (
+            <TabButton key={t.value} active={tab === t.value} onClick={() => { setTab(t.value); resetToFirstPage() }}>
+              {t.label} ({stats[t.stat]})
             </TabButton>
           ))}
         </div>
@@ -301,7 +365,8 @@ export function MembersAdmin({
             <input
               value={query}
               onChange={(e) => { setQuery(e.target.value); resetToFirstPage() }}
-              placeholder="Search members by name, company, email..."
+              placeholder="Search by name, company, email, member ID..."
+              aria-label="Search users"
               className="w-full rounded-lg border border-line bg-white py-2.5 pl-9 pr-3 text-sm text-heading outline-none placeholder:text-muted-2 focus:border-green focus:ring-2 focus:ring-green/20"
             />
           </div>
@@ -309,13 +374,7 @@ export function MembersAdmin({
             value={categoryFilter}
             onChange={(v) => { setCategoryFilter(v); resetToFirstPage() }}
             placeholder="All Categories"
-            options={CATEGORIES}
-          />
-          <SelectFilter
-            value={statusFilter}
-            onChange={(v) => { setStatusFilter(v); resetToFirstPage() }}
-            placeholder="All Statuses"
-            options={["active", "suspended", "expired"]}
+            options={categoryOptions}
           />
           <SelectFilter
             value={votingFilter}
@@ -326,10 +385,10 @@ export function MembersAdmin({
               { value: "non", label: "Non-Voting" },
             ]}
           />
-          {(categoryFilter || statusFilter || votingFilter || query) && (
+          {(categoryFilter || votingFilter || query) && (
             <button
               type="button"
-              onClick={() => { setCategoryFilter(""); setStatusFilter(""); setVotingFilter(""); setQuery(""); resetToFirstPage() }}
+              onClick={() => { setCategoryFilter(""); setVotingFilter(""); setQuery(""); resetToFirstPage() }}
               className="inline-flex items-center gap-1.5 rounded-lg border border-line px-3 py-2.5 text-sm font-medium text-muted-2 hover:bg-surface"
             >
               <Filter className="size-4" /> Clear
@@ -378,104 +437,120 @@ export function MembersAdmin({
                     <input
                       type="checkbox"
                       aria-label="Select all on page"
-                      checked={pageRows.length > 0 && pageRows.every((r) => selected.has(r.id))}
+                      checked={pageMemberIds.length > 0 && pageMemberIds.every((id) => selected.has(id))}
                       onChange={toggleSelectPage}
                       className="size-4 rounded border-line accent-green"
                     />
                   )}
                 </th>
-                <th className="px-4 py-3 font-semibold">Member</th>
-                <th className="px-4 py-3 font-semibold">Organization</th>
+                <th className="px-4 py-3 font-semibold">User</th>
                 <th className="px-4 py-3 font-semibold">Category</th>
-                <th className="px-4 py-3 font-semibold">Membership Status</th>
-                <th className="px-4 py-3 font-semibold">Voting Status</th>
-                <th className="px-4 py-3 font-semibold">Join Date</th>
-                <th className="px-4 py-3 font-semibold">Expiry Date</th>
+                <th className="px-4 py-3 font-semibold">Stage</th>
+                <th className="px-4 py-3 font-semibold">Payment</th>
+                <th className="px-4 py-3 font-semibold">Application</th>
+                <th className="px-4 py-3 font-semibold">Registered</th>
+                <th className="px-4 py-3 font-semibold">Expiry</th>
                 <th className="px-4 py-3 text-right font-semibold">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {pageRows.map((m) => (
-                <tr key={m.id} className="border-b border-line-light last:border-0 hover:bg-surface/50">
-                  <td className="px-4 py-3">
-                    {!readOnly && (
-                      <input
-                        type="checkbox"
-                        aria-label={`Select ${m.name}`}
-                        checked={selected.has(m.id)}
-                        onChange={() => toggleSelect(m.id)}
-                        className="size-4 rounded border-line accent-green"
-                      />
+              {pageRows.map((p) => {
+                const m = p.memberId ? memberById.get(p.memberId) : undefined
+                const open = expanded === p.key
+                return (
+                  <Fragment key={p.key}>
+                    <tr className={cn("border-b border-line-light last:border-0 hover:bg-surface/50", open && "bg-surface/50")}>
+                      <td className="px-4 py-3">
+                        {!readOnly && m && (
+                          <input
+                            type="checkbox"
+                            aria-label={`Select ${p.name}`}
+                            checked={selected.has(m.id)}
+                            onChange={() => toggleSelect(m.id)}
+                            className="size-4 rounded border-line accent-green"
+                          />
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-navy text-xs font-bold text-white">
+                            {initials(p.name)}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="truncate font-semibold text-heading">{p.name}</p>
+                            <p className="truncate text-xs text-muted-2">{p.email}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="max-w-56 px-4 py-3">
+                        {p.category ? (
+                          <span className={cn("inline-flex max-w-full truncate rounded-full px-2.5 py-0.5 text-xs font-medium", CATEGORY_STYLE[p.category] ?? "bg-slate-100 text-slate-600 ring-1 ring-slate-200")}>
+                            {p.category}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-2">Not selected</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={cn("inline-flex whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium", STAGE_BADGE[p.stage].className)}>
+                          {STAGE_BADGE[p.stage].label}
+                        </span>
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 text-body">{PAYMENT_LABEL[p.payment]}</td>
+                      <td className="whitespace-nowrap px-4 py-3 text-body">{APPLICATION_LABEL[p.application]}</td>
+                      <td className="whitespace-nowrap px-4 py-3 text-body">{fmtDate(p.registeredAt)}</td>
+                      <td className="whitespace-nowrap px-4 py-3 text-body">{fmtDate(p.expiresAt)}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            type="button"
+                            aria-expanded={open}
+                            onClick={() => setExpanded(open ? null : p.key)}
+                            className="rounded-md border border-line bg-white px-2.5 py-1 text-xs font-semibold text-heading hover:bg-surface"
+                          >
+                            {open ? "Hide" : "View"}
+                          </button>
+                          {!readOnly && m && (
+                            <RowMenu
+                              member={m}
+                              pending={pending}
+                              onEdit={() => setEditing(m)}
+                              onStatus={(s) => run(() => setMemberStatus(m.id, s))}
+                              onVoting={() => run(() => setMemberVoting(m.id, !m.votingEligible))}
+                              onDelete={() => run(() => deleteMembers([m.id]))}
+                              onRegenerateCert={() =>
+                                run(async () => {
+                                  const res = await regenerateMemberCertificate(m.id)
+                                  if (!res.ok) alert(res.error)
+                                })
+                              }
+                              onRevokeCert={() =>
+                                run(async () => {
+                                  const res = await revokeMemberCertificate(m.id)
+                                  if (!res.ok) alert(res.error)
+                                })
+                              }
+                            />
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                    {open && (
+                      <tr className="border-b border-line-light bg-surface/50">
+                        <td colSpan={9} className="px-4 pb-4 pt-0">
+                          <PersonDetails person={p} member={m} />
+                        </td>
+                      </tr>
                     )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-navy text-xs font-bold text-white">
-                        {initials(m.name)}
-                      </span>
-                      <div className="min-w-0">
-                        <p className="truncate font-semibold text-heading">{m.name}</p>
-                        <p className="truncate text-xs text-muted-2">{m.email}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-body">{m.organization || "Individual"}</td>
-                  <td className="px-4 py-3">
-                    <span className={cn("inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium", CATEGORY_STYLE[m.category] ?? "bg-slate-100 text-slate-600 ring-1 ring-slate-200")}>
-                      {m.category}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={cn("inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium capitalize", STATUS_STYLE[m.status] ?? STATUS_STYLE.expired)}>
-                      {m.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={cn(
-                        "inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium",
-                        m.votingEligible ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200" : "bg-slate-100 text-slate-600 ring-1 ring-slate-200",
-                      )}
-                    >
-                      {m.votingEligible ? "Eligible" : "Non-Voting"}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-body">{fmtDate(m.joinedAt)}</td>
-                  <td className="px-4 py-3 text-body">{fmtDate(m.expiresAt)}</td>
-                  <td className="px-4 py-3 text-right">
-                    {readOnly ? (
-                      <span className="text-xs text-muted-2">View only</span>
-                    ) : (
-                    <RowMenu
-                      member={m}
-                      pending={pending}
-                      onEdit={() => setEditing(m)}
-                      onStatus={(s) => run(() => setMemberStatus(m.id, s))}
-                      onVoting={() => run(() => setMemberVoting(m.id, !m.votingEligible))}
-                      onDelete={() => run(() => deleteMembers([m.id]))}
-                      onRegenerateCert={() =>
-                        run(async () => {
-                          const res = await regenerateMemberCertificate(m.id)
-                          if (!res.ok) alert(res.error)
-                        })
-                      }
-                      onRevokeCert={() =>
-                        run(async () => {
-                          const res = await revokeMemberCertificate(m.id)
-                          if (!res.ok) alert(res.error)
-                        })
-                      }
-                    />
-                    )}
-                  </td>
-                </tr>
-              ))}
+                  </Fragment>
+                )
+              })}
               {pageRows.length === 0 && (
                 <tr>
                   <td colSpan={9} className="px-4 py-16 text-center">
                     <BookUser className="mx-auto size-8 text-muted-2/60" />
-                    <p className="mt-2 text-sm font-medium text-heading">No members found</p>
-                    <p className="text-xs text-muted-2">Try adjusting your filters, or add a new member.</p>
+                    <p className="mt-2 text-sm font-medium text-heading">No users in this stage</p>
+                    <p className="text-xs text-muted-2">Try another tab or adjust your filters.</p>
                   </td>
                 </tr>
               )}
@@ -487,8 +562,8 @@ export function MembersAdmin({
         <div className="flex flex-col items-center justify-between gap-3 border-t border-line px-4 py-3 sm:flex-row">
           <p className="text-sm text-muted-2">
             {filtered.length === 0
-              ? "No members"
-              : `Showing ${(currentPage - 1) * PAGE_SIZE + 1} to ${Math.min(currentPage * PAGE_SIZE, filtered.length)} of ${filtered.length} members`}
+              ? "No users"
+              : `Showing ${(currentPage - 1) * PAGE_SIZE + 1} to ${Math.min(currentPage * PAGE_SIZE, filtered.length)} of ${filtered.length} users`}
           </p>
           <div className="flex items-center gap-1">
             <PageBtn disabled={currentPage <= 1} onClick={() => setPage(currentPage - 1)}>
@@ -624,29 +699,85 @@ export function MembersAdmin({
   )
 }
 
+const STAT_TONE = {
+  green: "bg-mint text-green",
+  amber: "bg-amber-50 text-amber-600",
+  red: "bg-red-50 text-red-600",
+  slate: "bg-slate-100 text-slate-600",
+} as const
+
 function StatCard({
   icon,
   label,
   value,
   sub,
   tone,
+  active,
+  onClick,
 }: {
   icon: ReactNode
   label: string
   value: number
   sub: string
-  tone: "green" | "blue" | "amber"
+  tone: keyof typeof STAT_TONE
+  active: boolean
+  onClick: () => void
 }) {
-  const toneClass =
-    tone === "green" ? "bg-mint text-green" : tone === "blue" ? "bg-sky-50 text-sky-600" : "bg-amber-50 text-amber-600"
   return (
-    <div className="rounded-xl border border-line bg-white p-4">
-      <div className="flex items-center justify-between">
-        <span className={cn("flex size-10 items-center justify-center rounded-lg", toneClass)}>{icon}</span>
-      </div>
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={cn(
+        "rounded-xl border bg-white p-4 text-left transition-colors hover:border-green-border",
+        active ? "border-green ring-2 ring-green/15" : "border-line",
+      )}
+    >
+      <span className={cn("flex size-10 items-center justify-center rounded-lg", STAT_TONE[tone])}>{icon}</span>
       <p className="mt-3 text-2xl font-bold text-heading">{value.toLocaleString()}</p>
       <p className="text-sm font-medium text-heading">{label}</p>
       <p className="text-xs text-muted-2">{sub}</p>
+    </button>
+  )
+}
+
+function PersonDetails({ person: p, member: m }: { person: Person; member?: Member }) {
+  const fields: [string, string][] = [
+    ["Member ID", m?.membershipId ?? "Not assigned"],
+    ["Organization", p.organization || "Individual"],
+    ["Application ref.", p.applicationReference ?? "—"],
+    ["Application submitted", fmtDate(p.submittedAt)],
+    ["Payment method", p.paymentMethod ? p.paymentMethod.toUpperCase() : "—"],
+    ["Amount", p.amount ?? "—"],
+    ["Email verified", p.emailVerified === null ? "—" : p.emailVerified ? "Yes" : "No"],
+    ["Voting", m ? (m.votingEligible ? "Eligible" : "Non-voting") : "Non-voting"],
+  ]
+  const next: Record<Stage, string> = {
+    incomplete: "Has not submitted the membership application yet.",
+    "not-paid": "Submitted the application but payment is not verified. Approval stays locked until it is.",
+    "pending-approval": "Payment verified. Ready for review in Applications.",
+    active: "Approved, paid and current.",
+    expired: "Membership term has ended. Needs renewal.",
+    suspended: "Membership suspended by an administrator.",
+  }
+  return (
+    <div className="rounded-lg border border-line bg-white p-4">
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-body">{next[p.stage]}</p>
+        {p.stage === "pending-approval" && (
+          <a href="/admin/applications" className="text-sm font-semibold text-green hover:underline">
+            Review application
+          </a>
+        )}
+      </div>
+      <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-3 md:grid-cols-4">
+        {fields.map(([label, value]) => (
+          <div key={label} className="min-w-0">
+            <dt className="text-xs uppercase tracking-wide text-muted-2">{label}</dt>
+            <dd className="truncate text-sm font-medium text-heading">{value}</dd>
+          </div>
+        ))}
+      </dl>
     </div>
   )
 }

@@ -26,7 +26,7 @@ import { canOwnReferralCode } from "@/lib/permissions"
 import { isVerifiedKolUser } from "@/lib/kol"
 import { notify, notifyCommunity } from "@/lib/notifications"
 import { and, desc, eq, isNull, sql } from "drizzle-orm"
-import { isIssuedMembership } from "@/lib/membership-state"
+import { isApplicationPaymentConfirmed, isIssuedMembership, syncCardPaymentVerifications } from "@/lib/membership-state"
 import { randomUUID } from "crypto"
 import { revalidatePath } from "next/cache"
 import { after } from "next/server"
@@ -319,7 +319,9 @@ export async function deleteEvent(id: number) {
 
 export async function getApplications() {
   const actor = await requireStaff()
-  const rows = await db.select().from(membershipApplications).orderBy(desc(membershipApplications.createdAt))
+  const rows = await syncCardPaymentVerifications(
+    await db.select().from(membershipApplications).orderBy(desc(membershipApplications.createdAt)),
+  )
   return rows.map((row) => {
     const withPayment = { ...row, paymentConfirmed: isPaymentConfirmed(row) }
     return canSeeContacts(actor) ? withPayment : maskApplication(withPayment)
@@ -334,6 +336,10 @@ export async function setApplicationStatus(
   if (!["pending", "approved", "rejected"].includes(status)) return { ok: false, error: "Invalid status." }
   const [current] = await db.select().from(membershipApplications).where(eq(membershipApplications.id, id)).limit(1)
   if (!current) return { ok: false, error: "Application not found." }
+  // Nobody, Super Admin included, can approve before payment is verified server-side.
+  if (status === "approved" && !(await isApplicationPaymentConfirmed(current))) {
+    return { ok: false, error: "Payment is not confirmed yet. Approval is only possible after payment is verified." }
+  }
   // Staff may only decide on applications whose payment the system has confirmed.
   if (actor.role !== "admin" && status !== "pending" && !isPaymentConfirmed(current)) {
     return { ok: false, error: "Payment is not confirmed yet. A Super Admin must verify payment before this can be decided." }

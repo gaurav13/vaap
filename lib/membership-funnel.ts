@@ -10,6 +10,8 @@ import {
   referralAttributions,
   user,
 } from "@/lib/db/schema"
+import { isIssuedMembership, syncCardPaymentVerifications } from "@/lib/membership-state"
+import { isPaymentConfirmed } from "@/lib/rbac"
 
 const DAY = 24 * 60 * 60 * 1000
 export const INVITE_TOPIC = "membership-invitation"
@@ -87,10 +89,16 @@ async function loadRaw() {
         category: membershipApplications.category,
         paymentMethod: membershipApplications.paymentMethod,
         totalAmount: membershipApplications.totalAmount,
+        txid: membershipApplications.txid,
+        invitationCode: membershipApplications.invitationCode,
+        paymentVerifiedAt: membershipApplications.paymentVerifiedAt,
+        reference: membershipApplications.reference,
+        organization: membershipApplications.organization,
         createdAt: membershipApplications.createdAt,
       })
       .from(membershipApplications)
-      .orderBy(desc(membershipApplications.createdAt)),
+      .orderBy(desc(membershipApplications.createdAt))
+      .then(syncCardPaymentVerifications),
     db
       .select({
         code: referralAttributions.code,
@@ -228,6 +236,157 @@ function buildPaid(raw: Raw, now: Date): PaidMember[] {
     })
 }
 
+export type MemberStage = "incomplete" | "not-paid" | "pending-approval" | "active" | "expired" | "suspended"
+
+export type DirectoryRow = {
+  key: string
+  userId: string | null
+  /** Issued member record, when one exists. */
+  memberId: number | null
+  name: string
+  email: string
+  organization: string | null
+  category: string | null
+  stage: MemberStage
+  payment: "not-started" | "unpaid" | "verified" | "not-required"
+  application: "not-started" | "draft" | "submitted" | "approved" | "rejected" | "manual"
+  applicationReference: string | null
+  paymentMethod: string | null
+  amount: string | null
+  registeredAt: Date
+  submittedAt: Date | null
+  expiresAt: Date | null
+  emailVerified: boolean | null
+}
+
+export type StageStats = {
+  totalRegistered: number
+  incomplete: number
+  notPaid: number
+  pendingApproval: number
+  activePaid: number
+  expired: number
+}
+
+type RawApp = Raw["applications"][number]
+const isNoFee = (a: RawApp) => a.totalAmount === "No payment required" || Boolean(a.invitationCode)
+
+/**
+ * One row per person (account or issued member record, deduplicated by user id
+ * and email), classified into a single stage. This is the shared logic behind
+ * every membership count and filter in the admin area.
+ */
+function buildDirectory(raw: Raw, now: Date): DirectoryRow[] {
+  const issued = raw.memberRows
+    .filter((m) => isIssuedMembership(m))
+    .sort((a, b) => b.joinedAt.getTime() - a.joinedAt.getTime())
+  const memberByUser = firstBy(issued, (m) => m.userId ?? "")
+  const memberByEmail = firstBy(issued, (m) => lower(m.email))
+  const appsByEmail = new Map<string, RawApp[]>()
+  for (const a of raw.applications) {
+    const k = lower(a.email)
+    appsByEmail.set(k, [...(appsByEmail.get(k) ?? []), a])
+  }
+
+  const usedMembers = new Set<number>()
+  const seenEmails = new Set<string>()
+
+  const fromMember = (m: (typeof issued)[number]) => {
+    const app = (appsByEmail.get(lower(m.email)) ?? []).find((a) => a.completed && a.status === "approved")
+    const expired = m.status === "expired" || (m.expiresAt !== null && m.expiresAt < now)
+    return {
+      memberId: m.id,
+      category: m.category,
+      organization: m.organization,
+      stage: (expired ? "expired" : m.status === "suspended" ? "suspended" : "active") as MemberStage,
+      payment: (!app ? "verified" : isNoFee(app) ? "not-required" : "verified") as DirectoryRow["payment"],
+      application: (app ? "approved" : "manual") as DirectoryRow["application"],
+      applicationReference: app?.reference ?? null,
+      paymentMethod: app?.paymentMethod ?? null,
+      amount: app?.totalAmount ?? null,
+      submittedAt: app?.createdAt ?? null,
+      expiresAt: m.expiresAt,
+    }
+  }
+
+  const rows: DirectoryRow[] = []
+  for (const u of raw.users) {
+    if (INTERNAL_ROLES.has(u.role)) continue
+    const email = lower(u.email)
+    if (seenEmails.has(email)) continue
+    seenEmails.add(email)
+    const member = memberByUser.get(u.id) ?? memberByEmail.get(email)
+    const base = { key: `u-${u.id}`, userId: u.id, name: u.name, email: u.email, registeredAt: u.createdAt, emailVerified: u.emailVerified }
+    if (member) {
+      usedMembers.add(member.id)
+      rows.push({ ...base, ...fromMember(member) })
+      continue
+    }
+    const apps = appsByEmail.get(email) ?? []
+    const submitted = apps.filter((a) => a.completed && a.status === "pending")
+    const paid = submitted.find((a) => isPaymentConfirmed(a))
+    const app = paid ?? submitted[0] ?? apps.find((a) => !a.completed && a.status !== "rejected") ?? apps[0]
+    const stage: MemberStage = paid ? "pending-approval" : submitted.length ? "not-paid" : "incomplete"
+    rows.push({
+      ...base,
+      memberId: null,
+      category: app?.category ?? null,
+      organization: app?.organization ?? null,
+      stage,
+      payment: !app || !app.completed ? "not-started" : paid ? (isNoFee(paid) ? "not-required" : "verified") : "unpaid",
+      application: !app
+        ? "not-started"
+        : app.status === "rejected"
+          ? "rejected"
+          : app.status === "approved"
+            ? "approved"
+            : app.completed
+              ? "submitted"
+              : "draft",
+      applicationReference: app?.reference ?? null,
+      paymentMethod: app?.paymentMethod ?? null,
+      amount: app?.totalAmount ?? null,
+      submittedAt: app?.completed ? app.createdAt : null,
+      expiresAt: null,
+    })
+  }
+
+  // Issued members without a website account (imported or added by an admin).
+  for (const m of issued) {
+    if (usedMembers.has(m.id) || seenEmails.has(lower(m.email))) continue
+    seenEmails.add(lower(m.email))
+    rows.push({
+      key: `m-${m.id}`,
+      userId: m.userId,
+      name: m.name,
+      email: m.email,
+      registeredAt: m.joinedAt,
+      emailVerified: null,
+      ...fromMember(m),
+    })
+  }
+
+  return rows.sort((a, b) => b.registeredAt.getTime() - a.registeredAt.getTime())
+}
+
+export function stageStats(rows: DirectoryRow[]): StageStats {
+  const by = (s: MemberStage) => rows.filter((r) => r.stage === s).length
+  return {
+    totalRegistered: rows.length,
+    incomplete: by("incomplete"),
+    notPaid: by("not-paid"),
+    pendingApproval: by("pending-approval"),
+    activePaid: by("active"),
+    expired: by("expired"),
+  }
+}
+
+/** Every registered person with their membership stage, plus the matching counts. */
+export async function getMemberDirectory() {
+  const rows = buildDirectory(await loadRaw(), new Date())
+  return { rows, stats: stageStats(rows) }
+}
+
 /** Registered website accounts that have never activated a paid membership. */
 export async function getRegisteredUsers() {
   return buildRegistered(await loadRaw())
@@ -274,11 +433,13 @@ export async function getMembershipFunnel() {
     if (joined && joined > firstInvite) conversions++
   }
 
+  const stages = stageStats(buildDirectory(raw, now))
   const stats = {
     totalRegistered: accounts.length,
     activePaid: paid.filter((p) => p.status === "active").length,
     unpaidRegistered: registered.length,
-    pendingPayments: raw.applications.filter((a) => a.completed && a.status === "pending").length,
+    // Submitted but payment not yet verified; verified-and-awaiting-approval is `stages.pendingApproval`.
+    pendingPayments: stages.notPaid,
     expired: paid.filter((p) => p.status === "expired").length,
     invitationsSent: sentInvites.length,
     failedInvitations: raw.invitations.filter((i) => i.status === "failed").length,
@@ -306,5 +467,5 @@ export async function getMembershipFunnel() {
     converted: (activatedByEmail.get(lower(i.email)) ?? new Date(0)) > i.createdAt,
   }))
 
-  return { stats, funnel, registered, paid, history }
+  return { stats, stages, funnel, registered, paid, history }
 }
