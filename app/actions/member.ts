@@ -13,6 +13,7 @@ import {
   rewardTransactions,
 } from "@/lib/db/schema"
 import { getSession } from "@/lib/session"
+import { getMembershipStanding } from "@/lib/membership-state"
 import { uniqueEventSlug } from "@/lib/event-slug-server"
 import { notify } from "@/lib/notifications"
 import { eq, desc, or, sql, inArray } from "drizzle-orm"
@@ -217,11 +218,9 @@ export async function getMyApplications() {
  * Returns the verified member record for the current user, or null.
  * Only accepted (active, in good standing) members may publish events.
  */
-async function getActiveMember(userId: string) {
-  const rows = await db.select().from(members).where(eq(members.userId, userId)).limit(1)
-  const m = rows[0]
-  if (!m || m.status !== "active" || !m.goodStanding) return null
-  return m
+async function getActiveMember(userId: string, email: string) {
+  const standing = await getMembershipStanding(userId, email)
+  return standing.state === "active" ? standing.member : null
 }
 
 /**
@@ -231,11 +230,11 @@ async function getActiveMember(userId: string) {
  */
 export async function submitMemberEvent(formData: FormData) {
   const current = await requireUser()
-  const member = await getActiveMember(current.id)
+  const member = await getActiveMember(current.id, current.email)
   if (!member) {
     return {
       ok: false,
-      error: "Only active members in good standing can publish events.",
+      error: "Only paid VAAP members are allowed to submit their events.",
     }
   }
 
@@ -313,7 +312,7 @@ export async function getMySubmittedEvents() {
 export async function canPublishEvents() {
   const session = await getSession()
   if (!session?.user) return false
-  const member = await getActiveMember(session.user.id)
+  const member = await getActiveMember(session.user.id, session.user.email)
   return Boolean(member)
 }
 

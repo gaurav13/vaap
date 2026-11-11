@@ -26,16 +26,15 @@ export default async function NewEventPage() {
         <SubmitEventForm />
       ) : (
         <div className="rounded-2xl border border-dashed border-line bg-card p-10 text-center">
-          <p className="text-sm font-semibold text-heading">Members only</p>
+          <p className="text-sm font-semibold text-heading">Paid members only</p>
           <p className="mx-auto mt-2 max-w-sm text-sm text-muted-2">
-            Publishing events is available to active VAAP members in good standing. Complete your membership to unlock
-            event publishing.
+            Only paid VAAP members are allowed to submit their events.
           </p>
           <Link
             href="/dashboard/membership"
             className="mt-4 inline-flex items-center justify-center rounded-lg bg-green px-4 py-2.5 text-sm font-bold text-white transition hover:bg-green/90"
           >
-            View membership
+            Become a Paid Member
           </Link>
         </div>
       )}
