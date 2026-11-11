@@ -15,7 +15,7 @@ export type MembershipState =
   | "rejected"
 
 export const MEMBERSHIP_STATE_LABEL: Record<MembershipState, string> = {
-  "not-member": "Not Subscribed",
+  "not-member": "Not Paid",
   "payment-pending": "Payment Pending",
   "under-review": "Under Review",
   active: "Active Paid Member",
@@ -106,9 +106,9 @@ export async function getMembershipStanding(userId: string, email: string): Prom
     return { state: "suspended", member, application: application ?? null }
   }
 
-  if (!application) return { state: "not-member", member: null, application: null }
+  // Drafts are saved mid-form before the final submit, so they are not an application yet.
+  if (!application || !application.completed) return { state: "not-member", member: null, application: null }
   if (application.status === "rejected") return { state: "rejected", member: null, application }
-  if (!application.completed) return { state: "payment-pending", member: null, application }
 
   const paid = await isPaymentConfirmed(application)
   return { state: paid ? "under-review" : "payment-pending", member: null, application }

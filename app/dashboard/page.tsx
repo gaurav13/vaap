@@ -53,7 +53,9 @@ export default async function DashboardPage() {
     ? `${membership.category} Member`
     : standing.application && !notMember && standing.state !== "rejected"
       ? `${standing.application.category} (applied)`
-      : "You are not a paid member"
+      : notMember
+        ? "Not Applied"
+        : "Not Assigned"
   const validExpiry = isActive ? effectiveExpiry(membership?.joinedAt, membership?.expiresAt) : null
   const validTill = validExpiry ? fmtDate(validExpiry) : null
   const votingEligible = isActive && (membership?.votingEligible ?? false)
@@ -104,7 +106,7 @@ export default async function DashboardPage() {
           label="Membership Category"
           value={category}
           valueTone={membership ? undefined : "neutral"}
-          action={notMember ? { label: "Become a Paid Member", href: "/membership/apply" } : undefined}
+          action={notMember ? { label: "Apply for Paid Membership", href: "/membership/apply" } : undefined}
         />
         <StatusCard
           icon={CheckCircle2}

@@ -17,11 +17,11 @@ const STATE_NOTICE: Record<
   { title: string; body: string; step: number; badge: string; cta?: { label: string; href: string } }
 > = {
   "not-member": {
-    title: "You are not a paid member yet",
-    body: "You have a free VAAP account. Apply and pay for a membership category to get your Member ID, digital card, certificate, and event publishing.",
+    title: "No membership yet",
+    body: "You have not applied for or purchased a VAAP membership yet. Apply for paid membership to access exclusive member benefits.",
     step: 0,
     badge: "bg-surface text-body",
-    cta: { label: "Become a Paid Member", href: "/membership/apply" },
+    cta: { label: "Apply for Paid Membership", href: "/membership/apply" },
   },
   "payment-pending": {
     title: "Your payment is not confirmed yet",
@@ -159,14 +159,21 @@ export default async function MembershipPage() {
             <h2 className="text-base font-bold text-heading">Membership details</h2>
             <dl className="mt-4 grid grid-cols-2 gap-4 text-sm">
               <Detail label="Member ID" value={membership?.membershipId ?? "Not Assigned"} />
-              <Detail label="Category" value={membership?.category ?? appliedCategory ?? "Not Assigned"} />
+              <Detail
+                label="Category"
+                value={
+                  membership?.category ??
+                  appliedCategory ??
+                  (standing.state === "not-member" ? "Not Applied" : "Not Assigned")
+                }
+              />
               <Detail label="Status" value={MEMBERSHIP_STATE_LABEL[standing.state]} />
               <Detail label="Member since" value={membership ? fmt(membership.joinedAt) : "—"} />
               <Detail
                 label="Valid till"
                 value={membership ? fmt(effectiveExpiry(membership.joinedAt, membership.expiresAt)) : "—"}
               />
-              <Detail label="Term" value="1 year (365 days)" />
+              <Detail label="Membership term" value={membership ? "1 year (365 days)" : "Not Started"} />
             </dl>
           </div>
 
