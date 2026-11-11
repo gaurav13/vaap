@@ -279,37 +279,49 @@ function StatusCard({
   highlight?: boolean
   action?: { label: string; href: string }
 }) {
-  const toneClass = {
-    green: "text-green",
-    amber: "text-amber",
-    red: "text-red-700",
-    neutral: "text-body",
+  const badgeClass = {
+  green: "bg-mint text-green",
+  amber: "bg-amber-tint text-amber",
+  red: "bg-red-50 text-red-700",
+  neutral: "bg-muted text-body",
   } as const
-  const valueClass = valueTone ? toneClass[valueTone] : "text-heading"
+  const dotClass = {
+  green: "bg-green",
+  amber: "bg-amber",
+  red: "bg-red-700",
+  neutral: "bg-body",
+  } as const
   return (
-    <div
-      className={`flex items-center gap-4 rounded-2xl border p-5 shadow-sm ${
-        highlight ? "border-amber/20 bg-amber-tint" : "border-line bg-card"
-      }`}
-    >
-      <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-mint text-green">
-        <Icon className="size-6" aria-hidden />
-      </span>
-      <div className="min-w-0">
-        <p className="text-sm font-medium text-muted-2">{label}</p>
-        <p className={`mt-0.5 text-pretty text-xl font-bold leading-snug ${valueClass}`}>{value}</p>
-        {hint && <p className="mt-0.5 text-pretty text-xs leading-relaxed text-muted-2">{hint}</p>}
-        {action && (
-          <Link
-            href={action.href}
-            className="mt-0.5 inline-flex items-center gap-1 text-xs font-semibold text-green hover:text-green-hover"
-          >
-            {action.label}
-            <ArrowRight className="size-3" aria-hidden />
-          </Link>
-        )}
-      </div>
-    </div>
+  <div
+  className={`flex h-full flex-col rounded-xl border bg-card p-5 shadow-sm ${
+  highlight ? "border-amber/30" : "border-line"
+  }`}
+  >
+  <div className="flex items-center justify-between gap-3">
+  <p className="text-xs font-medium uppercase tracking-wider text-muted-2">{label}</p>
+  <Icon className="size-4 shrink-0 text-muted-2" aria-hidden />
+  </div>
+  {valueTone ? (
+  <span
+  className={`mt-3 inline-flex w-fit items-center gap-1.5 rounded-md px-2.5 py-1 text-sm font-semibold ${badgeClass[valueTone]}`}
+  >
+  <span aria-hidden className={`size-1.5 rounded-full ${dotClass[valueTone]}`} />
+  {value}
+  </span>
+  ) : (
+  <p className="mt-3 text-pretty text-lg font-semibold leading-snug text-heading">{value}</p>
+  )}
+  {hint && <p className="mt-2 text-pretty text-xs leading-relaxed text-muted-2">{hint}</p>}
+  {action && (
+  <Link
+  href={action.href}
+  className="mt-auto inline-flex items-center gap-1 pt-3 text-xs font-semibold text-green hover:text-green-hover"
+  >
+  {action.label}
+  <ArrowRight className="size-3" aria-hidden />
+  </Link>
+  )}
+  </div>
   )
 }
 
