@@ -33,7 +33,17 @@ export async function OverviewTab({ range, isSuperAdmin }: { range: Range; isSup
       </div>
 
       <KpiGrid>
-        <Kpi label="Users" value={num(o.users)} hint={`${num(o.registered)} registered · ${num(o.guests)} guests`} />
+        <Kpi
+          label="Active AI users"
+          value={num(o.registered)}
+          hint={o.guests ? `${num(o.guests)} older guest sessions` : "Signed-in, verified users only"}
+        />
+        <Kpi
+          label="Verified accounts"
+          value={num(o.verifiedAccounts)}
+          hint={`${num(o.unverifiedAccounts)} unverified · ${num(o.newAccounts)} new in period`}
+          tone={o.unverifiedAccounts > o.verifiedAccounts ? "warn" : "default"}
+        />
         <Kpi label="Conversations" value={num(o.conversations)} />
         <Kpi label="Questions asked" value={num(o.questions)} hint={`${num(o.requests)} total requests`} />
         <Kpi

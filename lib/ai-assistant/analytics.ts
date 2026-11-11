@@ -23,7 +23,7 @@ const WHO = `coalesce(l."userId", 'guest:' || l."sessionId")`
 
 export async function getOverview(range: Range) {
   const since = SINCE[range]
-  const [{ rows: u }, { rows: f }, { rows: c }] = await Promise.all([
+  const [{ rows: u }, { rows: f }, { rows: c }, { rows: a }] = await Promise.all([
     pool.query(`
       select
         count(distinct ${WHO}) as users,
@@ -50,6 +50,13 @@ export async function getOverview(range: Range) {
     pool.query(`
       select count(*) filter (where status = 'approved') as approved, count(*) filter (where status = 'pending') as pending
       from ai_answer_corrections`),
+    pool.query(`
+      select
+        count(*) as accounts,
+        count(*) filter (where "emailVerified") as verified,
+        count(*) filter (where not "emailVerified") as unverified,
+        count(*) filter (where "createdAt" >= ${since}) as new_accounts
+      from "user"`),
   ])
   const r = u[0]
   const up = n(f[0]?.up)
@@ -77,6 +84,10 @@ export async function getOverview(range: Range) {
     satisfaction: up + down > 0 ? Math.round((up / (up + down)) * 100) : null,
     approvedCorrections: n(c[0]?.approved),
     pendingCorrections: n(c[0]?.pending),
+    accounts: n(a[0]?.accounts),
+    verifiedAccounts: n(a[0]?.verified),
+    unverifiedAccounts: n(a[0]?.unverified),
+    newAccounts: n(a[0]?.new_accounts),
   }
 }
 
