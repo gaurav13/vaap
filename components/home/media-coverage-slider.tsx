@@ -153,14 +153,14 @@ export function MediaCoverageSlider({ items }: { items: MediaCoverageItem[] }) {
       </div>
 
       <div
-        className="mt-6 flex items-center gap-2 rounded-2xl border border-gold/50 bg-white/[0.03] p-2 shadow-[0_0_24px_-12px] shadow-gold/40 sm:gap-3 sm:rounded-full sm:p-3"
+        className="mt-6 flex items-center gap-2 rounded-[12px] border border-gold/50 bg-white/[0.03] p-2 shadow-[0_0_24px_-12px] shadow-gold/40 sm:gap-3 sm:p-3"
         onMouseEnter={() => (paused.current = true)}
         onMouseLeave={() => (paused.current = false)}
       >
         <SliderButton direction={-1} onClick={() => nudge(-1)} />
         <div
           ref={viewportRef}
-          className="min-w-0 flex-1 touch-pan-y select-none overflow-hidden rounded-xl"
+          className="min-w-0 flex-1 touch-pan-y select-none overflow-hidden rounded-[8px]"
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={endDrag}
@@ -180,7 +180,7 @@ export function MediaCoverageSlider({ items }: { items: MediaCoverageItem[] }) {
                     tabIndex={duplicate ? -1 : undefined}
                     draggable={false}
                     title={`Read VAAP coverage on ${item.name}`}
-                    className="group flex h-16 w-32 items-center justify-center rounded-xl bg-card px-3 py-2 shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-gold sm:h-20 sm:w-40 sm:px-4 lg:w-44"
+                    className="group flex h-16 w-32 items-center justify-center rounded-[8px] bg-card px-3 py-2 shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-gold sm:h-20 sm:w-40 sm:px-4 lg:w-44"
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element -- admin-uploaded logos (incl. SVG) from object storage */}
                     <img
@@ -211,9 +211,9 @@ function SliderButton({ direction, onClick }: { direction: 1 | -1; onClick: () =
       type="button"
       onClick={onClick}
       aria-label={direction === 1 ? "Next media logos" : "Previous media logos"}
-      className="flex size-9 shrink-0 items-center justify-center rounded-full border-2 border-gold text-gold transition-colors hover:bg-gold hover:text-navy-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold sm:size-11"
+      className="flex size-8 shrink-0 items-center justify-center rounded-full border border-gold/80 text-gold transition-colors hover:bg-gold hover:text-navy-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold sm:size-9"
     >
-      <Icon className="size-5" strokeWidth={2.25} aria-hidden="true" />
+      <Icon className="size-4" strokeWidth={2} aria-hidden="true" />
     </button>
   )
 }
