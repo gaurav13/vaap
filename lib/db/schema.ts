@@ -1563,3 +1563,74 @@ export const emailVerificationSends = pgTable("email_verification_sends", {
   dayKey: text("dayKey").notNull(),
   dayCount: integer("dayCount").notNull().default(0),
 })
+
+// --- AI Social Media Agent (Super Admin only) --------------------------------
+
+// Uploaded fixed banner designs and the editable areas defined on them.
+export const socialTemplates = pgTable(
+  "social_templates",
+  {
+    id: serial("id").primaryKey(),
+    category: text("category").notNull(),
+    name: text("name").notNull(),
+    imageUrl: text("imageUrl").notNull(),
+    width: integer("width").notNull(),
+    height: integer("height").notNull(),
+    layers: jsonb("layers").$type<import("@/lib/social-agent/config").TemplateLayer[]>().notNull().default([]),
+    active: boolean("active").notNull().default(false),
+    createdBy: text("createdBy"),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+  },
+  (t) => [index("social_templates_category_idx").on(t.category)],
+)
+
+export const socialCategorySettings = pgTable("social_category_settings", {
+  category: text("category").primaryKey(),
+  enabled: boolean("enabled").notNull().default(true),
+  autoGenerate: boolean("autoGenerate").notNull().default(false),
+  captionRules: text("captionRules").notNull().default(""),
+  hashtags: text("hashtags").notNull().default(""),
+  platforms: jsonb("platforms").$type<string[]>().notNull().default([]),
+  // Automation only picks up records approved after this moment, so the existing backlog is not flooded.
+  detectFrom: timestamp("detectFrom"),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+})
+
+export const socialPosts = pgTable(
+  "social_posts",
+  {
+    id: serial("id").primaryKey(),
+    category: text("category").notNull(),
+    sourceId: text("sourceId").notNull(),
+    sourceTitle: text("sourceTitle").notNull().default(""),
+    sourceUrl: text("sourceUrl").notNull().default(""),
+    templateId: integer("templateId"),
+    fields: jsonb("fields").$type<Record<string, string>>().notNull().default({}),
+    bannerUrl: text("bannerUrl").notNull().default(""),
+    variants: jsonb("variants").$type<Record<string, string>>().notNull().default({}),
+    captions: jsonb("captions").$type<Record<string, string>>().notNull().default({}),
+    platforms: jsonb("platforms").$type<string[]>().notNull().default([]),
+    issues: jsonb("issues").$type<string[]>().notNull().default([]),
+    status: text("status").notNull().default("needs_review"),
+    videoUrl: text("videoUrl").notNull().default(""),
+    scheduledAt: timestamp("scheduledAt"),
+    publishedAt: timestamp("publishedAt"),
+    publishedLinks: jsonb("publishedLinks").$type<Record<string, string>>().notNull().default({}),
+    reviewNote: text("reviewNote").notNull().default(""),
+    createdBy: text("createdBy"),
+    reviewedBy: text("reviewedBy"),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("social_posts_source_uq").on(t.category, t.sourceId), index("social_posts_status_idx").on(t.status)],
+)
+
+export const socialAccounts = pgTable("social_accounts", {
+  platform: text("platform").primaryKey(),
+  handle: text("handle").notNull().default(""),
+  profileUrl: text("profileUrl").notNull().default(""),
+  notes: text("notes").notNull().default(""),
+  updatedBy: text("updatedBy"),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+})
