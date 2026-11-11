@@ -3,7 +3,8 @@
 import { db } from "@/lib/db"
 import { EVENT_CATEGORIES, EVENT_CITIES, EVENT_FORMATS, pickOption } from "@/lib/event-options"
 import { normalizeUrl } from "@/lib/news-options"
-import { news, events, membershipApplications, contactMessages, user, members, account, referralPartners } from "@/lib/db/schema"
+import { news, events, membershipApplications, contactMessages, contactMessageReplies, user, members, account, referralPartners } from "@/lib/db/schema"
+import { brandedEmail, sendEmail } from "@/lib/mailer"
 import { getSession } from "@/lib/session"
 import { auth } from "@/lib/auth"
 import { computeExpiry } from "@/lib/membership"
@@ -469,6 +470,83 @@ export async function setMessageHandled(id: number, handled: boolean) {
   await requireStaff()
   await db.update(contactMessages).set({ handled }).where(eq(contactMessages.id, id))
   revalidatePath("/admin/messages")
+}
+
+export async function getContactMessageReplies() {
+  await requireStaff()
+  return db.select().from(contactMessageReplies).orderBy(contactMessageReplies.createdAt)
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;")
+}
+
+const MAX_REPLY_LENGTH = 10000
+
+export async function replyToContactMessage(
+  id: number,
+  input: { body: string; markHandled: boolean },
+): Promise<{ ok: true; emailStatus: "sent" | "skipped" } | { ok: false; error: string }> {
+  const staff = await requireStaff()
+  const body = String(input.body ?? "").trim()
+  if (!Number.isInteger(id) || id <= 0) return { ok: false, error: "Invalid message." }
+  if (body.length < 2) return { ok: false, error: "Write a reply before sending." }
+  if (body.length > MAX_REPLY_LENGTH) return { ok: false, error: `Replies are limited to ${MAX_REPLY_LENGTH} characters.` }
+
+  const [msg] = await db.select().from(contactMessages).where(eq(contactMessages.id, id)).limit(1)
+  if (!msg) return { ok: false, error: "Message not found." }
+
+  const subjectBase = msg.subject?.trim() || "Your VAAP inquiry"
+  const subject = /^re:/i.test(subjectBase) ? subjectBase : `Re: ${subjectBase}`
+  const paragraphs = body.split(/\n{2,}/).map((p) => escapeHtml(p).replace(/\n/g, "<br>"))
+  const quoted = escapeHtml(msg.message.length > 1500 ? `${msg.message.slice(0, 1500)}…` : msg.message).replace(/\n/g, "<br>")
+  const email = brandedEmail({
+    subject,
+    heading: `Dear ${escapeHtml(msg.name)},`,
+    intro: paragraphs,
+    footnote: `<strong>Your original message (${msg.createdAt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}):</strong><br>${quoted}`,
+  })
+
+  let emailStatus: "sent" | "skipped"
+  try {
+    const sent = await sendEmail({
+      to: msg.email,
+      subject: email.subject,
+      html: email.html,
+      text: `Dear ${msg.name},\n\n${body}\n\n---\nYour original message:\n${msg.message}`,
+      templateKey: "contact-reply",
+    })
+    emailStatus = sent ? "sent" : "skipped"
+  } catch (err) {
+    await db.insert(contactMessageReplies).values({
+      messageId: id,
+      body,
+      sentById: staff.id,
+      sentByName: staff.name,
+      emailStatus: "failed",
+    })
+    revalidatePath("/admin/messages")
+    return { ok: false, error: `Email could not be delivered: ${err instanceof Error ? err.message : "unknown error"}. The draft was saved to the thread.` }
+  }
+
+  await db.insert(contactMessageReplies).values({
+    messageId: id,
+    body,
+    sentById: staff.id,
+    sentByName: staff.name,
+    emailStatus,
+  })
+  if (input.markHandled && emailStatus === "sent") {
+    await db.update(contactMessages).set({ handled: true }).where(eq(contactMessages.id, id))
+  }
+  revalidatePath("/admin/messages")
+  revalidatePath("/admin")
+  return { ok: true, emailStatus }
 }
 
 // --- User & role management (admin only) -----------------------------------

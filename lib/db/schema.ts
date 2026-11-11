@@ -237,6 +237,16 @@ export const contactMessages = pgTable("contact_messages", {
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 })
 
+export const contactMessageReplies = pgTable("contact_message_replies", {
+  id: serial("id").primaryKey(),
+  messageId: integer("messageId").notNull(),
+  body: text("body").notNull(),
+  sentById: text("sentById"),
+  sentByName: text("sentByName"),
+  emailStatus: text("emailStatus").notNull().default("sent"), // sent | failed | skipped
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
 // Support & Grievance Centre complaints submitted from the public /support page.
 // Each row carries a public case reference (VAAP-CASE-000123) that anyone can
 // use to track status without signing in. Status moves through the lifecycle
