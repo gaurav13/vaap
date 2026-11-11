@@ -226,6 +226,68 @@ export async function updateAiSettings(next: AiSettings): Promise<ActionResult> 
   }
 }
 
+const openAiKeyInput = z
+  .string()
+  .trim()
+  .min(20, "That key looks too short.")
+  .max(300, "That key looks too long.")
+  .regex(/^sk-[A-Za-z0-9_\-]+$/, "OpenAI keys start with sk- and contain no spaces.")
+
+export async function saveOpenAiKey(_: ActionResult | null, form: FormData): Promise<ActionResult> {
+  try {
+    const actor = await requireSuperAdmin()
+    const parsed = openAiKeyInput.safeParse(form.get("apiKey"))
+    if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid key." }
+    const { storeOpenAiKey, testOpenAiConnection } = await import("@/lib/ai-assistant/provider")
+    const { getAiSettings } = await import("@/lib/ai-assistant/settings")
+    await storeOpenAiKey(parsed.data, actor.id)
+    await logActivity(actor, "ai_provider.key_saved", { entityType: "ai_provider", entityId: 0, details: "provider=openai" })
+    const test = await testOpenAiConnection((await getAiSettings()).defaultModel)
+    await logActivity(actor, test.ok ? "ai_provider.test_ok" : "ai_provider.test_failed", {
+      entityType: "ai_provider",
+      entityId: 0,
+      details: test.ok ? `model=${test.model}` : `code=${test.code}`,
+    })
+    revalidatePath(PATH)
+    return test.ok
+      ? { ok: true, message: `Saved and connected. Ask VAAP AI is now answering with OpenAI (${test.model}).` }
+      : { ok: false, error: `Key saved, but the connection test failed: ${test.message}` }
+  } catch (e) {
+    return fail(e)
+  }
+}
+
+export async function testOpenAiKey(): Promise<ActionResult> {
+  try {
+    const actor = await requireSuperAdmin()
+    const { testOpenAiConnection } = await import("@/lib/ai-assistant/provider")
+    const { getAiSettings } = await import("@/lib/ai-assistant/settings")
+    const test = await testOpenAiConnection((await getAiSettings()).defaultModel)
+    await logActivity(actor, test.ok ? "ai_provider.test_ok" : "ai_provider.test_failed", {
+      entityType: "ai_provider",
+      entityId: 0,
+      details: test.ok ? `model=${test.model}` : `code=${test.code}`,
+    })
+    revalidatePath(PATH)
+    return test.ok ? { ok: true, message: `Connected. OpenAI answered using ${test.model}.` } : { ok: false, error: test.message }
+  } catch (e) {
+    return fail(e)
+  }
+}
+
+export async function removeOpenAiKey(): Promise<ActionResult> {
+  try {
+    const actor = await requireSuperAdmin()
+    const { deleteOpenAiKey } = await import("@/lib/ai-assistant/provider")
+    await deleteOpenAiKey()
+    await logActivity(actor, "ai_provider.key_removed", { entityType: "ai_provider", entityId: 0, details: "provider=openai" })
+    revalidatePath(PATH)
+    return { ok: true, message: "Key removed. OpenAI models now go through Vercel AI Gateway." }
+  } catch (e) {
+    return fail(e)
+  }
+}
+
 export async function setEmergencyShutdown(on: boolean): Promise<ActionResult> {
   try {
     const actor = await requireSuperAdmin()

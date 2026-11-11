@@ -28,6 +28,7 @@ import { checkBudgetAlerts, releaseBudget, reserveBudget } from "@/lib/ai-assist
 import { reconcileCosts } from "@/lib/ai-assistant/reconcile"
 import { markCorrectionsUsed, searchCorrections } from "@/lib/ai-assistant/corrections"
 import { assistantTools, freeAnswer, systemPrompt } from "@/lib/ai-assistant/server"
+import { classifyAiError, resolveModel } from "@/lib/ai-assistant/provider"
 import { consumeQuestion, getUsageState, ipSubject, limitMessage } from "@/lib/ai-assistant/usage-limits"
 import type { UsageState, UsageTier } from "@/lib/ai-assistant/config"
 
@@ -204,7 +205,8 @@ If one of these asks for the same information as the user (even in different wor
   const startedAt = Date.now()
   let toolCalls = 0
   let knowledgeMissed = false
-  let provider = ""
+  const resolved = await resolveModel(settings.defaultModel)
+  let provider: string = resolved.provider
   let servedModel: string = settings.defaultModel
   const generationIds: string[] = []
 
@@ -228,13 +230,15 @@ If one of these asks for the same information as the user (even in different wor
   }
 
   const result = streamText({
-    model: settings.defaultModel,
+    model: resolved.model,
     system,
     messages: await convertToModelMessages(messages),
     tools: assistantTools(viewer),
     stopWhen: isStepCount(MAX_STEPS),
     maxOutputTokens: settings.maxOutputTokens,
-    providerOptions: settings.fallbackModel ? { gateway: { models: [settings.fallbackModel] } } : undefined,
+    providerOptions:
+      resolved.provider === "gateway" && settings.fallbackModel ? { gateway: { models: [settings.fallbackModel] } } : undefined,
+    abortSignal: AbortSignal.timeout(60_000),
     onStepFinish: (step) => {
       toolCalls += step.toolCalls?.length ?? 0
       for (const r of step.toolResults ?? []) {
@@ -264,7 +268,8 @@ If one of these asks for the same information as the user (even in different wor
       })
     },
     onError: async ({ error }) => {
-      console.error("[assistant] generation failed:", error instanceof Error ? error.message : error)
+      const failure = classifyAiError(error)
+      console.error(`[assistant] generation failed via ${provider}:`, failure.detail)
       // A technical failure is not the user's fault; give the question back.
       await ticket.refund()
       // Charge the worst case until reconciliation replaces it with the actual gateway cost.
@@ -272,7 +277,7 @@ If one of these asks for the same information as the user (even in different wor
         status: "error",
         costMicroUsd: generationIds.length ? worstCaseMicroUsd : 0,
         answered: false,
-        errorMessage: (error instanceof Error ? error.message : String(error)).slice(0, 500),
+        errorMessage: failure.detail.slice(0, 500),
       })
     },
   })
@@ -281,7 +286,7 @@ If one of these asks for the same information as the user (even in different wor
     stream: toUIMessageStream({
       stream: result.stream,
       messageMetadata: ({ part }) => (part.type === "start" ? { requestId, usage } : undefined),
-      onError: () => "The assistant could not answer right now. Please try again in a moment.",
+      onError: (error) => classifyAiError(error).userMessage,
     }),
   })
 }
