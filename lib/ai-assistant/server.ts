@@ -188,21 +188,6 @@ export function assistantTools(viewer: Viewer) {
   }
 }
 
-/** Per-user / per-guest request quotas. Only paid answers count; free fallback answers are unlimited. */
-export async function checkQuota(userId: string | null, sessionId: string, s: AiSettings) {
-  const who = userId ? eq(aiUsageLogs.userId, userId) : eq(aiUsageLogs.sessionId, sessionId)
-  const [row] = await db
-    .select({
-      day: sql<number>`count(*) filter (where ${aiUsageLogs.createdAt} >= now() - interval '1 day')::int`,
-      month: sql<number>`count(*)::int`,
-    })
-    .from(aiUsageLogs)
-    .where(and(who, sql`${aiUsageLogs.status} in ('ok', 'error')`, sql`${aiUsageLogs.createdAt} >= date_trunc('month', now())`))
-  if (row.day >= (userId ? s.userDailyRequests : s.guestDailyRequests)) return "daily" as const
-  if (userId && row.month >= s.userMonthlyRequests) return "monthly" as const
-  return "ok" as const
-}
-
 function plain(text: string) {
   return text.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()
 }

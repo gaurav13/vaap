@@ -27,7 +27,9 @@ import { getAiSettings } from "@/lib/ai-assistant/settings"
 import { checkBudgetAlerts, releaseBudget, reserveBudget } from "@/lib/ai-assistant/budget"
 import { reconcileCosts } from "@/lib/ai-assistant/reconcile"
 import { markCorrectionsUsed, searchCorrections } from "@/lib/ai-assistant/corrections"
-import { assistantTools, checkQuota, freeAnswer, systemPrompt } from "@/lib/ai-assistant/server"
+import { assistantTools, freeAnswer, systemPrompt } from "@/lib/ai-assistant/server"
+import { consumeQuestion, getUsageState, ipSubject, limitMessage } from "@/lib/ai-assistant/usage-limits"
+import type { UsageState, UsageTier } from "@/lib/ai-assistant/config"
 
 export const maxDuration = 30
 
@@ -63,6 +65,7 @@ type LogBase = {
   language: AssistantLanguage
   question: string
   topic: string
+  tier: UsageTier
 }
 
 async function writeLog(base: LogBase, values: Partial<typeof aiUsageLogs.$inferInsert>) {
@@ -104,6 +107,7 @@ export async function POST(req: Request) {
   const session = await getSession().catch(() => null)
   const viewer = session?.user ? { id: session.user.id, name: session.user.name, email: session.user.email } : null
   const requestId = randomUUID()
+  const usageCtx = { viewer: viewer ? { id: viewer.id, email: viewer.email } : null, sessionId, ip: ipSubject(req), settings }
   const base: LogBase = {
     requestId,
     userId: viewer?.id ?? null,
@@ -112,12 +116,61 @@ export async function POST(req: Request) {
     language,
     question: question.slice(0, 1000),
     topic: classifyTopic(question),
+    tier: viewer ? "registered" : "guest",
   }
 
-  const [basePrompt, matchedCorrections] = await Promise.all([
-    systemPrompt(language, viewer),
-    searchCorrections(question, 2).catch(() => []),
-  ])
+  const staticReply = (text: string, metadata: Record<string, unknown>) =>
+    createUIMessageStreamResponse({
+      stream: createUIMessageStream({
+        execute({ writer }) {
+          writer.write({ type: "start", messageMetadata: { requestId, free: true, ...metadata } })
+          writer.write({ type: "text-start", id: requestId })
+          writer.write({ type: "text-delta", id: requestId, delta: text })
+          writer.write({ type: "text-end", id: requestId })
+          writer.write({ type: "finish" })
+        },
+      }),
+    })
+
+  const freeReply = async (reason: keyof typeof NOTICES, usage: UsageState) => {
+    const free = await freeAnswer(question, NOTICES[reason])
+    await writeLog(base, { status: STATUS_FOR[reason], answered: free.answered, provider: "faq", answer: free.text.slice(0, 8000) })
+    return staticReply(free.text, { usage })
+  }
+
+  if (!settings.enabled || settings.emergencyShutdown) {
+    const usage = await getUsageState(usageCtx)
+    base.tier = usage.tier
+    return freeReply("disabled", usage)
+  }
+
+  // Reserve one question atomically before any paid call, including the correction-search embedding.
+  const consumed = await consumeQuestion(usageCtx)
+  base.tier = consumed.state.tier
+  if (!consumed.ok) {
+    const text = limitMessage(consumed.state, consumed.reason)
+    await writeLog(base, {
+      status: consumed.reason === "spend" ? "blocked_spend" : "blocked_quota",
+      answered: false,
+      provider: "limit",
+      answer: text,
+    })
+    return staticReply(text, { limited: true, usage: consumed.state })
+  }
+  const { ticket } = consumed
+  const usage = consumed.state
+
+  let basePrompt: string
+  let matchedCorrections: Awaited<ReturnType<typeof searchCorrections>>
+  try {
+    ;[basePrompt, matchedCorrections] = await Promise.all([
+      systemPrompt(language, viewer),
+      searchCorrections(question, 2).catch(() => []),
+    ])
+  } catch (error) {
+    await ticket.refund()
+    throw error
+  }
   const system = matchedCorrections.length
     ? `${basePrompt}
 
@@ -136,29 +189,16 @@ If one of these asks for the same information as the user (even in different wor
     inputTokensPerStep * MAX_STEPS * price.input + settings.maxOutputTokens * MAX_STEPS * price.output,
   )
 
-  let blocked: keyof typeof NOTICES | null = null
-  if (!settings.enabled || settings.emergencyShutdown) blocked = "disabled"
-  else if (worstCaseMicroUsd > settings.maxCostPerRequestUsd * 1_000_000) blocked = "cost"
-  else {
-    const quota = await checkQuota(base.userId, sessionId, settings)
-    if (quota !== "ok") blocked = quota
-    else if (!(await reserveBudget(requestId, worstCaseMicroUsd, settings)).ok) blocked = "budget"
-  }
-
-  if (blocked) {
-    const reason = blocked
-    const free = await freeAnswer(question, NOTICES[reason])
-    await writeLog(base, { status: STATUS_FOR[reason], answered: free.answered, provider: "faq", answer: free.text.slice(0, 8000) })
-    const stream = createUIMessageStream({
-      execute({ writer }) {
-        writer.write({ type: "start", messageMetadata: { requestId, free: true } })
-        writer.write({ type: "text-start", id: requestId })
-        writer.write({ type: "text-delta", id: requestId, delta: free.text })
-        writer.write({ type: "text-end", id: requestId })
-        writer.write({ type: "finish" })
-      },
-    })
-    return createUIMessageStreamResponse({ stream })
+  // Requests refused here never reach the model, so the question is given back.
+  const refused: keyof typeof NOTICES | null =
+    worstCaseMicroUsd > settings.maxCostPerRequestUsd * 1_000_000
+      ? "cost"
+      : !(await reserveBudget(requestId, worstCaseMicroUsd, settings)).ok
+        ? "budget"
+        : null
+  if (refused) {
+    await ticket.refund()
+    return freeReply(refused, { ...usage, used: usage.used - 1, remaining: usage.remaining + 1 })
   }
 
   const startedAt = Date.now()
@@ -225,6 +265,8 @@ If one of these asks for the same information as the user (even in different wor
     },
     onError: async ({ error }) => {
       console.error("[assistant] generation failed:", error instanceof Error ? error.message : error)
+      // A technical failure is not the user's fault; give the question back.
+      await ticket.refund()
       // Charge the worst case until reconciliation replaces it with the actual gateway cost.
       await finalize({
         status: "error",
@@ -238,7 +280,7 @@ If one of these asks for the same information as the user (even in different wor
   return createUIMessageStreamResponse({
     stream: toUIMessageStream({
       stream: result.stream,
-      messageMetadata: ({ part }) => (part.type === "start" ? { requestId } : undefined),
+      messageMetadata: ({ part }) => (part.type === "start" ? { requestId, usage } : undefined),
       onError: () => "The assistant could not answer right now. Please try again in a moment.",
     }),
   })

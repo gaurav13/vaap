@@ -1325,6 +1325,7 @@ export const aiUsageLogs = pgTable("ai_usage_logs", {
   question: text("question").notNull().default(""),
   answer: text("answer").notNull().default(""),
   topic: text("topic").notNull().default("general"),
+  tier: text("tier").notNull().default("guest"),
   answered: boolean("answered"),
   generationIds: text("generationIds").notNull().default(""),
   actualCostMicroUsd: integer("actualCostMicroUsd"),
@@ -1393,6 +1394,31 @@ export const aiBudgetReservations = pgTable("ai_budget_reservations", {
   requestId: text("requestId").primaryKey(),
   amountMicroUsd: integer("amountMicroUsd").notNull(),
   expiresAt: timestamp("expiresAt").notNull(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
+// Atomic per-subject question counter for the daily allowance. `day` is the
+// calendar date in the configured reset time zone. Subjects: user:<id>, guest:<sid>, ip:<hash>.
+export const aiDailyUsage = pgTable(
+  "ai_daily_usage",
+  {
+    subject: text("subject").notNull(),
+    day: text("day").notNull(),
+    count: integer("count").notNull().default(0),
+    blocked: integer("blocked").notNull().default(0),
+    tier: text("tier").notNull().default("guest"),
+    dailyLimit: integer("dailyLimit").notNull().default(0),
+    updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.subject, t.day] })],
+)
+
+export const aiUpgradeClicks = pgTable("ai_upgrade_clicks", {
+  id: serial("id").primaryKey(),
+  userId: text("userId"),
+  sessionId: text("sessionId"),
+  tier: text("tier").notNull().default("guest"),
+  target: text("target").notNull(), // plans | status | signin
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 })
 

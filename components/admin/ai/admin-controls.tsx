@@ -217,10 +217,39 @@ export function SettingsForm({ initial }: { initial: AiSettings }) {
       </fieldset>
 
       <fieldset className="grid gap-3 sm:grid-cols-3">
-        <legend className="mb-2 font-serif text-base font-bold text-heading">Usage limits</legend>
-        <NumberField label="Guest requests per day" value={s.guestDailyRequests} onChange={(v) => set("guestDailyRequests", v)} />
-        <NumberField label="Member requests per day" value={s.userDailyRequests} onChange={(v) => set("userDailyRequests", v)} />
+        <legend className="mb-2 font-serif text-base font-bold text-heading">Daily question limits</legend>
+        <NumberField label="Free users (default)" value={s.freeDailyQuestions} onChange={(v) => set("freeDailyQuestions", v)} />
+        <NumberField
+          label="Guests"
+          hint="Defaults to the free limit."
+          value={s.guestDailyQuestions ?? s.freeDailyQuestions}
+          onChange={(v) => set("guestDailyQuestions", v)}
+        />
+        <NumberField
+          label="Registered (unpaid)"
+          hint="Defaults to the free limit."
+          value={s.registeredDailyQuestions ?? s.freeDailyQuestions}
+          onChange={(v) => set("registeredDailyQuestions", v)}
+        />
+        <NumberField label="Professional members" value={s.professionalDailyQuestions} onChange={(v) => set("professionalDailyQuestions", v)} />
+        <NumberField label="Corporate members" value={s.corporateDailyQuestions} onChange={(v) => set("corporateDailyQuestions", v)} />
+        <NumberField
+          label="Guest questions per IP"
+          hint="Stops cookie clearing from unlocking more questions."
+          value={s.guestIpDailyQuestions}
+          min={1}
+          onChange={(v) => set("guestIpDailyQuestions", v)}
+        />
         <NumberField label="Member requests per month" value={s.userMonthlyRequests} onChange={(v) => set("userMonthlyRequests", v)} />
+        <label className="flex flex-col gap-1 text-sm">
+          <span className="font-medium text-heading">Reset time zone</span>
+          <input className={field} value={s.resetTimezone} onChange={(e) => set("resetTimezone", e.target.value)} placeholder="Asia/Karachi" />
+          <span className="text-xs leading-relaxed text-muted-2">Limits reset at midnight in this zone.</span>
+        </label>
+        <label className="flex items-center gap-2 self-end pb-2 text-sm text-heading">
+          <input type="checkbox" checked={s.paidUpgradesEnabled} onChange={(e) => set("paidUpgradesEnabled", e.target.checked)} />
+          Show upgrade button at limit
+        </label>
       </fieldset>
 
       <fieldset className="flex flex-col gap-3">

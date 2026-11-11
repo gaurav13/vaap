@@ -20,7 +20,8 @@ import {
 import { usePathname } from "next/navigation"
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react"
 import useSWR from "swr"
-import type { PublicAssistantConfig } from "@/lib/ai-assistant/config"
+import type { PublicAssistantConfig, UsageState } from "@/lib/ai-assistant/config"
+import { AllowanceLine, LimitCard } from "./assistant-usage"
 import { cn } from "@/lib/utils"
 import { AssistantFeedback } from "./assistant-feedback"
 import { AssistantMessageText } from "./assistant-message-text"
@@ -81,7 +82,10 @@ const ACTION_KEYS: Record<string, QuickAction["key"]> = {
 
 const fetchConfig = (url: string) => fetch(url).then((r) => r.json() as Promise<PublicAssistantConfig>)
 
-type MessageMeta = { requestId?: string; free?: boolean }
+const fetchUsage = (url: string) =>
+  fetch(url, { cache: "no-store" }).then((r) => (r.ok ? (r.json() as Promise<UsageState>) : undefined))
+
+type MessageMeta = { requestId?: string; free?: boolean; limited?: boolean; usage?: UsageState }
 
 const QUICK_ACTIONS: QuickAction[] = [
   {
@@ -186,9 +190,22 @@ export function AssistantWidget() {
       }),
     [],
   )
-  const { messages, sendMessage, status, error, setMessages, stop, clearError } = useChat({ transport })
+  const { data: usage, mutate: mutateUsage } = useSWR(open ? "/api/assistant/usage" : null, fetchUsage, {
+    revalidateOnFocus: false,
+  })
+  const { messages, sendMessage, status, error, setMessages, stop, clearError } = useChat({
+    transport,
+    onFinish: ({ message }) => {
+      const next = (message.metadata as MessageMeta | undefined)?.usage
+      if (next) mutateUsage(next, { revalidate: false })
+      else mutateUsage()
+    },
+    // Failed requests are refunded server-side, so re-read the real count.
+    onError: () => mutateUsage(),
+  })
 
   const busy = status === "submitted" || status === "streaming"
+  const limited = usage?.remaining === 0
   const welcome = config?.welcome?.[lang]?.trim()
   const copy = { ...COPY[lang], ...(welcome ? { intro: welcome } : {}) }
   const rtl = lang === "ur"
@@ -221,7 +238,7 @@ export function AssistantWidget() {
 
   function ask(text: string) {
     const trimmed = text.trim()
-    if (!trimmed || busy) return
+    if (!trimmed || busy || limited) return
     clearError()
     sendMessage({ text: trimmed })
     setInput("")
@@ -367,6 +384,8 @@ export function AssistantWidget() {
           </div>
 
           <div className="flex flex-col gap-3 border-t border-line-light px-4 pb-3 pt-3">
+            {usage && limited && <LimitCard usage={usage} lang={lang} />}
+            {usage && !limited && <AllowanceLine usage={usage} lang={lang} />}
             <form
               onSubmit={(e) => {
                 e.preventDefault()
@@ -387,13 +406,14 @@ export function AssistantWidget() {
                 }}
                 placeholder={copy.placeholder}
                 maxLength={2000}
+                disabled={limited}
                 dir="auto"
                 autoComplete="off"
                 className="min-w-0 flex-1 bg-transparent text-sm text-heading outline-none placeholder:text-muted-2"
               />
               <button
                 type="submit"
-                disabled={busy || !input.trim()}
+                disabled={busy || limited || !input.trim()}
                 className="flex size-10 shrink-0 items-center justify-center rounded-full bg-green-hover text-primary-foreground transition-colors hover:bg-green disabled:opacity-50"
                 aria-label="Send question"
               >

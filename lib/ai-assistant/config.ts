@@ -31,6 +31,31 @@ export type QuickActionKey = (typeof QUICK_ACTION_KEYS)[number]
 export const MAX_STEPS = 4
 export const MAX_HISTORY_MESSAGES = 12
 
+export function isValidTimeZone(tz: string) {
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: tz })
+    return true
+  } catch {
+    return false
+  }
+}
+
+export const USAGE_TIERS = ["guest", "registered", "professional", "corporate"] as const
+export type UsageTier = (typeof USAGE_TIERS)[number]
+
+/** Allowance state shown in the chat. Mirrors what the server enforces. */
+export type UsageState = {
+  tier: UsageTier
+  signedIn: boolean
+  limit: number
+  used: number
+  remaining: number
+  resetAt: string
+  resetLabel: string
+  resetTimeZone: string
+  paidUpgradesEnabled: boolean
+}
+
 export const aiSettingsSchema = z
   .object({
     enabled: z.boolean(),
@@ -42,9 +67,18 @@ export const aiSettingsSchema = z
     dailyBudgetUsd: z.number().min(0).max(1_000),
     maxCostPerRequestUsd: z.number().min(0.001).max(5),
     maxOutputTokens: z.number().int().min(100).max(4000),
-    guestDailyRequests: z.number().int().min(0).max(10_000),
-    userDailyRequests: z.number().int().min(0).max(10_000),
+    // Daily question allowances. null for guest/registered means "use the free allowance".
+    freeDailyQuestions: z.number().int().min(0).max(1_000),
+    guestDailyQuestions: z.number().int().min(0).max(1_000).nullable(),
+    registeredDailyQuestions: z.number().int().min(0).max(1_000).nullable(),
+    professionalDailyQuestions: z.number().int().min(0).max(1_000),
+    corporateDailyQuestions: z.number().int().min(0).max(10_000),
+    // Shared-IP safeguard for guests, so clearing cookies cannot unlock unlimited questions.
+    guestIpDailyQuestions: z.number().int().min(1).max(10_000),
     userMonthlyRequests: z.number().int().min(0).max(100_000),
+    userDailySpendUsd: z.number().min(0).max(100),
+    resetTimezone: z.string().min(1).max(64).refine(isValidTimeZone, { message: "Unknown time zone." }),
+    paidUpgradesEnabled: z.boolean(),
     alertThresholds: z.array(z.number().int().min(1).max(100)).max(8),
     languages: z.array(z.enum(ASSISTANT_LANGUAGES)).min(1),
     welcome: z.object({ en: z.string().max(600), ur: z.string().max(600), "roman-ur": z.string().max(600) }),
@@ -69,9 +103,16 @@ export const DEFAULT_AI_SETTINGS: AiSettings = {
   dailyBudgetUsd: 2,
   maxCostPerRequestUsd: 0.02,
   maxOutputTokens: 700,
-  guestDailyRequests: 20,
-  userDailyRequests: 60,
+  freeDailyQuestions: 5,
+  guestDailyQuestions: null,
+  registeredDailyQuestions: null,
+  professionalDailyQuestions: 5,
+  corporateDailyQuestions: 25,
+  guestIpDailyQuestions: 25,
   userMonthlyRequests: 600,
+  userDailySpendUsd: 0.1,
+  resetTimezone: "Asia/Karachi",
+  paidUpgradesEnabled: true,
   alertThresholds: [50, 75, 90, 100],
   languages: ["en", "ur", "roman-ur"],
   welcome: { en: "", ur: "", "roman-ur": "" },
