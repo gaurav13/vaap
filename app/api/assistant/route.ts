@@ -12,7 +12,7 @@ import { cookies } from "next/headers"
 import { after } from "next/server"
 import { db } from "@/lib/db"
 import { aiUsageLogs } from "@/lib/db/schema"
-import { getSession } from "@/lib/session"
+import { accessDenied, getAssistantAccess } from "@/lib/ai-assistant/access"
 import {
   ASSISTANT_LANGUAGES,
   MAX_HISTORY_MESSAGES,
@@ -31,6 +31,14 @@ import { assistantTools, freeAnswer, systemPrompt } from "@/lib/ai-assistant/ser
 import { classifyAiError, resolveModel } from "@/lib/ai-assistant/provider"
 import { consumeQuestion, getUsageState, ipSubject, limitMessage } from "@/lib/ai-assistant/usage-limits"
 import type { UsageState, UsageTier } from "@/lib/ai-assistant/config"
+import {
+  CONVERSATION_ID,
+  claimConversation,
+  findPriorReply,
+  saveExchangeEnd,
+  saveExchangeStart,
+  validMessageId,
+} from "@/lib/ai-assistant/history"
 
 export const maxDuration = 30
 
@@ -78,6 +86,11 @@ async function writeLog(base: LogBase, values: Partial<typeof aiUsageLogs.$infer
 }
 
 export async function POST(req: Request) {
+  // Sign-in and email verification are checked before anything is counted or any AI cost is incurred.
+  const access = await getAssistantAccess()
+  if (!access.ok) return accessDenied(access)
+  const viewer = access.viewer
+
   let body: { messages?: UIMessage[]; language?: string; conversationId?: string }
   try {
     body = await req.json()
@@ -105,19 +118,17 @@ export async function POST(req: Request) {
     cookieStore.set(SESSION_COOKIE, sessionId, { httpOnly: true, sameSite: "lax", secure: true, path: "/", maxAge: 60 * 60 * 24 * 30 })
   }
 
-  const session = await getSession().catch(() => null)
-  const viewer = session?.user ? { id: session.user.id, name: session.user.name, email: session.user.email } : null
   const requestId = randomUUID()
-  const usageCtx = { viewer: viewer ? { id: viewer.id, email: viewer.email } : null, sessionId, ip: ipSubject(req), settings }
+  const usageCtx = { viewer: { id: viewer.id, email: viewer.email }, sessionId, ip: ipSubject(req), settings }
   const base: LogBase = {
     requestId,
-    userId: viewer?.id ?? null,
+    userId: viewer.id,
     sessionId,
     conversationId: typeof body.conversationId === "string" ? body.conversationId.slice(0, 64) : null,
     language,
     question: question.slice(0, 1000),
     topic: classifyTopic(question),
-    tier: viewer ? "registered" : "guest",
+    tier: "registered",
   }
 
   const staticReply = (text: string, metadata: Record<string, unknown>) =>
@@ -133,9 +144,45 @@ export async function POST(req: Request) {
       }),
     })
 
+  // Signed-in conversations are stored server-side so they survive refreshes, logouts and other devices.
+  let persist: { conversationId: string; retry: boolean } | null = null
+  if (viewer && base.conversationId && CONVERSATION_ID.test(base.conversationId) && validMessageId(last.id)) {
+    const owned = await claimConversation(base.conversationId, viewer.id, question, language)
+    if (!owned) return new Response("This conversation is no longer available. Please start a new conversation.", { status: 404 })
+    const prior = await findPriorReply(base.conversationId, viewer.id, last.id)
+    if (prior.kind === "complete") {
+      // Duplicate of an already-answered request (e.g. resent after a refresh): return the saved answer without charging again.
+      return staticReply(prior.content, { requestId: prior.requestId ?? requestId, restored: true, usage: await getUsageState(usageCtx) })
+    }
+    if (prior.kind === "pending") {
+      return staticReply("Your previous answer is still being prepared. It will appear here in a moment.", {
+        pending: true,
+        usage: await getUsageState(usageCtx),
+      })
+    }
+    persist = { conversationId: base.conversationId, retry: prior.kind === "retry" }
+  }
+  const persistStart = async () => {
+    if (!persist || !viewer) return
+    try {
+      await saveExchangeStart({ ...persist, userId: viewer.id, userMessageId: last.id, question, language, requestId })
+    } catch (error) {
+      console.error("[assistant] history save failed:", (error as Error).message)
+      persist = null
+    }
+  }
+  const persistEnd = async (status: "complete" | "error", content: string) => {
+    if (!persist) return
+    await saveExchangeEnd(persist.conversationId, requestId, status, content).catch((error) =>
+      console.error("[assistant] history update failed:", (error as Error).message),
+    )
+  }
+
   const freeReply = async (reason: keyof typeof NOTICES, usage: UsageState) => {
     const free = await freeAnswer(question, NOTICES[reason])
     await writeLog(base, { status: STATUS_FOR[reason], answered: free.answered, provider: "faq", answer: free.text.slice(0, 8000) })
+    await persistStart()
+    await persistEnd("complete", free.text)
     return staticReply(free.text, { usage })
   }
 
@@ -202,6 +249,7 @@ If one of these asks for the same information as the user (even in different wor
     return freeReply(refused, { ...usage, used: usage.used - 1, remaining: usage.remaining + 1 })
   }
 
+  await persistStart()
   const startedAt = Date.now()
   let toolCalls = 0
   let knowledgeMissed = false
@@ -256,6 +304,7 @@ If one of these asks for the same information as the user (even in different wor
       const input = totalUsage.inputTokens ?? 0
       const output = totalUsage.outputTokens ?? 0
       const cached = totalUsage.inputTokenDetails?.cacheReadTokens ?? 0
+      await persistEnd(text.trim() ? "complete" : "error", text)
       await finalize({
         status: "ok",
         inputTokens: input,
@@ -272,6 +321,7 @@ If one of these asks for the same information as the user (even in different wor
       console.error(`[assistant] generation failed via ${provider}:`, failure.detail)
       // A technical failure is not the user's fault; give the question back.
       await ticket.refund()
+      await persistEnd("error", "")
       // Charge the worst case until reconciliation replaces it with the actual gateway cost.
       await finalize({
         status: "error",
@@ -281,6 +331,12 @@ If one of these asks for the same information as the user (even in different wor
       })
     },
   })
+
+  // Keep generating (and saving) even if the visitor refreshes or closes the page mid-answer.
+  if (persist)
+    after(async () => {
+      await result.consumeStream()
+    })
 
   return createUIMessageStreamResponse({
     stream: toUIMessageStream({

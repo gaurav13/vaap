@@ -20,6 +20,11 @@ function GoogleMark() {
   )
 }
 
+/** Only same-site paths, so the redirect parameter cannot send users to another website. */
+function safeReturnPath(value: string | null) {
+  return value && value.startsWith("/") && !value.startsWith("//") && !value.includes("\\") && value.length < 300 ? value : "/dashboard"
+}
+
 export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -34,6 +39,8 @@ export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
 
   const isSignUp = mode === "sign-up"
   const busy = loading || googleLoading
+  const returnTo = safeReturnPath(searchParams.get("redirect"))
+  const authPage = (page: "sign-in" | "sign-up") => (returnTo === "/dashboard" ? `/${page}` : `/${page}?redirect=${encodeURIComponent(returnTo)}`)
 
   async function handleGoogle() {
     setError(null)
@@ -41,9 +48,9 @@ export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
     try {
       const { error } = await authClient.signIn.social({
         provider: "google",
-        callbackURL: "/dashboard",
-        newUserCallbackURL: "/dashboard",
-        errorCallbackURL: isSignUp ? "/sign-up" : "/sign-in",
+        callbackURL: returnTo,
+        newUserCallbackURL: returnTo,
+        errorCallbackURL: authPage(isSignUp ? "sign-up" : "sign-in"),
       })
       if (error) {
         setError(error.message ?? "Could not continue with Google.")
@@ -76,7 +83,7 @@ export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
           return
         }
       }
-      router.push("/dashboard")
+      router.push(returnTo)
       router.refresh()
     } catch {
       setError("Something went wrong. Please try again.")
@@ -191,14 +198,14 @@ export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
         {isSignUp ? (
           <>
             Already a member?{" "}
-            <Link href="/sign-in" className="font-medium text-primary hover:underline">
+            <Link href={authPage("sign-in")} className="font-medium text-primary hover:underline">
               Sign in
             </Link>
           </>
         ) : (
           <>
             New to VAAP?{" "}
-            <Link href="/sign-up" className="font-medium text-primary hover:underline">
+            <Link href={authPage("sign-up")} className="font-medium text-primary hover:underline">
               Create an account
             </Link>
           </>
