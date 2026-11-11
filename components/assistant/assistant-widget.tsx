@@ -21,7 +21,7 @@ import { usePathname } from "next/navigation"
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react"
 import useSWR from "swr"
 import type { PublicAssistantConfig, UsageState } from "@/lib/ai-assistant/config"
-import { AllowanceLine, LimitCard } from "./assistant-usage"
+import { AllowanceLine, LimitCard, LimitStatus, limitedPlaceholder } from "./assistant-usage"
 import { cn } from "@/lib/utils"
 import { AssistantFeedback } from "./assistant-feedback"
 import { AssistantMessageText } from "./assistant-message-text"
@@ -84,6 +84,8 @@ const fetchConfig = (url: string) => fetch(url).then((r) => r.json() as Promise<
 
 const fetchUsage = (url: string) =>
   fetch(url, { cache: "no-store" }).then((r) => (r.ok ? (r.json() as Promise<UsageState>) : undefined))
+
+const LIMIT_DISMISSED_KEY = "vaap-ai-limit-dismissed"
 
 type MessageMeta = { requestId?: string; free?: boolean; limited?: boolean; usage?: UsageState }
 
@@ -203,6 +205,17 @@ export function AssistantWidget() {
     // Failed requests are refunded server-side, so re-read the real count.
     onError: () => mutateUsage(),
   })
+
+  // Remembers which reset window the full notice was dismissed for, so it stays closed for this browser session.
+  const [limitDismissed, setLimitDismissed] = useState<string | null>(() =>
+    typeof window === "undefined" ? null : window.sessionStorage.getItem(LIMIT_DISMISSED_KEY),
+  )
+  function dismissLimit(resetAt: string) {
+    setLimitDismissed(resetAt)
+    try {
+      window.sessionStorage.setItem(LIMIT_DISMISSED_KEY, resetAt)
+    } catch {}
+  }
 
   const busy = status === "submitted" || status === "streaming"
   const limited = usage?.remaining === 0
@@ -384,7 +397,8 @@ export function AssistantWidget() {
           </div>
 
           <div className="flex flex-col gap-3 border-t border-line-light px-4 pb-3 pt-3">
-            {usage && limited && <LimitCard usage={usage} lang={lang} />}
+            {usage && limited && limitDismissed !== usage.resetAt && <LimitCard usage={usage} lang={lang} onDismiss={() => dismissLimit(usage.resetAt)} />}
+            {usage && limited && limitDismissed === usage.resetAt && <LimitStatus usage={usage} lang={lang} />}
             {usage && !limited && <AllowanceLine usage={usage} lang={lang} />}
             <form
               onSubmit={(e) => {
@@ -404,7 +418,7 @@ export function AssistantWidget() {
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && (e.nativeEvent.isComposing || e.keyCode === 229)) e.preventDefault()
                 }}
-                placeholder={copy.placeholder}
+                placeholder={limited ? limitedPlaceholder(lang) : copy.placeholder}
                 maxLength={2000}
                 disabled={limited}
                 dir="auto"
