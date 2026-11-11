@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { getKnowledgeAssessment, getPendingKnowledge } from "@/lib/ai-assistant/analytics"
 import { dateTime, num } from "@/lib/ai-assistant/format"
+import { richTextToPlain } from "@/lib/rich-text-plain"
 import { Empty, Section, Table, Td, Th } from "@/components/admin/ai/ui"
 import { KnowledgeReviewButtons } from "@/components/admin/ai/admin-controls"
 
@@ -34,7 +35,7 @@ export async function KnowledgeTab({ isSuperAdmin }: { isSuperAdmin: boolean }) 
                   </span>
                 </div>
                 {k.sourceUrl ? <p className="truncate text-xs text-muted-2">{k.sourceUrl}</p> : null}
-                <p className="line-clamp-3 text-sm leading-relaxed text-muted-2">{k.preview}</p>
+                <p className="line-clamp-3 text-sm leading-relaxed text-muted-2">{richTextToPlain(k.preview)}</p>
                 {isSuperAdmin ? <KnowledgeReviewButtons id={k.id} title={k.title} /> : null}
               </li>
             ))}

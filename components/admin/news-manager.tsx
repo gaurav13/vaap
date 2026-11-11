@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation"
 import { Eye, Pencil, Plus, Trash2, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { FileUpload } from "@/components/admin/file-upload"
+import { RichTextEditor } from "@/components/admin/rich-text-editor"
+import { isHtml } from "@/lib/sanitize"
+import { renderSafeMarkdown } from "@/lib/markdown-safe"
 import { createNews, updateNews, deleteNews } from "@/app/actions/admin"
 import { NEWS_CATEGORIES } from "@/lib/news-options"
 
@@ -226,7 +229,7 @@ export function NewsManager({
               <textarea name="excerpt" defaultValue={editing?.excerpt} rows={2} className={inputCls} />
             </Field>
             <Field label="Content">
-              <textarea name="content" defaultValue={editing?.content} rows={5} className={inputCls} />
+              <RichTextEditor key={editing?.id ?? "new"} name="content" defaultValue={editing?.content ? (isHtml(editing.content) ? editing.content : renderSafeMarkdown(editing.content)) : ""} placeholder="Write or paste the post…" />
             </Field>
             <label className="flex items-center gap-2 text-sm text-body">
               <input

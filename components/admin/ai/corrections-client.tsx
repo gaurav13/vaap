@@ -12,6 +12,9 @@ import {
 } from "@/app/actions/ai-admin"
 import { TOPICS } from "@/lib/ai-assistant/config"
 import { dateTime } from "@/lib/ai-assistant/format"
+import { MarkdownRichEditor } from "@/components/admin/markdown-rich-editor"
+import { MarkdownView } from "@/components/markdown-view"
+import { richTextToPlain } from "@/lib/rich-text-plain"
 import { StatusBadge } from "@/components/admin/ai/ui"
 import { cn } from "@/lib/utils"
 
@@ -57,7 +60,7 @@ export function CorrectionForm({
         <label htmlFor="c-answer" className="text-sm font-medium text-heading">
           Corrected answer
         </label>
-        <textarea id="c-answer" name="correctedAnswer" required rows={6} className={field} />
+        <MarkdownRichEditor id="c-answer" name="correctedAnswer" required minLength={10} maxLength={6000} label="Corrected answer" />
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-1.5">
@@ -164,7 +167,15 @@ export function CorrectionCard({ correction: c, isSuperAdmin }: { correction: Co
           <label className="sr-only" htmlFor={`a-${c.id}`}>
             Corrected answer
           </label>
-          <textarea id={`a-${c.id}`} name="correctedAnswer" rows={6} defaultValue={c.correctedAnswer} className={field} />
+          <MarkdownRichEditor
+            id={`a-${c.id}`}
+            name="correctedAnswer"
+            required
+            minLength={10}
+            maxLength={6000}
+            defaultValue={c.correctedAnswer}
+            label="Corrected answer"
+          />
           <div className="grid gap-3 sm:grid-cols-3">
             <input name="keywords" aria-label="Keywords" defaultValue={c.keywords} className={field} placeholder="Keywords" />
             <select name="topic" aria-label="Topic" defaultValue={c.topic} className={field}>
@@ -186,7 +197,7 @@ export function CorrectionCard({ correction: c, isSuperAdmin }: { correction: Co
           </div>
         </form>
       ) : (
-        <p className="whitespace-pre-wrap text-pretty text-sm leading-relaxed text-heading">{c.correctedAnswer}</p>
+        <MarkdownView text={c.correctedAnswer} className="text-heading" />
       )}
 
       {c.originalAnswer ? (
@@ -255,7 +266,7 @@ export function CorrectionCard({ correction: c, isSuperAdmin }: { correction: Co
                 </span>
               </div>
               {v.note ? <p className="text-xs text-muted-2">{v.note}</p> : null}
-              <p className="line-clamp-3 whitespace-pre-wrap text-muted-2">{v.correctedAnswer}</p>
+              <p className="line-clamp-3 text-muted-2">{richTextToPlain(v.correctedAnswer)}</p>
               {isSuperAdmin && v.correctedAnswer !== c.correctedAnswer ? (
                 <button
                   type="button"

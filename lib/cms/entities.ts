@@ -250,9 +250,9 @@ export const ENTITIES: Record<EntityKey, EntityConfig> = {
       {
         name: "answer",
         label: "Answer",
-        type: "textarea",
+        type: "richtext",
         fullWidth: true,
-        placeholder: "Write the answer shown when the question is expanded.",
+        placeholder: "Write or paste the answer shown when the question is expanded.",
       },
       { name: "published", label: "Published", type: "checkbox" },
     ],

@@ -3,6 +3,8 @@
 import { useActionState, useState, useTransition } from "react"
 import { FileText, Globe, Loader2, RefreshCw, Search, Trash2, Type, Upload } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { MarkdownRichEditor } from "@/components/admin/markdown-rich-editor"
+import { richTextToPlain } from "@/lib/rich-text-plain"
 import {
   addKnowledgeSource,
   deleteKnowledgeSource,
@@ -120,10 +122,17 @@ export function AiKnowledgeManager({
             </label>
           )}
           {mode === "text" && (
-            <label className="flex flex-col gap-1.5 text-sm font-medium text-foreground">
-              Content
-              <textarea name="text" required rows={8} minLength={40} className={cn(field, "leading-relaxed")} />
-            </label>
+            <div className="flex flex-col gap-1.5 text-sm font-medium text-foreground">
+              <label htmlFor="knowledge-text">Content</label>
+              <MarkdownRichEditor
+                id="knowledge-text"
+                name="text"
+                required
+                minLength={40}
+                label="Knowledge content"
+                placeholder="Paste or write the approved VAAP information…"
+              />
+            </div>
           )}
 
           <div className="flex flex-wrap items-center gap-3">
@@ -281,7 +290,7 @@ function SearchTester() {
               <p className="font-semibold text-foreground">
                 {r.title} <span className="font-normal capitalize text-muted-2">· {r.category}</span>
               </p>
-              <p className="mt-1 leading-relaxed text-muted-2">{r.excerpt}…</p>
+              <p className="mt-1 leading-relaxed text-muted-2">{richTextToPlain(r.excerpt)}…</p>
             </li>
           ))}
         </ul>
