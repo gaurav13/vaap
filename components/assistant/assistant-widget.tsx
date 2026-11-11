@@ -19,7 +19,7 @@ import {
   type LucideIcon,
 } from "lucide-react"
 import { usePathname } from "next/navigation"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react"
 import { cn } from "@/lib/utils"
 import { AssistantMessageText } from "./assistant-message-text"
 import { ASSISTANT_ASK_EVENT } from "./assistant-events"
@@ -166,14 +166,13 @@ export function AssistantWidget() {
     return () => window.removeEventListener("keydown", onKey)
   }, [open])
 
-  const askRef = useRef<(text: string) => void>(() => {})
-  askRef.current = ask
+  const askFromEvent = useEffectEvent((text: string) => ask(text))
   useEffect(() => {
     const onAsk = (e: Event) => {
       const text = (e as CustomEvent<{ text?: string }>).detail?.text ?? ""
       setOpen(true)
       setSeen(true)
-      if (text.trim()) askRef.current(text)
+      if (text.trim()) askFromEvent(text)
       else requestAnimationFrame(() => inputRef.current?.focus())
     }
     window.addEventListener(ASSISTANT_ASK_EVENT, onAsk)
