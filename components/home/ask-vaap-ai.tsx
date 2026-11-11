@@ -1,8 +1,9 @@
 "use client"
 
-import { Bot, SendHorizontal } from "lucide-react"
+import { SendHorizontal } from "lucide-react"
 import { useState } from "react"
 import { openAssistant } from "@/components/assistant/assistant-events"
+import { AssistantIcon } from "@/components/assistant/assistant-icon"
 
 const SUGGESTIONS = ["How do I become a member?", "Upcoming events", "What is blockchain?"]
 

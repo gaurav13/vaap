@@ -22,6 +22,7 @@ import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react"
 import { cn } from "@/lib/utils"
 import { AssistantMessageText } from "./assistant-message-text"
 import { ASSISTANT_ASK_EVENT } from "./assistant-events"
+import { AssistantIcon } from "./assistant-icon"
 
 type Lang = "en" | "ur" | "roman-ur"
 
