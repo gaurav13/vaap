@@ -11,7 +11,35 @@ type UserRow = {
   email: string
   role: "member" | "staff" | "manager" | "admin"
   createdAt: string
+  isPaid: boolean
+  membershipId: string | null
 }
+
+type UserType = "super-admin" | "admin" | "staff" | "paid" | "unpaid"
+
+const USER_TYPE: Record<UserType, { label: string; className: string }> = {
+  "super-admin": { label: "Super Admin", className: "border-navy bg-navy text-white" },
+  admin: { label: "Admin", className: "border-navy/20 bg-navy/10 text-navy" },
+  staff: { label: "Staff", className: "border-line bg-muted/60 text-heading" },
+  paid: { label: "Paid Member", className: "border-green-border bg-mint text-green" },
+  unpaid: { label: "Non-Paid", className: "border-amber-200 bg-amber-50 text-amber-800" },
+}
+
+function userType(u: UserRow): UserType {
+  if (u.role === "admin") return "super-admin"
+  if (u.role === "manager") return "admin"
+  if (u.role === "staff") return "staff"
+  return u.isPaid ? "paid" : "unpaid"
+}
+
+const FILTERS: { key: "all" | UserType; label: string }[] = [
+  { key: "all", label: "All" },
+  { key: "super-admin", label: "Super Admin" },
+  { key: "paid", label: "Paid" },
+  { key: "unpaid", label: "Non-Paid" },
+  { key: "admin", label: "Admin" },
+  { key: "staff", label: "Staff" },
+]
 
 const ROLES = ["member", "staff", "manager", "admin"] as const
 const ROLE_LABELS: Record<(typeof ROLES)[number], string> = {
@@ -170,6 +198,7 @@ export function UsersManager({ items, currentUserId }: { items: UserRow[]; curre
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState("")
   const [pwUser, setPwUser] = useState<UserRow | null>(null)
+  const [filter, setFilter] = useState<"all" | UserType>("all")
 
   function change(userId: string, role: (typeof ROLES)[number]) {
     setError(null)
@@ -196,37 +225,93 @@ export function UsersManager({ items, currentUserId }: { items: UserRow[]; curre
     })
   }
 
+  const counts = items.reduce<Record<string, number>>(
+    (acc, u) => {
+      const t = userType(u)
+      acc[t] = (acc[t] ?? 0) + 1
+      return acc
+    },
+    { all: items.length },
+  )
+
+  const q = query.toLowerCase()
   const visible = items.filter(
-    (u) => u.name.toLowerCase().includes(query.toLowerCase()) || u.email.toLowerCase().includes(query.toLowerCase()),
+    (u) =>
+      (filter === "all" || userType(u) === filter) &&
+      (u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)),
   )
 
   return (
     <div className="mt-6">
-      <input
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search by name or email…"
-        className="mb-4 w-full max-w-sm rounded-lg border border-line bg-card px-3.5 py-2.5 text-sm text-heading outline-none focus:border-green-border focus:ring-2 focus:ring-green/20"
-      />
+      <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div role="tablist" aria-label="Filter users by type" className="flex flex-wrap gap-2">
+          {FILTERS.map((f) => (
+            <button
+              key={f.key}
+              type="button"
+              role="tab"
+              aria-selected={filter === f.key}
+              onClick={() => setFilter(f.key)}
+              className={cn(
+                "flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-colors",
+                filter === f.key
+                  ? "border-navy bg-navy text-white"
+                  : "border-line bg-card text-muted-2 hover:bg-mint hover:text-navy",
+              )}
+            >
+              {f.label}
+              <span
+                className={cn(
+                  "rounded-full px-1.5 py-0.5 text-[11px] leading-none",
+                  filter === f.key ? "bg-white/20 text-white" : "bg-muted/60 text-heading",
+                )}
+              >
+                {counts[f.key] ?? 0}
+              </span>
+            </button>
+          ))}
+        </div>
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search by name or email…"
+          aria-label="Search users"
+          className="w-full max-w-sm rounded-lg border border-line bg-card px-3.5 py-2.5 text-sm text-heading outline-none focus:border-green-border focus:ring-2 focus:ring-green/20"
+        />
+      </div>
 
       {error && <p className="mb-4 text-sm text-destructive">{error}</p>}
 
       <div className="overflow-hidden rounded-xl border border-line bg-card">
-        <div className="hidden grid-cols-[1.5fr_1fr_auto_auto] gap-4 border-b border-line bg-muted/40 px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-2 sm:grid">
+        <div className="hidden grid-cols-[1.5fr_1fr_1fr_auto_auto] gap-4 border-b border-line bg-muted/40 px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-2 sm:grid">
           <span>User</span>
+          <span>Type</span>
           <span>Joined</span>
           <span>Role</span>
           <span>Actions</span>
         </div>
         <ul className="divide-y divide-line">
           {visible.map((u) => (
-            <li key={u.id} className="grid gap-3 px-5 py-4 sm:grid-cols-[1.5fr_1fr_auto_auto] sm:items-center sm:gap-4">
+            <li key={u.id} className="grid gap-3 px-5 py-4 sm:grid-cols-[1.5fr_1fr_1fr_auto_auto] sm:items-center sm:gap-4">
               <div className="min-w-0">
                 <p className="truncate text-sm font-bold text-heading">
                   {u.name}
                   {u.id === currentUserId && <span className="ml-2 text-xs font-normal text-green">(you)</span>}
                 </p>
                 <p className="truncate text-xs text-muted-2">{u.email}</p>
+              </div>
+              <div className="flex min-w-0 flex-col items-start gap-1">
+                <span
+                  className={cn(
+                    "rounded-full border px-2.5 py-0.5 text-xs font-semibold",
+                    USER_TYPE[userType(u)].className,
+                  )}
+                >
+                  {USER_TYPE[userType(u)].label}
+                </span>
+                {u.isPaid && u.membershipId && (
+                  <span className="truncate font-mono text-[11px] text-muted-2">{u.membershipId}</span>
+                )}
               </div>
               <p className="text-xs text-muted-2">
                 {new Date(u.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}

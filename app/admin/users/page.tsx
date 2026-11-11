@@ -16,6 +16,8 @@ export default async function AdminUsersPage() {
           email: r.email,
           role: r.role as "member" | "staff" | "manager" | "admin",
           createdAt: r.createdAt.toISOString(),
+          isPaid: r.isPaid,
+          membershipId: r.membershipId,
         }))}
       />
     </div>

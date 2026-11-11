@@ -25,7 +25,8 @@ import { processMembershipApproval } from "@/lib/referral-engine"
 import { canOwnReferralCode } from "@/lib/permissions"
 import { isVerifiedKolUser } from "@/lib/kol"
 import { notify, notifyCommunity } from "@/lib/notifications"
-import { and, desc, eq, sql } from "drizzle-orm"
+import { and, desc, eq, isNull, sql } from "drizzle-orm"
+import { isIssuedMembership } from "@/lib/membership-state"
 import { randomUUID } from "crypto"
 import { revalidatePath } from "next/cache"
 import { after } from "next/server"
@@ -739,17 +740,48 @@ export async function replyToContactMessage(
 
 export async function getUsers() {
   await requireAdmin()
-  return db
-    .select({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      createdAt: user.createdAt,
-    })
-    .from(user)
-    .orderBy(desc(user.createdAt))
-}
+  const [users, memberRows] = await Promise.all([
+    db
+      .select({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        createdAt: user.createdAt,
+      })
+      .from(user)
+      .orderBy(desc(user.createdAt)),
+    db
+      .select({
+        userId: members.userId,
+        email: members.email,
+        status: members.status,
+        membershipId: members.membershipId,
+        goodStanding: members.goodStanding,
+        expiresAt: members.expiresAt,
+      })
+      .from(members)
+      .where(isNull(members.deletedAt)),
+  ])
+
+  // Same rule as getMembershipStanding: paid means an issued, active, in-good-standing,
+  // unexpired membership. Checkout alone never counts.
+  const now = Date.now()
+  const paidByUserId = new Map<string, string>()
+  const paidByEmail = new Map<string, string>()
+  for (const m of memberRows) {
+    if (!isIssuedMembership(m)) continue
+    if (m.status !== "active" || !m.goodStanding) continue
+    if (m.expiresAt && m.expiresAt.getTime() < now) continue
+    if (m.userId) paidByUserId.set(m.userId, m.membershipId)
+    if (m.email) paidByEmail.set(m.email.toLowerCase(), m.membershipId)
+  }
+
+  return users.map((u) => {
+    const membershipId = paidByUserId.get(u.id) ?? paidByEmail.get(u.email.toLowerCase()) ?? null
+    return { ...u, isPaid: Boolean(membershipId), membershipId }
+  })
+  }
 
 export async function setUserRole(userId: string, role: "member" | "staff" | "manager" | "admin") {
   const admin = await requireAdmin()
