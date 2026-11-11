@@ -29,6 +29,7 @@ import { useSession } from "@/lib/auth-client"
 import { AllowanceLine, LimitCard, LimitStatus, limitedPlaceholder } from "./assistant-usage"
 import { AssistantAuthGate } from "./assistant-auth-gate"
 import { AssistantHistory } from "./assistant-history"
+import { AssistantSizeMenu, isAssistantSize, type AssistantSize } from "./assistant-size-menu"
 import { cn } from "@/lib/utils"
 import { AssistantFeedback } from "./assistant-feedback"
 import { AssistantMessageText } from "./assistant-message-text"
@@ -208,6 +209,16 @@ const LANGS: { id: Lang; label: string }[] = [
   { id: "roman-ur", label: "Roman Urdu" },
 ]
 
+const SIZE_KEY = "vaap-assistant-size"
+
+// Mobile always fills the screen; the sm: classes apply the chosen desktop size.
+const PANEL_SIZE: Record<AssistantSize, string> = {
+  compact: "sm:static sm:h-[min(520px,calc(100dvh-7rem))] sm:w-[340px] sm:rounded-3xl sm:border",
+  standard: "sm:static sm:h-[min(680px,calc(100dvh-7rem))] sm:w-[400px] sm:rounded-3xl sm:border",
+  half: "sm:inset-auto sm:bottom-6 sm:right-6 sm:top-6 sm:h-auto sm:w-[max(400px,calc(50vw-1.5rem))] sm:rounded-3xl sm:border",
+  full: "sm:inset-6 sm:h-auto sm:w-auto sm:rounded-3xl sm:border",
+}
+
 function textOf(message: UIMessage) {
   return message.parts.map((p) => (p.type === "text" ? p.text : "")).join("")
 }
@@ -228,6 +239,23 @@ export function AssistantWidget() {
   const returnPath = `${pathname || "/"}?assistant=open`
   const [view, setView] = useState<"chat" | "history">("chat")
   const [activeId, setActiveId] = useState("")
+  const [size, setSizeState] = useState<AssistantSize>(() => {
+    if (typeof window === "undefined") return "standard"
+    try {
+      const saved = window.localStorage.getItem(SIZE_KEY)
+      return isAssistantSize(saved) ? saved : "standard"
+    } catch {
+      return "standard"
+    }
+  })
+  const sizeMenuOpen = useRef(false)
+  function setSize(next: AssistantSize) {
+    setSizeState(next)
+    try {
+      window.localStorage.setItem(SIZE_KEY, next)
+    } catch {}
+  }
+  const wide = size === "half" || size === "full"
 
   const { data: config } = useSWR(open ? "/api/assistant/config" : null, fetchConfig, { revalidateOnFocus: false })
   const languages = LANGS.filter((l) => !config || config.languages.includes(l.id))
@@ -350,10 +378,25 @@ export function AssistantWidget() {
 
   useEffect(() => {
     if (!open) return
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false)
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && !sizeMenuOpen.current && setOpen(false)
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
   }, [open])
+
+  // Stop the page behind from scrolling while the panel covers it (mobile, or full screen on desktop).
+  useEffect(() => {
+    if (!open) return
+    const mobile = window.matchMedia("(max-width: 639px)")
+    const apply = () => {
+      document.documentElement.style.overflow = mobile.matches || size === "full" ? "hidden" : ""
+    }
+    apply()
+    mobile.addEventListener("change", apply)
+    return () => {
+      mobile.removeEventListener("change", apply)
+      document.documentElement.style.overflow = ""
+    }
+  }, [open, size])
 
   const askFromEvent = useEffectEvent((text: string) => ask(text))
   useEffect(() => {
@@ -416,16 +459,43 @@ export function AssistantWidget() {
           id="vaap-assistant"
           role="dialog"
           aria-label="VAAP AI Assistant"
-          className="flex h-[min(680px,calc(100dvh-7rem))] w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-3xl border border-line bg-card shadow-2xl shadow-heading/15 animate-in fade-in slide-in-from-bottom-4 duration-200 sm:w-[400px]"
+          aria-modal={size === "full" ? true : undefined}
+          className={cn(
+            "fixed inset-0 z-50 flex h-dvh w-full flex-col overflow-hidden border-line bg-card shadow-2xl shadow-heading/15 animate-in fade-in slide-in-from-bottom-4 duration-200 sm:fixed",
+            PANEL_SIZE[size],
+          )}
         >
-          <header className="flex items-center gap-3 bg-green-hover px-4 py-3.5 text-primary-foreground">
-            <span className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-xl ring-2 ring-gold/70">
+          <header
+            className="flex shrink-0 items-center gap-2 bg-green-hover px-3 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] text-primary-foreground sm:gap-3 sm:px-4 sm:py-3.5"
+            onDoubleClick={(e) => {
+              if ((e.target as HTMLElement).closest("button")) return
+              if (window.matchMedia("(min-width: 640px)").matches) setSize(size === "full" ? "standard" : "full")
+            }}
+          >
+            <span
+              className={cn(
+                "flex shrink-0 items-center justify-center overflow-hidden rounded-xl ring-2 ring-gold/70",
+                size === "compact" ? "size-9" : "size-10 sm:size-11",
+              )}
+            >
               <AssistantIcon className="size-full" />
             </span>
             <div className="min-w-0 flex-1">
-              <h2 className="truncate text-lg font-semibold leading-tight">VAAP AI Assistant</h2>
-              <p className="truncate text-xs text-primary-foreground/75">Your Guide to Virtual Assets, Knowledge & Community Support</p>
+              <h2 className={cn("truncate font-semibold leading-tight", size === "compact" ? "text-base" : "text-base sm:text-lg")}>
+                VAAP AI Assistant
+              </h2>
+              {size !== "compact" && (
+                <p className="truncate text-xs text-primary-foreground/75">Your Guide to Virtual Assets, Knowledge & Community Support</p>
+              )}
             </div>
+            <div className="flex shrink-0 items-center">
+            <AssistantSizeMenu
+              size={size}
+              onChange={setSize}
+              onOpenChange={(v) => {
+                sizeMenuOpen.current = v
+              }}
+            />
             {canChat && (
               <button
                 type="button"
@@ -460,6 +530,7 @@ export function AssistantWidget() {
             >
               <Minus className="size-5" aria-hidden />
             </button>
+            </div>
             <button
               type="button"
               onClick={() => setOpen(false)}
@@ -470,7 +541,12 @@ export function AssistantWidget() {
             </button>
           </header>
 
-          <div ref={scrollRef} className="flex-1 overflow-y-auto overscroll-contain px-4 py-4" aria-live="polite">
+          <div
+            ref={scrollRef}
+            className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4 [-webkit-overflow-scrolling:touch] [scrollbar-gutter:stable] sm:px-4"
+            aria-live="polite"
+          >
+            <div className={cn("mx-auto w-full", wide && "sm:max-w-3xl")}>
             {access === "loading" ? (
               <p className="py-10 text-center text-sm text-muted-2">Loading...</p>
             ) : access === "signed-out" ? (
@@ -497,7 +573,7 @@ export function AssistantWidget() {
                     <p className="text-sm font-semibold text-heading">{copy.ask}</p>
                   </div>
                 </div>
-                <ul className="grid grid-cols-2 gap-3">
+                <ul className={cn("grid grid-cols-2 gap-2.5 sm:gap-3", wide && "lg:grid-cols-3", size === "full" && "xl:grid-cols-4")}>
                   {quickActions.map((a) => (
                     <li key={a.label.en}>
                       <button
@@ -551,7 +627,8 @@ export function AssistantWidget() {
                       <div
                         dir="auto"
                         className={cn(
-                          "max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed",
+                          "min-w-0 max-w-[85%] break-words rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed [overflow-wrap:anywhere]",
+                          wide && "sm:text-[15px]",
                           m.role === "user" ? "rounded-br-md bg-green text-primary-foreground" : "rounded-bl-md bg-surface text-body",
                         )}
                       >
@@ -582,9 +659,16 @@ export function AssistantWidget() {
                 )}
               </ol>
             )}
+            </div>
           </div>
 
-          <div className="flex flex-col gap-3 border-t border-line-light px-4 pb-3 pt-3">
+          <div
+            className={cn(
+              "mx-auto flex w-full shrink-0 flex-col gap-3 border-t border-line-light px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:px-4 sm:pb-3",
+              wide && "sm:max-w-3xl sm:border-x-0",
+              size === "compact" && "gap-2 pt-2.5",
+            )}
+          >
             {canChat && usage && limited && limitDismissed !== usage.resetAt && <LimitCard usage={usage} lang={lang} onDismiss={() => dismissLimit(usage.resetAt)} />}
             {canChat && usage && limited && limitDismissed === usage.resetAt && <LimitStatus usage={usage} lang={lang} />}
             {canChat && usage && !limited && <AllowanceLine usage={usage} lang={lang} />}
@@ -611,7 +695,8 @@ export function AssistantWidget() {
                 disabled={limited}
                 dir="auto"
                 autoComplete="off"
-                className="min-w-0 flex-1 bg-transparent text-sm text-heading outline-none placeholder:text-muted-2"
+                enterKeyHint="send"
+                className="min-w-0 flex-1 bg-transparent text-base text-heading outline-none placeholder:text-muted-2 sm:text-sm"
               />
               <button
                 type="submit"
@@ -632,7 +717,7 @@ export function AssistantWidget() {
                     aria-checked={lang === l.id}
                     onClick={() => setLang(l.id)}
                     className={cn(
-                      "rounded-full px-4 py-1.5 text-sm font-semibold transition-colors",
+                      "rounded-full px-3 py-1.5 text-sm font-semibold transition-colors sm:px-4",
                       lang === l.id ? "bg-green-hover text-primary-foreground" : "text-heading hover:text-green",
                     )}
                   >
@@ -654,7 +739,11 @@ export function AssistantWidget() {
         aria-expanded={open}
         aria-controls="vaap-assistant"
         aria-label={open ? "Hide VAAP AI Assistant" : "Open VAAP AI Assistant"}
-        className="relative flex size-16 items-center justify-center rounded-2xl bg-green-hover text-primary-foreground shadow-xl shadow-green/30 transition-transform hover:scale-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green"
+        className={cn(
+          "relative flex size-14 items-center justify-center rounded-2xl bg-green-hover text-primary-foreground shadow-xl shadow-green/30 transition-transform hover:scale-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green sm:size-16",
+          open && "max-sm:hidden",
+          open && wide && "sm:hidden",
+        )}
       >
         {open ? (
           <X className="size-7" aria-hidden />
