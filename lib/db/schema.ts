@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, serial, integer, jsonb, uniqueIndex, primaryKey } from "drizzle-orm/pg-core"
+import { pgTable, text, timestamp, boolean, serial, integer, jsonb, index, uniqueIndex, primaryKey } from "drizzle-orm/pg-core"
 import type { EmailContent } from "@/lib/email-templates/registry"
 
 // --- Better Auth required tables -------------------------------------------
@@ -1487,6 +1487,44 @@ export const aiCorrectionVersions = pgTable("ai_correction_versions", {
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 })
 
+export const aiConversations = pgTable(
+  "ai_conversations",
+  {
+    id: text("id").primaryKey(),
+    userId: text("userId").notNull(),
+    title: text("title").notNull().default(""),
+    language: text("language").notNull().default("en"),
+    status: text("status").notNull().default("active"), // active | deleted
+    messageCount: integer("messageCount").notNull().default(0),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+    lastActivityAt: timestamp("lastActivityAt").notNull().defaultNow(),
+    deletedAt: timestamp("deletedAt"),
+  },
+  (t) => [index("ai_conversations_user_activity_idx").on(t.userId, t.lastActivityAt)],
+)
+
+export const aiMessages = pgTable(
+  "ai_messages",
+  {
+    seq: serial("seq").primaryKey(),
+    id: text("id").notNull(),
+    conversationId: text("conversationId").notNull(),
+    userId: text("userId").notNull(),
+    role: text("role").notNull(), // user | assistant
+    content: text("content").notNull().default(""),
+    language: text("language").notNull().default("en"),
+    requestId: text("requestId"),
+    replyTo: text("replyTo"),
+    status: text("status").notNull().default("complete"), // complete | pending | error
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("ai_messages_conversation_message_uq").on(t.conversationId, t.id),
+    index("ai_messages_conversation_seq_idx").on(t.conversationId, t.seq),
+  ],
+)
+
 export const aiFeedback = pgTable("ai_feedback", {
   id: serial("id").primaryKey(),
   requestId: text("requestId"),
@@ -1499,4 +1537,12 @@ export const aiFeedback = pgTable("ai_feedback", {
   sessionId: text("sessionId").notNull(),
   resolved: boolean("resolved").notNull().default(false),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
+// Per-user throttle for "Resend verification email" so the mailer cannot be abused.
+export const emailVerificationSends = pgTable("email_verification_sends", {
+  userId: text("userId").primaryKey(),
+  lastSentAt: timestamp("lastSentAt").notNull().defaultNow(),
+  dayKey: text("dayKey").notNull(),
+  dayCount: integer("dayCount").notNull().default(0),
 })

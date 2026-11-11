@@ -5,6 +5,9 @@ import { DefaultChatTransport, type UIMessage } from "ai"
 import {
   CalendarDays,
   ChartNoAxesColumnIncreasing,
+  Check,
+  Copy,
+  History,
   Landmark,
   Layers,
   Minus,
@@ -21,7 +24,11 @@ import { usePathname } from "next/navigation"
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react"
 import useSWR from "swr"
 import type { PublicAssistantConfig, UsageState } from "@/lib/ai-assistant/config"
-import { AllowanceLine, LimitCard } from "./assistant-usage"
+import type { ConversationSummary, StoredMessage } from "@/lib/ai-assistant/history"
+import { useSession } from "@/lib/auth-client"
+import { AllowanceLine, LimitCard, LimitStatus, limitedPlaceholder } from "./assistant-usage"
+import { AssistantAuthGate } from "./assistant-auth-gate"
+import { AssistantHistory } from "./assistant-history"
 import { cn } from "@/lib/utils"
 import { AssistantFeedback } from "./assistant-feedback"
 import { AssistantMessageText } from "./assistant-message-text"
@@ -85,7 +92,52 @@ const fetchConfig = (url: string) => fetch(url).then((r) => r.json() as Promise<
 const fetchUsage = (url: string) =>
   fetch(url, { cache: "no-store" }).then((r) => (r.ok ? (r.json() as Promise<UsageState>) : undefined))
 
-type MessageMeta = { requestId?: string; free?: boolean; limited?: boolean; usage?: UsageState }
+const fetchConversations = (url: string) =>
+  fetch(url, { cache: "no-store" }).then((r) =>
+    r.ok ? (r.json() as Promise<{ conversations: ConversationSummary[] }>).then((d) => d.conversations) : [],
+  )
+
+const LIMIT_DISMISSED_KEY = "vaap-ai-limit-dismissed"
+
+type MessageMeta = {
+  requestId?: string
+  free?: boolean
+  limited?: boolean
+  usage?: UsageState
+  stored?: StoredMessage["status"]
+}
+
+function toUIMessage(m: StoredMessage): UIMessage {
+  return {
+    id: m.id,
+    role: m.role,
+    parts: m.content ? [{ type: "text", text: m.content }] : [],
+    metadata: { requestId: m.requestId ?? undefined, stored: m.status } satisfies MessageMeta,
+  }
+}
+
+function CopyAnswer({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false)
+  return (
+    <button
+      type="button"
+      onClick={() =>
+        navigator.clipboard
+          .writeText(text)
+          .then(() => {
+            setCopied(true)
+            setTimeout(() => setCopied(false), 1500)
+          })
+          .catch(() => {})
+      }
+      className="flex h-7 items-center gap-1 rounded-full px-2 text-xs text-muted-2 transition-colors hover:bg-surface hover:text-heading"
+      aria-label={copied ? "Answer copied" : "Copy answer"}
+    >
+      {copied ? <Check className="size-3.5 text-green" aria-hidden /> : <Copy className="size-3.5" aria-hidden />}
+      {copied ? "Copied" : "Copy"}
+    </button>
+  )
+}
 
 const QUICK_ACTIONS: QuickAction[] = [
   {
@@ -169,6 +221,14 @@ export function AssistantWidget() {
   const scrollRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
+  const { data: session, isPending: sessionPending, refetch: refetchSession } = useSession()
+  const user = session?.user as { id: string; email: string; emailVerified?: boolean } | undefined
+  const access = sessionPending && !session ? "loading" : !user ? "signed-out" : !user.emailVerified ? "unverified" : "ok"
+  const canChat = access === "ok"
+  const returnPath = `${pathname || "/"}?assistant=open`
+  const [view, setView] = useState<"chat" | "history">("chat")
+  const [activeId, setActiveId] = useState("")
+
   const { data: config } = useSWR(open ? "/api/assistant/config" : null, fetchConfig, { revalidateOnFocus: false })
   const languages = LANGS.filter((l) => !config || config.languages.includes(l.id))
   const quickActions = QUICK_ACTIONS.filter((a) => {
@@ -190,19 +250,93 @@ export function AssistantWidget() {
       }),
     [],
   )
-  const { data: usage, mutate: mutateUsage } = useSWR(open ? "/api/assistant/usage" : null, fetchUsage, {
+  const { data: usage, mutate: mutateUsage } = useSWR(open && canChat ? "/api/assistant/usage" : null, fetchUsage, {
     revalidateOnFocus: false,
   })
+  const { data: conversations, mutate: mutateConversations } = useSWR(
+    open && canChat ? "/api/assistant/conversations" : null,
+    fetchConversations,
+    { revalidateOnFocus: false },
+  )
   const { messages, sendMessage, status, error, setMessages, stop, clearError } = useChat({
     transport,
     onFinish: ({ message }) => {
       const next = (message.metadata as MessageMeta | undefined)?.usage
       if (next) mutateUsage(next, { revalidate: false })
       else mutateUsage()
+      mutateConversations()
     },
     // Failed requests are refunded server-side, so re-read the real count.
-    onError: () => mutateUsage(),
+    onError: () => {
+      mutateUsage()
+      mutateConversations()
+    },
   })
+
+  async function openConversation(id: string) {
+    const res = await fetch(`/api/assistant/conversations/${id}`, { cache: "no-store" }).catch(() => null)
+    if (!res?.ok) {
+      mutateConversations()
+      return
+    }
+    const data = (await res.json()) as { language?: string; messages: StoredMessage[] }
+    stop()
+    clearError()
+    conversationRef.current = id
+    setActiveId(id)
+    setMessages(data.messages.map(toUIMessage))
+    if (data.language && data.language in COPY) setLang(data.language as Lang)
+    setView("chat")
+  }
+
+  // Reopen the member's most recent conversation once per sign-in, so a refresh or another device picks up where they left off.
+  const restoredFor = useRef<string | null>(null)
+  const restoreLatest = useEffectEvent((list: ConversationSummary[]) => {
+    if (!user || restoredFor.current === user.id) return
+    restoredFor.current = user.id
+    if (messages.length === 0 && list[0]) openConversation(list[0].id)
+  })
+  useEffect(() => {
+    if (conversations) restoreLatest(conversations)
+  }, [conversations])
+
+  // Never show one account's conversation to the next person who signs in on the same browser.
+  const lastUserId = useRef<string | undefined>(undefined)
+  const clearForUser = useEffectEvent(() => {
+    stop()
+    setMessages([])
+    conversationRef.current = ""
+    restoredFor.current = null
+    setActiveId("")
+    setView("chat")
+  })
+  useEffect(() => {
+    if (sessionPending) return
+    const id = user?.id ?? ""
+    if (lastUserId.current !== undefined && lastUserId.current !== id) clearForUser()
+    lastUserId.current = id
+  }, [user?.id, sessionPending])
+
+  // Sign-in and email verification links come back with ?assistant=open so the chat reopens where the member left.
+  useEffect(() => {
+    const url = new URL(window.location.href)
+    if (url.searchParams.get("assistant") !== "open") return
+    url.searchParams.delete("assistant")
+    window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash)
+    setOpen(true)
+    setSeen(true)
+  }, [pathname])
+
+  // Remembers which reset window the full notice was dismissed for, so it stays closed for this browser session.
+  const [limitDismissed, setLimitDismissed] = useState<string | null>(() =>
+    typeof window === "undefined" ? null : window.sessionStorage.getItem(LIMIT_DISMISSED_KEY),
+  )
+  function dismissLimit(resetAt: string) {
+    setLimitDismissed(resetAt)
+    try {
+      window.sessionStorage.setItem(LIMIT_DISMISSED_KEY, resetAt)
+    } catch {}
+  }
 
   const busy = status === "submitted" || status === "streaming"
   const limited = usage?.remaining === 0
@@ -238,10 +372,23 @@ export function AssistantWidget() {
 
   function ask(text: string) {
     const trimmed = text.trim()
-    if (!trimmed || busy || limited) return
+    if (!trimmed || busy || limited || !canChat) return
     clearError()
+    if (!conversationRef.current) {
+      conversationRef.current = crypto.randomUUID()
+      setActiveId(conversationRef.current)
+    }
+    setView("chat")
     sendMessage({ text: trimmed })
     setInput("")
+  }
+
+  // Resends the same question id, so the server reuses the saved question instead of storing it twice.
+  function retryLast() {
+    const lastUser = messages.findLast((m) => m.role === "user")
+    if (!lastUser || busy || limited || !canChat) return
+    clearError()
+    sendMessage({ text: textOf(lastUser), messageId: lastUser.id })
   }
 
   function reset() {
@@ -249,6 +396,8 @@ export function AssistantWidget() {
     clearError()
     setMessages([])
     conversationRef.current = ""
+    setActiveId("")
+    setView("chat")
     setInput("")
     inputRef.current?.focus()
   }
@@ -277,7 +426,22 @@ export function AssistantWidget() {
               <h2 className="truncate text-lg font-semibold leading-tight">VAAP AI Assistant</h2>
               <p className="truncate text-xs text-primary-foreground/75">Your Guide to Virtual Assets, Knowledge & Community Support</p>
             </div>
-            {messages.length > 0 && (
+            {canChat && (
+              <button
+                type="button"
+                onClick={() => setView((v) => (v === "history" ? "chat" : "history"))}
+                className={cn(
+                  "flex size-9 items-center justify-center rounded-full transition-colors hover:bg-primary-foreground/15",
+                  view === "history" && "bg-primary-foreground/15",
+                )}
+                aria-pressed={view === "history"}
+                aria-label="Conversation history"
+                title="Conversation history"
+              >
+                <History className="size-4.5" aria-hidden />
+              </button>
+            )}
+            {canChat && messages.length > 0 && view === "chat" && (
               <button
                 type="button"
                 onClick={reset}
@@ -298,10 +462,7 @@ export function AssistantWidget() {
             </button>
             <button
               type="button"
-              onClick={() => {
-                reset()
-                setOpen(false)
-              }}
+              onClick={() => setOpen(false)}
               className="flex size-9 items-center justify-center rounded-full transition-colors hover:bg-primary-foreground/15"
               aria-label="Close assistant"
             >
@@ -310,7 +471,21 @@ export function AssistantWidget() {
           </header>
 
           <div ref={scrollRef} className="flex-1 overflow-y-auto overscroll-contain px-4 py-4" aria-live="polite">
-            {messages.length === 0 ? (
+            {access === "loading" ? (
+              <p className="py-10 text-center text-sm text-muted-2">Loading...</p>
+            ) : access === "signed-out" ? (
+              <AssistantAuthGate kind="signed-out" returnPath={returnPath} />
+            ) : access === "unverified" ? (
+              <AssistantAuthGate kind="unverified" returnPath={returnPath} email={user?.email ?? ""} onRecheck={() => refetchSession()} />
+            ) : view === "history" ? (
+              <AssistantHistory
+                conversations={conversations}
+                activeId={activeId}
+                onOpen={openConversation}
+                onNew={reset}
+                onChanged={() => mutateConversations()}
+              />
+            ) : messages.length === 0 ? (
               <div className="flex flex-col gap-4" dir={rtl ? "rtl" : "ltr"}>
                 <div className="flex gap-3 rounded-2xl bg-mint p-4">
                   <span className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-xl shadow-sm">
@@ -341,8 +516,29 @@ export function AssistantWidget() {
               <ol className="flex flex-col gap-3">
                 {messages.map((m, i) => {
                   const text = textOf(m)
-                  if (!text.trim()) return null
-                  const requestId = (m.metadata as MessageMeta | undefined)?.requestId
+                  const meta = m.metadata as MessageMeta | undefined
+                  if (!text.trim()) {
+                    if (m.role !== "assistant" || !meta?.stored || meta.stored === "complete" || busy) return null
+                    return (
+                      <li key={m.id} className="flex flex-col items-start gap-2 rounded-2xl border border-line-light bg-surface px-3.5 py-2.5 text-sm text-body">
+                        {meta.stored === "pending"
+                          ? "This answer was still being prepared when the chat closed."
+                          : "This answer couldn't be completed."}
+                        {i === messages.length - 1 && (
+                          <button
+                            type="button"
+                            onClick={retryLast}
+                            disabled={limited}
+                            className="flex h-8 items-center gap-1.5 rounded-full border border-green-border px-3 text-xs font-semibold text-green hover:bg-mint disabled:opacity-50"
+                          >
+                            <RotateCcw className="size-3.5" aria-hidden />
+                            Try again
+                          </button>
+                        )}
+                      </li>
+                    )
+                  }
+                  const requestId = meta?.requestId
                   const settled = !busy || i < messages.length - 1
                   return (
                     <li key={m.id} className="flex flex-col gap-1">
@@ -362,7 +558,12 @@ export function AssistantWidget() {
                         {m.role === "user" ? <p className="whitespace-pre-wrap">{text}</p> : <AssistantMessageText text={text} />}
                       </div>
                     </div>
-                    {m.role === "assistant" && requestId && settled && <AssistantFeedback requestId={requestId} />}
+                    {m.role === "assistant" && settled && (
+                      <div className="flex flex-wrap items-center gap-1 ps-9">
+                        <CopyAnswer text={text} />
+                        {requestId && <AssistantFeedback requestId={requestId} />}
+                      </div>
+                    )}
                     </li>
                   )
                 })}
@@ -384,9 +585,10 @@ export function AssistantWidget() {
           </div>
 
           <div className="flex flex-col gap-3 border-t border-line-light px-4 pb-3 pt-3">
-            {usage && limited && <LimitCard usage={usage} lang={lang} />}
-            {usage && !limited && <AllowanceLine usage={usage} lang={lang} />}
-            <form
+            {canChat && usage && limited && limitDismissed !== usage.resetAt && <LimitCard usage={usage} lang={lang} onDismiss={() => dismissLimit(usage.resetAt)} />}
+            {canChat && usage && limited && limitDismissed === usage.resetAt && <LimitStatus usage={usage} lang={lang} />}
+            {canChat && usage && !limited && <AllowanceLine usage={usage} lang={lang} />}
+            {canChat && view === "chat" && <form
               onSubmit={(e) => {
                 e.preventDefault()
                 ask(input)
@@ -404,7 +606,7 @@ export function AssistantWidget() {
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && (e.nativeEvent.isComposing || e.keyCode === 229)) e.preventDefault()
                 }}
-                placeholder={copy.placeholder}
+                placeholder={limited ? limitedPlaceholder(lang) : copy.placeholder}
                 maxLength={2000}
                 disabled={limited}
                 dir="auto"
@@ -419,7 +621,7 @@ export function AssistantWidget() {
               >
                 <SendHorizontal className="size-4.5" aria-hidden />
               </button>
-            </form>
+            </form>}
             <div className="flex items-center justify-center" role="radiogroup" aria-label="Assistant language">
               <div className="flex items-center rounded-full border border-line-light bg-surface p-1">
                 {languages.map((l) => (

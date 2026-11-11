@@ -1,6 +1,6 @@
 "use client"
 
-import { Clock } from "lucide-react"
+import { Clock, X } from "lucide-react"
 import Link from "next/link"
 import type { UsageState } from "@/lib/ai-assistant/config"
 import { cn } from "@/lib/utils"
@@ -20,6 +20,14 @@ const COPY: Record<
     plans: string
     status: string
     signIn: string
+    cardTitle: string
+    cardFree: string
+    cardIncluded: string
+    cardReset: (label: string) => string
+    statusLine: string
+    plansShort: string
+    dismiss: string
+    inputLimited: string
   }
 > = {
   en: {
@@ -33,6 +41,14 @@ const COPY: Record<
     plans: "View Membership Plans",
     status: "Check My Membership",
     signIn: "Sign in",
+    cardTitle: "Daily AI Limit Reached",
+    cardFree: "You've used all your free AI questions for today.",
+    cardIncluded: "You've used all your included AI questions for today.",
+    cardReset: (label) => `Your allowance resets tomorrow at 12:00 AM ${label}.`,
+    statusLine: "Daily limit reached — resets tomorrow",
+    plansShort: "View Plans",
+    dismiss: "Dismiss daily limit notice",
+    inputLimited: "Daily limit reached — resets tomorrow.",
   },
   ur: {
     remaining: (n) => `آج ${n} سوالات باقی ہیں`,
@@ -45,6 +61,14 @@ const COPY: Record<
     plans: "ممبرشپ پلانز دیکھیں",
     status: "میری ممبرشپ دیکھیں",
     signIn: "سائن ان کریں",
+    cardTitle: "روزانہ AI حد مکمل",
+    cardFree: "آپ آج کے تمام مفت AI سوالات استعمال کر چکے ہیں۔",
+    cardIncluded: "آپ آج کے تمام شامل AI سوالات استعمال کر چکے ہیں۔",
+    cardReset: () => "آپ کی حد کل رات 12:00 بجے پاکستان وقت دوبارہ شروع ہوگی۔",
+    statusLine: "روزانہ حد مکمل — کل دوبارہ شروع",
+    plansShort: "پلانز دیکھیں",
+    dismiss: "روزانہ حد کا پیغام بند کریں",
+    inputLimited: "روزانہ حد مکمل — کل دوبارہ شروع ہوگی۔",
   },
   "roman-ur": {
     remaining: (n) => `Aaj ${n} sawal baqi hain`,
@@ -57,8 +81,18 @@ const COPY: Record<
     plans: "Membership Plans Dekhein",
     status: "Meri Membership Dekhein",
     signIn: "Sign in karein",
+    cardTitle: "Rozana AI Limit Poori",
+    cardFree: "Aap aaj ke tamam free AI sawal istemal kar chuke hain.",
+    cardIncluded: "Aap aaj ke tamam shamil AI sawal istemal kar chuke hain.",
+    cardReset: (label) => `Aap ki limit kal raat 12:00 AM ${label} reset hogi.`,
+    statusLine: "Rozana limit poori — kal reset hogi",
+    plansShort: "Plans Dekhein",
+    dismiss: "Rozana limit ka paigham band karein",
+    inputLimited: "Rozana limit poori — kal reset hogi.",
   },
 }
+
+export const limitedPlaceholder = (lang: Lang) => COPY[lang].inputLimited
 
 function track(target: "plans" | "status" | "signin") {
   const body = JSON.stringify({ target })
@@ -81,38 +115,63 @@ export function AllowanceLine({ usage, lang }: { usage: UsageState; lang: Lang }
   )
 }
 
-export function LimitCard({ usage, lang }: { usage: UsageState; lang: Lang }) {
+function upgradeLink(usage: UsageState): { href: string; target: "plans" | "status" | "signin" } {
+  const free = usage.tier === "guest" || usage.tier === "registered"
+  if (free && usage.paidUpgradesEnabled) return { href: "/membership", target: "plans" }
+  if (usage.signedIn) return { href: "/dashboard/membership", target: "status" }
+  return { href: "/sign-in?callbackURL=/dashboard/membership", target: "signin" }
+}
+
+function linkLabel(c: (typeof COPY)[Lang], target: "plans" | "status" | "signin") {
+  return target === "plans" ? c.plans : target === "status" ? c.status : c.signIn
+}
+
+export function LimitCard({ usage, lang, onDismiss }: { usage: UsageState; lang: Lang; onDismiss: () => void }) {
   const c = COPY[lang]
   const free = usage.tier === "guest" || usage.tier === "registered"
-  const date = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: usage.resetTimeZone }).format(new Date(usage.resetAt))
-  const link = "inline-flex h-9 items-center justify-center rounded-full px-4 text-sm font-semibold transition-colors"
+  const link = upgradeLink(usage)
   return (
-    <div role="status" className="flex flex-col gap-3 rounded-2xl border border-gold/40 bg-mint p-4" dir={lang === "ur" ? "rtl" : "ltr"}>
-      <div className="flex items-start gap-2">
-        <Clock className="mt-0.5 size-4 shrink-0 text-gold" aria-hidden />
-        <p className="text-sm font-bold leading-snug text-heading">{c.title}</p>
-      </div>
-      <div className="flex flex-col gap-1.5 text-sm leading-relaxed text-body">
-        <p>{free ? c.free(usage.limit) : c.included(usage.limit)}</p>
-        <p>{c.reset(free, usage.resetLabel, date)}</p>
-        {free && usage.paidUpgradesEnabled && <p>{c.upgrade}</p>}
-      </div>
-      <div className="flex flex-wrap gap-2">
-        {free && usage.paidUpgradesEnabled && (
-          <Link href="/membership" onClick={() => track("plans")} className={cn(link, "bg-green-hover text-primary-foreground hover:bg-green")}>
-            {c.plans}
-          </Link>
-        )}
-        {usage.signedIn ? (
-          <Link href="/dashboard/membership" onClick={() => track("status")} className={cn(link, "border border-line bg-card text-heading hover:border-green")}>
-            {c.status}
-          </Link>
-        ) : (
-          <Link href="/sign-in?callbackURL=/dashboard/membership" onClick={() => track("signin")} className={cn(link, "border border-line bg-card text-heading hover:border-green")}>
-            {c.signIn}
-          </Link>
-        )}
-      </div>
+    <div
+      role="status"
+      className="relative flex flex-col gap-1.5 rounded-xl border border-gold/40 bg-mint py-2.5 pe-10 ps-3"
+      dir={lang === "ur" ? "rtl" : "ltr"}
+    >
+      <button
+        type="button"
+        onClick={onDismiss}
+        className="absolute end-1 top-1 flex size-8 items-center justify-center rounded-full text-body transition-colors hover:bg-card hover:text-heading focus-visible:outline-2 focus-visible:outline-green"
+        aria-label={c.dismiss}
+      >
+        <X className="size-4" aria-hidden />
+      </button>
+      <p className="flex items-center gap-1.5 text-sm font-bold leading-snug text-heading">
+        <Clock className="size-4 shrink-0 text-gold" aria-hidden />
+        {c.cardTitle}
+      </p>
+      <p className="text-xs leading-relaxed text-body">
+        {free ? c.cardFree : c.cardIncluded} {c.cardReset(usage.resetLabel)}
+      </p>
+      <Link
+        href={link.href}
+        onClick={() => track(link.target)}
+        className="self-start text-xs font-semibold text-green-hover underline underline-offset-2 hover:text-green"
+      >
+        {linkLabel(c, link.target)}
+      </Link>
     </div>
+  )
+}
+
+export function LimitStatus({ usage, lang }: { usage: UsageState; lang: Lang }) {
+  const c = COPY[lang]
+  const link = upgradeLink(usage)
+  return (
+    <p className="text-center text-xs font-medium text-destructive" dir={lang === "ur" ? "rtl" : "ltr"} role="status">
+      {c.statusLine}
+      <span aria-hidden> · </span>
+      <Link href={link.href} onClick={() => track(link.target)} className="font-semibold text-green-hover underline underline-offset-2 hover:text-green">
+        {link.target === "plans" ? c.plansShort : linkLabel(c, link.target)}
+      </Link>
+    </p>
   )
 }
