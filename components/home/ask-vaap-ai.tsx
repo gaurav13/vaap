@@ -18,8 +18,8 @@ export function AskVaapAi() {
     <section aria-labelledby="ask-vaap-ai-title" className="bg-background px-5 pt-10 sm:px-8 lg:px-12">
       <div className="mx-auto flex max-w-7xl flex-col gap-5 rounded-3xl border border-line bg-mint p-5 sm:p-6 lg:flex-row lg:items-center lg:gap-8">
         <div className="flex items-start gap-4 lg:max-w-md">
-          <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-green-hover text-primary-foreground ring-2 ring-gold/70">
-            <Bot className="size-6" aria-hidden="true" />
+          <span className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-xl shadow-sm">
+            <AssistantIcon className="size-full" />
           </span>
           <div className="flex flex-col gap-1">
             <h2 id="ask-vaap-ai-title" className="text-xl font-bold text-heading text-balance">

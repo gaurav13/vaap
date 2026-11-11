@@ -3,7 +3,6 @@
 import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport, type UIMessage } from "ai"
 import {
-  Bot,
   CalendarDays,
   ChartNoAxesColumnIncreasing,
   Landmark,
@@ -214,8 +213,8 @@ export function AssistantWidget() {
           className="flex h-[min(680px,calc(100dvh-7rem))] w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-3xl border border-line bg-card shadow-2xl shadow-heading/15 animate-in fade-in slide-in-from-bottom-4 duration-200 sm:w-[400px]"
         >
           <header className="flex items-center gap-3 bg-green-hover px-4 py-3.5 text-primary-foreground">
-            <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-card text-green-hover ring-2 ring-gold/70">
-              <Bot className="size-6" aria-hidden />
+            <span className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-xl ring-2 ring-gold/70">
+              <AssistantIcon className="size-full" />
             </span>
             <div className="min-w-0 flex-1">
               <h2 className="truncate text-lg font-semibold leading-tight">VAAP AI Assistant</h2>
@@ -257,8 +256,8 @@ export function AssistantWidget() {
             {messages.length === 0 ? (
               <div className="flex flex-col gap-4" dir={rtl ? "rtl" : "ltr"}>
                 <div className="flex gap-3 rounded-2xl bg-mint p-4">
-                  <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-card text-green-hover shadow-sm">
-                    <Bot className="size-5" aria-hidden />
+                  <span className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-xl shadow-sm">
+                    <AssistantIcon className="size-full" />
                   </span>
                   <div className="flex flex-col gap-2">
                     <p className="text-xl font-bold text-heading">{copy.hello}</p>
@@ -289,8 +288,8 @@ export function AssistantWidget() {
                   return (
                     <li key={m.id} className={cn("flex gap-2", m.role === "user" ? "justify-end" : "justify-start")}>
                       {m.role === "assistant" && (
-                        <span className="mt-1 flex size-7 shrink-0 items-center justify-center rounded-full bg-mint text-green-hover">
-                          <Bot className="size-4" aria-hidden />
+                        <span className="mt-1 flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-lg">
+                          <AssistantIcon className="size-full" />
                         </span>
                       )}
                       <div
@@ -307,8 +306,8 @@ export function AssistantWidget() {
                 })}
                 {busy && lastAssistantEmpty && (
                   <li className="flex items-center gap-2 text-sm text-muted-2">
-                    <span className="flex size-7 items-center justify-center rounded-full bg-mint text-green-hover">
-                      <Bot className="size-4 animate-pulse" aria-hidden />
+                    <span className="flex size-7 animate-pulse items-center justify-center overflow-hidden rounded-lg">
+                      <AssistantIcon className="size-full" />
                     </span>
                     {copy.thinking}
                   </li>
@@ -388,10 +387,16 @@ export function AssistantWidget() {
         aria-expanded={open}
         aria-controls="vaap-assistant"
         aria-label={open ? "Hide VAAP AI Assistant" : "Open VAAP AI Assistant"}
-        className="relative flex size-16 items-center justify-center rounded-full bg-green-hover text-primary-foreground shadow-xl shadow-green/30 ring-4 ring-card transition-transform hover:scale-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green"
+        className="relative flex size-16 items-center justify-center rounded-2xl bg-green-hover text-primary-foreground shadow-xl shadow-green/30 transition-transform hover:scale-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green"
       >
-        {open ? <X className="size-7" aria-hidden /> : <Bot className="size-8" aria-hidden />}
-        {!seen && <span className="absolute right-0.5 top-0.5 size-4 rounded-full bg-destructive ring-2 ring-card" aria-hidden />}
+        {open ? (
+          <X className="size-7" aria-hidden />
+        ) : (
+          <span className="flex size-full overflow-hidden rounded-2xl">
+            <AssistantIcon className="size-full" priority />
+          </span>
+        )}
+        {!seen && <span className="absolute -right-1 -top-1 size-4 rounded-full bg-destructive ring-2 ring-card" aria-hidden />}
       </button>
     </div>
   )
