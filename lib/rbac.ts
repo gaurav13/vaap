@@ -6,22 +6,37 @@ export type AdminActor = {
   id: string
   name: string
   email: string
-  role: "admin" | "staff"
+  role: "admin" | "manager" | "staff"
 }
 
 export const HIDDEN = "Hidden"
 
+const isAreaRole = (r: string | null | undefined) => r === "admin" || r === "manager" || r === "staff"
+
 function toActor(u: { id: string; name?: string | null; email?: string | null; role?: string | null }): AdminActor {
-  return { id: u.id, name: u.name ?? "", email: u.email ?? "", role: u.role === "admin" ? "admin" : "staff" }
+  const role = u.role === "admin" ? "admin" : u.role === "manager" ? "manager" : "staff"
+  return { id: u.id, name: u.name ?? "", email: u.email ?? "", role }
 }
 
-/** Any admin-area user (Staff or Super Admin). Role is re-read from the DB every request, so revocation is immediate. */
+/** Any admin-area user (Staff, Admin or Super Admin). Role is re-read from the DB every request, so revocation is immediate. */
 export async function requireOperator(): Promise<AdminActor> {
   const session = await getSession()
   if (!session?.user) throw new Error("Unauthorized")
-  if (session.user.role !== "admin" && session.user.role !== "staff") throw new Error("Forbidden")
+  if (!isAreaRole(session.user.role)) throw new Error("Forbidden")
   return toActor(session.user)
 }
+
+/** Admin or Super Admin: operational management beyond Staff limits. */
+export async function requireManager(): Promise<AdminActor> {
+  const session = await getSession()
+  if (!session?.user) throw new Error("Unauthorized")
+  if (session.user.role !== "admin" && session.user.role !== "manager") throw new Error("Only an Admin can do this.")
+  return toActor(session.user)
+}
+
+/** Admin and Super Admin may see member contact details for operational work; Staff never do. */
+export const canSeeContacts = (actor: AdminActor | null | undefined) =>
+  actor?.role === "admin" || actor?.role === "manager"
 
 export async function requireSuperAdmin(): Promise<AdminActor> {
   const session = await getSession()
@@ -32,7 +47,7 @@ export async function requireSuperAdmin(): Promise<AdminActor> {
 
 export async function currentOperator(): Promise<AdminActor | null> {
   const session = await getSession()
-  if (!session?.user || (session.user.role !== "admin" && session.user.role !== "staff")) return null
+  if (!session?.user || !isAreaRole(session.user.role)) return null
   return toActor(session.user)
 }
 

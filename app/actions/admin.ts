@@ -16,7 +16,7 @@ import {
   session as sessionTable,
   auditLogs,
 } from "@/lib/db/schema"
-import { HIDDEN, isPaymentConfirmed, logActivity, requireOperator, requireSuperAdmin, saveRevision } from "@/lib/rbac"
+import { canSeeContacts, HIDDEN, isPaymentConfirmed, logActivity, requireOperator, requireSuperAdmin, saveRevision } from "@/lib/rbac"
 import { brandedEmail, sendEmail } from "@/lib/mailer"
 import { getSession } from "@/lib/session"
 import { auth } from "@/lib/auth"
@@ -321,7 +321,7 @@ export async function getApplications() {
   const rows = await db.select().from(membershipApplications).orderBy(desc(membershipApplications.createdAt))
   return rows.map((row) => {
     const withPayment = { ...row, paymentConfirmed: isPaymentConfirmed(row) }
-    return actor.role === "admin" ? withPayment : maskApplication(withPayment)
+    return canSeeContacts(actor) ? withPayment : maskApplication(withPayment)
   })
 }
 
@@ -589,7 +589,7 @@ export async function deleteApplication(id: number) {
 export async function getContactMessages() {
   const actor = await requireStaff()
   const rows = await db.select().from(contactMessages).orderBy(desc(contactMessages.createdAt))
-  if (actor.role === "admin") return rows
+  if (canSeeContacts(actor)) return rows
   return rows.map((m) => ({ ...m, email: HIDDEN, phone: m.phone ? HIDDEN : null }))
 }
 
@@ -627,7 +627,7 @@ export async function assignMessage(id: number, assigneeId: string | null) {
   let assigneeName = ""
   if (assigneeId) {
     const [assignee] = await db.select({ name: user.name, role: user.role }).from(user).where(eq(user.id, assigneeId)).limit(1)
-    if (!assignee || (assignee.role !== "staff" && assignee.role !== "admin")) return { ok: false, error: "Choose a staff member." }
+    if (!assignee || (assignee.role !== "staff" && assignee.role !== "manager" && assignee.role !== "admin")) return { ok: false, error: "Choose a staff member." }
     assigneeName = assignee.name ?? ""
   }
   const [msg] = await db.select({ subject: contactMessages.subject, status: contactMessages.status }).from(contactMessages).where(eq(contactMessages.id, id)).limit(1)
@@ -751,13 +751,13 @@ export async function getUsers() {
     .orderBy(desc(user.createdAt))
 }
 
-export async function setUserRole(userId: string, role: "member" | "staff" | "admin") {
+export async function setUserRole(userId: string, role: "member" | "staff" | "manager" | "admin") {
   const admin = await requireAdmin()
   // Prevent an admin from demoting themselves and losing access.
   if (admin.id === userId && role !== "admin") {
     return { ok: false, error: "You cannot change your own admin role." }
   }
-  if (!["member", "staff", "admin"].includes(role)) return { ok: false, error: "Invalid role." }
+  if (!["member", "staff", "manager", "admin"].includes(role)) return { ok: false, error: "Invalid role." }
   const [target] = await db.select({ name: user.name, role: user.role }).from(user).where(eq(user.id, userId)).limit(1)
   if (!target) return { ok: false, error: "User not found." }
   await db.update(user).set({ role }).where(eq(user.id, userId))

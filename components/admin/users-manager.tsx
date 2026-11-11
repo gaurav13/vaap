@@ -9,11 +9,17 @@ type UserRow = {
   id: string
   name: string
   email: string
-  role: "member" | "staff" | "admin"
+  role: "member" | "staff" | "manager" | "admin"
   createdAt: string
 }
 
-const ROLES = ["member", "staff", "admin"] as const
+const ROLES = ["member", "staff", "manager", "admin"] as const
+const ROLE_LABELS: Record<(typeof ROLES)[number], string> = {
+  member: "Member",
+  staff: "Staff",
+  manager: "Admin",
+  admin: "Super Admin",
+}
 
 function generatePassword(length = 14) {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%&*"
@@ -237,7 +243,7 @@ export function UsersManager({ items, currentUserId }: { items: UserRow[]; curre
                       u.role === r ? "bg-navy text-white" : "text-muted-2 hover:bg-mint hover:text-navy disabled:opacity-40",
                     )}
                   >
-                    {r}
+                    {ROLE_LABELS[r]}
                   </button>
                 ))}
               </div>

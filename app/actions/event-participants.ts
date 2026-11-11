@@ -4,8 +4,7 @@ import { and, asc, desc, eq, ilike, inArray, isNull, or, sql } from "drizzle-orm
 import { revalidatePath } from "next/cache"
 import { db } from "@/lib/db"
 import { eventRsvps, events } from "@/lib/db/schema"
-import { getSession } from "@/lib/session"
-import { HIDDEN, logActivity, requireSuperAdmin } from "@/lib/rbac"
+import { canSeeContacts, HIDDEN, logActivity, requireOperator, requireSuperAdmin } from "@/lib/rbac"
 import { sendTemplateEmail } from "@/lib/email-templates/service"
 import { releaseRegistrationEmailClaims } from "@/lib/email-dedupe"
 import {
@@ -20,13 +19,7 @@ import {
 const STATUSES: RsvpStatus[] = ["pending", "confirmed", "cancelled"]
 const MAX_BULK_RECIPIENTS = 2000
 
-async function requireStaff() {
-  const session = await getSession()
-  if (!session?.user) throw new Error("Unauthorized")
-  const role = session.user.role
-  if (role !== "staff" && role !== "admin") throw new Error("Forbidden")
-  return session.user
-}
+const requireStaff = requireOperator
 
 function refresh(eventId: number) {
   revalidatePath(`/admin/events/${eventId}/participants`)
@@ -49,7 +42,7 @@ export async function getEventParticipants(eventId: number) {
     .where(eq(eventRsvps.eventId, eventId))
     .orderBy(asc(eventRsvps.createdAt))
   const participants =
-    actor.role === "admin" ? rows : rows.map((p) => ({ ...p, email: HIDDEN, ...("phone" in p ? { phone: null } : {}) }))
+    canSeeContacts(actor) ? rows : rows.map((p) => ({ ...p, email: HIDDEN, ...("phone" in p ? { phone: null } : {}) }))
   return { event, participants }
 }
 
@@ -81,7 +74,7 @@ export async function getParticipantsOverview() {
 
 export async function searchAllParticipants(query: string, status?: string) {
   const actor = await requireStaff()
-  const superAdmin = actor.role === "admin"
+  const superAdmin = canSeeContacts(actor)
   const q = query.trim().slice(0, 100)
   const filters = []
   if (q) {
@@ -112,7 +105,7 @@ export async function searchAllParticipants(query: string, status?: string) {
     .where(filters.length ? and(...filters) : undefined)
     .orderBy(desc(eventRsvps.createdAt))
     .limit(300)
-  return superAdmin ? rows : rows.map((r) => ({ ...r, email: HIDDEN }))
+  return canSeeContacts(actor) ? rows : rows.map((r) => ({ ...r, email: HIDDEN }))
 }
 
 export async function setParticipantCheckIn(id: number, eventId: number, checkedIn: boolean) {

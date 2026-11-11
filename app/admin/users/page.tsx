@@ -14,7 +14,7 @@ export default async function AdminUsersPage() {
           id: r.id,
           name: r.name,
           email: r.email,
-          role: r.role as "member" | "staff" | "admin",
+          role: r.role as "member" | "staff" | "manager" | "admin",
           createdAt: r.createdAt.toISOString(),
         }))}
       />

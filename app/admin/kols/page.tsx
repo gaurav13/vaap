@@ -4,7 +4,7 @@ import { kolAuditLog, kolProfiles, members, referralCodes } from "@/lib/db/schem
 import { ensureKolReferralCode, ownershipCode } from "@/lib/kol"
 import { KolAdminManager, type AdminKolRow } from "@/components/kol/kol-admin-manager"
 import { getSession } from "@/lib/session"
-import { HIDDEN } from "@/lib/rbac"
+import { canSeeContacts, currentOperator, HIDDEN } from "@/lib/rbac"
 
 export const dynamic = "force-dynamic"
 
@@ -66,7 +66,7 @@ export default async function AdminKolsPage() {
     .orderBy(members.name)
     .limit(1000)
 
-  const superAdmin = (await getSession())?.user?.role === "admin"
+  const superAdmin = canSeeContacts(await currentOperator())
   const items: AdminKolRow[] = rows.map(({ kol, memberName, memberEmail: rawEmail, memberStatus, userId }) => {
     const memberEmail = superAdmin ? rawEmail : HIDDEN
     return {

@@ -1,5 +1,6 @@
 "use client"
 
+import { ADMIN_AREA_LABELS, type AdminAreaRole } from "@/lib/permissions"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { useState } from "react"
@@ -23,7 +24,7 @@ export function AdminTopbar({
   notifications,
 }: {
   name: string
-  role: "staff" | "admin"
+  role: AdminAreaRole
   notifications: NotificationItem[]
 }) {
   const router = useRouter()
@@ -42,7 +43,7 @@ export function AdminTopbar({
     router.push(q ? `/admin/members?q=${encodeURIComponent(q)}` : "/admin/members")
   }
 
-  const roleLabel = role === "admin" ? "Super Admin" : "Staff"
+  const roleLabel = ADMIN_AREA_LABELS[role]
 
   return (
     <header className="sticky top-0 z-30 flex items-center gap-4 border-b border-line bg-white px-5 py-3 lg:px-8">

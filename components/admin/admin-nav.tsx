@@ -38,7 +38,7 @@ import {
 import { cn } from "@/lib/utils"
 import { VaapLogo } from "@/components/vaap-logo"
 import { authClient } from "@/lib/auth-client"
-import { isStaffAdminRoute } from "@/lib/permissions"
+import { ADMIN_AREA_LABELS, canOpenAdminRoute, type AdminAreaRole } from "@/lib/permissions"
 
 const GROUPS: { heading: string; links: { href: string; label: string; icon: typeof Home; adminOnly?: boolean }[] }[] = [
   {
@@ -114,7 +114,7 @@ const GROUPS: { heading: string; links: { href: string; label: string; icon: typ
   },
 ]
 
-export function AdminNav({ role, name }: { role: "staff" | "admin"; name: string }) {
+export function AdminNav({ role, name }: { role: AdminAreaRole; name: string }) {
   const pathname = usePathname()
   const router = useRouter()
 
@@ -130,14 +130,15 @@ export function AdminNav({ role, name }: { role: "staff" | "admin"; name: string
         <Link href="/">
           <VaapLogo onDark height={52} />
         </Link>
-        <span className="mt-1 hidden text-xs text-white/60 lg:block">Administration</span>
+        <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-green/20 px-3 py-1 text-xs font-semibold text-green-light">
+          <ShieldCheck className="size-3.5" aria-hidden />
+          {ADMIN_AREA_LABELS[role]}
+        </span>
       </div>
 
       <nav className="flex gap-1 overflow-x-auto px-3 pb-3 lg:flex-col lg:gap-0 lg:overflow-visible lg:px-3 lg:py-2">
         {GROUPS.map((group) => {
-          const links = group.links.filter((l) =>
-            role === "admin" ? true : isStaffAdminRoute(l.href),
-          )
+          const links = group.links.filter((l) => canOpenAdminRoute(role, l.href))
           if (links.length === 0) return null
           return (
             <div key={group.heading} className="flex gap-1 lg:mt-3 lg:flex-col lg:gap-0.5 lg:first:mt-0">
@@ -169,7 +170,7 @@ export function AdminNav({ role, name }: { role: "staff" | "admin"; name: string
       <div className="mt-auto hidden flex-col gap-1 border-t border-white/10 p-3 lg:flex">
         <div className="px-3.5 py-2">
           <p className="truncate text-sm font-semibold text-white">{name}</p>
-          <span className="text-[10px] font-bold uppercase tracking-wide text-green-light">{role}</span>
+          <span className="text-[10px] font-bold uppercase tracking-wide text-green-light">{ADMIN_AREA_LABELS[role]}</span>
         </div>
         <Link
           href="/"
