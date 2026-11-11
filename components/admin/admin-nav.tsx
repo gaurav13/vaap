@@ -78,6 +78,7 @@ const GROUPS: { heading: string; links: { href: string; label: string; icon: typ
       { href: "/admin/membership-funnel", label: "Registered vs Paid", icon: Users, adminOnly: true },
       { href: "/admin/membership-plans", label: "Membership Plans", icon: Wallet },
       { href: "/admin/membership-faqs", label: "Membership FAQs", icon: HelpCircle },
+      { href: "/admin/ai", label: "AI Assistant Admin", icon: LayoutDashboard },
       { href: "/admin/ai-knowledge", label: "AI Knowledge Center", icon: BookOpen },
       { href: "/admin/applications", label: "Applications", icon: FileText },
       { href: "/admin/invitations", label: "Invitations & Enrolment", icon: KeyRound, adminOnly: true },
