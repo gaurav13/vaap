@@ -114,7 +114,7 @@ export async function checkBudgetAlerts(s: AiSettings) {
           body: reached
             ? `$${spentUsd} of $${p.limit.toFixed(2)} used. Paid AI answers are paused; members now get free FAQ answers until the budget resets or is raised.`
             : `$${spentUsd} of $${p.limit.toFixed(2)} used this ${p.label === "monthly" ? "month" : "day"}.`,
-          link: "/admin/ai-management",
+          link: "/admin/ai?tab=cost",
         })
       }
     }

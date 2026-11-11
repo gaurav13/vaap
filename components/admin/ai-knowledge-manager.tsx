@@ -22,8 +22,11 @@ export type KnowledgeSourceRow = {
   charCount: number
   chunkCount: number
   active: boolean
+  status: string
   updatedAt: string
 }
+
+const STATUS_TEXT: Record<string, string> = { approved: "Live", pending: "Awaiting approval", rejected: "Rejected" }
 
 type Mode = "file" | "url" | "text"
 
@@ -36,7 +39,15 @@ const MODES: { key: Mode; label: string; icon: typeof Upload }[] = [
 const field =
   "w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
 
-export function AiKnowledgeManager({ sources, categories }: { sources: KnowledgeSourceRow[]; categories: readonly string[] }) {
+export function AiKnowledgeManager({
+  sources,
+  categories,
+  isSuperAdmin,
+}: {
+  sources: KnowledgeSourceRow[]
+  categories: readonly string[]
+  isSuperAdmin: boolean
+}) {
   const [mode, setMode] = useState<Mode>("file")
   const [state, formAction, adding] = useActionState<KnowledgeResult | null, FormData>(addKnowledgeSource, null)
 
@@ -146,7 +157,7 @@ export function AiKnowledgeManager({ sources, categories }: { sources: Knowledge
         ) : (
           <ul className="mt-3 flex flex-col gap-3">
             {sources.map((s) => (
-              <SourceItem key={s.id} source={s} />
+              <SourceItem key={s.id} source={s} isSuperAdmin={isSuperAdmin} />
             ))}
           </ul>
         )}
@@ -155,7 +166,7 @@ export function AiKnowledgeManager({ sources, categories }: { sources: Knowledge
   )
 }
 
-function SourceItem({ source: s }: { source: KnowledgeSourceRow }) {
+function SourceItem({ source: s, isSuperAdmin }: { source: KnowledgeSourceRow; isSuperAdmin: boolean }) {
   const [pending, start] = useTransition()
   const [note, setNote] = useState("")
   const Icon = s.kind === "url" ? Globe : s.kind === "text" ? Type : FileText
@@ -167,7 +178,17 @@ function SourceItem({ source: s }: { source: KnowledgeSourceRow }) {
           <Icon className="size-4" aria-hidden />
         </span>
         <div className="min-w-0">
-          <p className="truncate font-semibold text-foreground">{s.title}</p>
+          <p className="flex flex-wrap items-center gap-2 font-semibold text-foreground">
+            <span className="truncate">{s.title}</span>
+            <span
+              className={cn(
+                "rounded-full px-2 py-0.5 text-xs font-medium",
+                s.status === "approved" ? "bg-secondary text-primary" : s.status === "rejected" ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-2",
+              )}
+            >
+              {STATUS_TEXT[s.status] ?? s.status}
+            </span>
+          </p>
           <p className="mt-0.5 text-xs text-muted-2">
             <span className="capitalize">{s.category}</span> · {s.kind.toUpperCase()} · {s.chunkCount} sections ·{" "}
             {Math.round(s.charCount / 1000)}k characters · updated {new Date(s.updatedAt).toLocaleDateString()}
@@ -207,17 +228,19 @@ function SourceItem({ source: s }: { source: KnowledgeSourceRow }) {
             Re-read
           </button>
         )}
-        <button
-          type="button"
-          disabled={pending}
-          aria-label={`Delete ${s.title}`}
-          onClick={() => {
-            if (confirm(`Delete "${s.title}" from the knowledge base?`)) start(() => deleteKnowledgeSource(s.id))
-          }}
-          className="flex size-9 items-center justify-center rounded-lg border border-border text-destructive hover:bg-destructive/10"
-        >
-          <Trash2 className="size-4" aria-hidden />
-        </button>
+        {isSuperAdmin && (
+          <button
+            type="button"
+            disabled={pending}
+            aria-label={`Delete ${s.title}`}
+            onClick={() => {
+              if (confirm(`Delete "${s.title}" from the knowledge base?`)) start(() => deleteKnowledgeSource(s.id))
+            }}
+            className="flex size-9 items-center justify-center rounded-lg border border-border text-destructive hover:bg-destructive/10"
+          >
+            <Trash2 className="size-4" aria-hidden />
+          </button>
+        )}
       </div>
     </li>
   )

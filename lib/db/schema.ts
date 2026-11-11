@@ -1323,6 +1323,7 @@ export const aiUsageLogs = pgTable("ai_usage_logs", {
   messageId: text("messageId"),
   provider: text("provider").notNull().default(""),
   question: text("question").notNull().default(""),
+  answer: text("answer").notNull().default(""),
   topic: text("topic").notNull().default("general"),
   answered: boolean("answered"),
   generationIds: text("generationIds").notNull().default(""),
@@ -1406,6 +1407,40 @@ export const aiBudgetAlerts = pgTable(
   },
   (t) => [primaryKey({ columns: [t.period, t.threshold] })],
 )
+
+// Admin-reviewed replacement answers. Only `approved` rows are retrieved by the assistant.
+export const aiAnswerCorrections = pgTable("ai_answer_corrections", {
+  id: serial("id").primaryKey(),
+  usageLogId: integer("usageLogId"),
+  question: text("question").notNull(),
+  originalAnswer: text("originalAnswer").notNull().default(""),
+  correctedAnswer: text("correctedAnswer").notNull(),
+  keywords: text("keywords").notNull().default(""),
+  topic: text("topic").notNull().default("general"),
+  status: text("status").notNull().default("draft"), // draft | pending | approved | rejected | withdrawn
+  version: integer("version").notNull().default(1),
+  createdBy: text("createdBy"),
+  createdByName: text("createdByName").notNull().default(""),
+  reviewedBy: text("reviewedBy"),
+  reviewedAt: timestamp("reviewedAt"),
+  reviewNote: text("reviewNote").notNull().default(""),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+})
+
+export const aiCorrectionVersions = pgTable("ai_correction_versions", {
+  id: serial("id").primaryKey(),
+  correctionId: integer("correctionId")
+    .notNull()
+    .references(() => aiAnswerCorrections.id, { onDelete: "cascade" }),
+  version: integer("version").notNull(),
+  action: text("action").notNull(), // created | edited | submitted | approved | rejected | withdrawn
+  correctedAnswer: text("correctedAnswer").notNull().default(""),
+  note: text("note").notNull().default(""),
+  changedBy: text("changedBy"),
+  changedByName: text("changedByName").notNull().default(""),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
 
 export const aiFeedback = pgTable("ai_feedback", {
   id: serial("id").primaryKey(),

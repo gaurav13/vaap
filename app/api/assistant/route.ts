@@ -133,7 +133,7 @@ export async function POST(req: Request) {
   if (blocked) {
     const reason = blocked
     const free = await freeAnswer(question, NOTICES[reason])
-    await writeLog(base, { status: STATUS_FOR[reason], answered: free.answered, provider: "faq" })
+    await writeLog(base, { status: STATUS_FOR[reason], answered: free.answered, provider: "faq", answer: free.text.slice(0, 8000) })
     const stream = createUIMessageStream({
       execute({ writer }) {
         writer.write({ type: "start", messageMetadata: { requestId, free: true } })
@@ -204,6 +204,7 @@ export async function POST(req: Request) {
         cachedInputTokens: cached,
         reasoningTokens: totalUsage.outputTokenDetails?.reasoningTokens ?? 0,
         costMicroUsd: costMicroUsd(servedModel, input, cached, output),
+        answer: text.slice(0, 8000),
         answered: !(knowledgeMissed && UNANSWERED.test(text)) && !UNANSWERED.test(text.slice(0, 300)),
       })
     },

@@ -189,6 +189,7 @@ export async function searchKnowledge(query: string, category?: string, limit = 
     .where(
       and(
         eq(aiKnowledgeSources.active, true),
+        eq(aiKnowledgeSources.status, "approved"),
         category ? eq(aiKnowledgeSources.category, category) : undefined,
         sql`to_tsvector('simple', ${aiKnowledgeChunks.content}) @@ to_tsquery('simple', ${tsq})`,
       ),

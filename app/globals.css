@@ -38,6 +38,8 @@
   --color-line: var(--line);
   --color-line-light: var(--line-light);
   --color-green-border: var(--green-border);
+  --color-warning: var(--warning);
+  --color-warning-bg: var(--warning-bg);
   --color-gold: var(--gold);
   --color-gold-tint: var(--gold-tint);
   --color-blue-tint: var(--blue-tint);
@@ -97,6 +99,8 @@
   --line: #dde5e7;
   --line-light: #e9eef0;
   --green-border: #bce8d7;
+  --warning: #8a5a00;
+  --warning-bg: #fdf3df;
   --gold: #b89146;
   --gold-tint: #f7f1e3;
   --blue-tint: #eef4f6;

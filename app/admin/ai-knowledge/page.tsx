@@ -3,10 +3,12 @@ import { db } from "@/lib/db"
 import { aiKnowledgeSources } from "@/lib/db/schema"
 import { KNOWLEDGE_CATEGORIES } from "@/lib/ai-assistant/knowledge"
 import { AiKnowledgeManager } from "@/components/admin/ai-knowledge-manager"
+import { currentOperator } from "@/lib/rbac"
 
 export const metadata = { title: "AI Knowledge Center | VAAP Admin" }
 
 export default async function AdminAiKnowledgePage() {
+  const actor = await currentOperator()
   const rows = await db
     .select({
       id: aiKnowledgeSources.id,
@@ -18,6 +20,7 @@ export default async function AdminAiKnowledgePage() {
       charCount: aiKnowledgeSources.charCount,
       chunkCount: aiKnowledgeSources.chunkCount,
       active: aiKnowledgeSources.active,
+      status: aiKnowledgeSources.status,
       updatedAt: aiKnowledgeSources.updatedAt,
     })
     .from(aiKnowledgeSources)
@@ -31,6 +34,7 @@ export default async function AdminAiKnowledgePage() {
       </p>
       <AiKnowledgeManager
         categories={KNOWLEDGE_CATEGORIES}
+        isSuperAdmin={actor?.role === "admin"}
         sources={rows.map((r) => ({ ...r, updatedAt: r.updatedAt.toISOString() }))}
       />
     </div>
