@@ -8,6 +8,7 @@ export const AI_TABS = [
   { key: "corrections", label: "Answer Corrections" },
   { key: "knowledge", label: "Knowledge" },
   { key: "improvement", label: "Improvement" },
+  { key: "leadership", label: "Leadership Profiles" },
   { key: "cost", label: "Usage, Cost & Credits", adminOnly: true },
   { key: "users", label: "User Analytics", adminOnly: true },
   { key: "settings", label: "Budget & Models", adminOnly: true },

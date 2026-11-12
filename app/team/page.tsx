@@ -23,6 +23,7 @@ export default async function TeamPage() {
     photo: p.photo,
     linkedin: p.linkedin,
     kind: p.kind,
+    slug: p.slug,
   }))
 
   return (

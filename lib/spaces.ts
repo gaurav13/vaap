@@ -39,7 +39,7 @@ export function publicSpaceUrl(key: string) {
   return `${base}/${key}`
 }
 
-const IMAGE_FOLDERS = new Set(["pages", "news", "articles", "events", "publications", "governance", "kol", "media-coverage", "social-agent"])
+const IMAGE_FOLDERS = new Set(["pages", "news", "articles", "events", "publications", "governance", "kol", "media-coverage", "social-agent", "leadership"])
 // Folders that also accept SVG logos (sanitised, served with an image content type).
 const SVG_FOLDERS = new Set(["media-coverage"])
 const MAX_SVG_BYTES = 512 * 1024

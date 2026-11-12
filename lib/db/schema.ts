@@ -345,7 +345,37 @@ export const leadership = pgTable("leadership", {
   sortOrder: serial("sortOrder"),
   published: boolean("published").notNull().default(true),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
-})
+  // Application & approval workflow. Live columns above are what the public
+  // site renders; `draft` holds unapproved edits (including AI output) and
+  // `submission` keeps the applicant's original facts for AI grounding.
+  slug: text("slug"),
+  title: text("title").notNull().default(""),
+  summary: text("summary").notNull().default(""),
+  portfolio: text("portfolio").notNull().default(""),
+  message: text("message").notNull().default(""),
+  status: text("status").notNull().default("approved"),
+  contactEmail: text("contactEmail"),
+  contactPhone: text("contactPhone"),
+  applicantUserId: text("applicantUserId"),
+  submission: jsonb("submission").$type<Record<string, string>>(),
+  draft: jsonb("draft").$type<Record<string, string>>(),
+  reviewNote: text("reviewNote").notNull().default(""),
+  submittedAt: timestamp("submittedAt"),
+  reviewedAt: timestamp("reviewedAt"),
+  reviewedBy: text("reviewedBy"),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+}, (t) => [uniqueIndex("leadership_slug_idx").on(t.slug), index("leadership_status_idx").on(t.status)])
+
+export const leadershipRevisions = pgTable("leadership_revisions", {
+  id: serial("id").primaryKey(),
+  leadershipId: integer("leadershipId").notNull(),
+  action: text("action").notNull(),
+  actorId: text("actorId"),
+  actorName: text("actorName").notNull().default(""),
+  note: text("note").notNull().default(""),
+  snapshot: jsonb("snapshot").$type<Record<string, unknown>>(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+}, (t) => [index("leadership_revisions_leader_idx").on(t.leadershipId)])
 
 // --- Sub-committees ---------------------------------------------------------
 

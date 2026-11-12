@@ -2,6 +2,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 import { RichContent } from "@/components/rich-content"
+import { leaderPath } from "@/lib/leadership"
 
 type Profile = {
   id: number
@@ -12,9 +13,12 @@ type Profile = {
   photo: string | null
   linkedin: string | null
   kind: string
+  slug?: string | null
+  href?: string
 }
 
-export function Leadership({ profiles }: { profiles: Profile[] }) {
+export function Leadership({ profiles: raw }: { profiles: Profile[] }) {
+  const profiles = raw.map((p) => ({ ...p, href: leaderPath(p) }))
   // The Chairman is the profile whose Type is "Chairman" (fallback to the
   // first). Remaining profiles are grouped by Type in admin sort order; any
   // legacy/unknown type falls into the Executive Committee.
@@ -51,7 +55,7 @@ export function Leadership({ profiles }: { profiles: Profile[] }) {
               />
             </div>
             <div className="min-w-0 pt-1">
-              <Link href={`/team/${chairman.id}`} className="group inline-block">
+              <Link href={chairman.href} className="group inline-block">
                 <h3 className="text-2xl font-bold text-heading transition-colors group-hover:text-green sm:text-3xl">
                   {chairman.name}
                 </h3>
@@ -66,7 +70,7 @@ export function Leadership({ profiles }: { profiles: Profile[] }) {
                   <SocialLink href={chairman.linkedin} label={`${chairman.name} LinkedIn profile`} />
                 ) : null}
                 <Link
-                  href={`/team/${chairman.id}`}
+                  href={chairman.href}
                   className="group inline-flex items-center gap-1.5 text-sm font-semibold text-green transition-colors hover:text-green-hover"
                 >
                   View full profile
@@ -134,7 +138,7 @@ function ProfileGroup({
           featured ? (
             <li key={m.id}>
               <Link
-                href={`/team/${m.id}`}
+                href={m.href ?? leaderPath(m)}
                 className="group flex h-full items-center gap-3 rounded-xl border border-line bg-card p-3 shadow-sm transition-all hover:border-green-border hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green sm:gap-4 sm:p-4"
               >
                 <div className="relative aspect-[4/5] w-20 shrink-0 overflow-hidden rounded-lg bg-surface sm:w-24">
@@ -161,7 +165,7 @@ function ProfileGroup({
           ) : (
             <li key={m.id}>
               <Link
-                href={`/team/${m.id}`}
+                href={m.href ?? leaderPath(m)}
                 className="group block h-full min-w-0 rounded-xl border border-line bg-card p-3 text-center shadow-sm sm:p-4 transition-all hover:border-green-border hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green"
               >
                 <div className="relative mx-auto aspect-square w-full overflow-hidden rounded-xl bg-surface">

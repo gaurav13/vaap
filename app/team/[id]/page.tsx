@@ -1,108 +1,20 @@
-import Image from "next/image"
-import Link from "next/link"
-import { notFound } from "next/navigation"
-import { ArrowLeft } from "lucide-react"
-import { eq } from "drizzle-orm"
+import { notFound, permanentRedirect } from "next/navigation"
+import { and, eq } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { leadership } from "@/lib/db/schema"
-import { SiteHeaderServer } from "@/components/site-header-server"
-import { SiteFooter } from "@/components/site-footer"
-import { getHeaderUser } from "@/lib/header-user"
-import { ProfileSocials } from "@/components/profiles/profile-socials"
-import { RichContent } from "@/components/rich-content"
-import { seoMetadata } from "@/lib/seo"
-import { teamSubject } from "@/lib/seo/subjects"
-import { SeoJsonLd } from "@/components/seo/json-ld"
+import { leaderPath } from "@/lib/leadership"
 
-async function getProfile(id: number) {
-  const rows = await db.select().from(leadership).where(eq(leadership.id, id)).limit(1)
-  const row = rows[0]
-  if (!row || !row.published) return null
-  return row
-}
-
-export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
-  const profile = await getProfile(Number(id))
-  if (!profile) return { title: "Profile" }
-  return seoMetadata(teamSubject(profile))
-}
-
-function RichBio({ html }: { html: string }) {
-  return <RichContent value={html} className="mt-6 max-w-2xl" />
-}
-
-export default async function TeamProfilePage({ params }: { params: Promise<{ id: string }> }) {
+// Legacy numeric profile URLs now redirect to /leadership/[section]/[slug].
+export default async function LegacyTeamProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const numericId = Number(id)
-  if (!Number.isInteger(numericId)) notFound()
+  if (!Number.isInteger(numericId) || numericId <= 0) notFound()
 
-  const [profile, user] = await Promise.all([getProfile(numericId), getHeaderUser()])
-  if (!profile) notFound()
-
-  const backHref = "/about#leadership"
-
-  return (
-    <>
-      <SeoJsonLd subject={teamSubject(profile)} />
-      <SiteHeaderServer active="About" user={user} />
-      <main>
-        <div className="vaap-container py-12 lg:py-16">
-          <Link
-            href={backHref}
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-2 transition-colors hover:text-green"
-          >
-            <ArrowLeft className="size-4" /> Back to leadership
-          </Link>
-
-          <div className="mt-8 grid grid-cols-1 gap-8 md:grid-cols-[16rem_1fr] lg:gap-12">
-            <div>
-              <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl border border-line bg-surface">
-                <Image
-                  src={profile.photo || "/placeholder.svg?height=400&width=320&query=portrait"}
-                  alt={`${profile.name} portrait`}
-                  fill
-                  sizes="(max-width: 768px) 100vw, 256px"
-                  className="object-cover"
-                />
-              </div>
-            </div>
-
-            <div className="min-w-0">
-              {profile.kind ? (
-                <span className="inline-flex rounded-md bg-mint px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-green">
-                  {profile.kind === "message" ? "Leadership" : profile.kind}
-                </span>
-              ) : null}
-              <h1 className="mt-4 text-3xl font-bold text-heading lg:text-4xl">{profile.name}</h1>
-              {profile.position ? (
-                <p className="mt-2 text-lg font-semibold text-green">{profile.position}</p>
-              ) : null}
-              {profile.organization ? <p className="mt-1 text-muted-2">{profile.organization}</p> : null}
-              {profile.responsibility ? (
-                <p className="mt-4 max-w-2xl text-pretty leading-relaxed text-body">{profile.responsibility}</p>
-              ) : null}
-
-              <div className="mt-6">
-                <ProfileSocials
-                  name={profile.name}
-                  socials={{
-                    linkedin: profile.linkedin,
-                    x: profile.x,
-                    facebook: profile.facebook,
-                    instagram: profile.instagram,
-                    website: profile.website,
-                    email: profile.email,
-                  }}
-                />
-              </div>
-
-              {profile.bio ? <RichBio html={profile.bio} /> : null}
-            </div>
-          </div>
-        </div>
-      </main>
-      <SiteFooter />
-    </>
-  )
+  const [row] = await db
+    .select({ id: leadership.id, slug: leadership.slug, kind: leadership.kind })
+    .from(leadership)
+    .where(and(eq(leadership.id, numericId), eq(leadership.published, true)))
+    .limit(1)
+  if (!row?.slug) notFound()
+  permanentRedirect(leaderPath(row))
 }

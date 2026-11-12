@@ -1,5 +1,6 @@
 import type { news, articles, events, leadership, kolProfiles, pages } from "@/lib/db/schema"
 import { clip } from "./shared"
+import { leaderPath } from "@/lib/leadership"
 import type { JsonLdNode, SchemaContext, SeoSubject } from "./resolve"
 import { getStaticPage, type StaticPageDef } from "./pages"
 
@@ -111,7 +112,7 @@ export function staticSubject(def: StaticPageDef, opts: { people?: LeaderRow[] }
                     name: p.name,
                     jobTitle: p.position || undefined,
                     image: ctx.abs(p.photo) || undefined,
-                    url: ctx.abs(`/team/${p.id}`),
+                    url: ctx.abs(leaderPath(p)),
                     worksFor: { "@id": ctx.orgId },
                   },
                 })),
@@ -326,7 +327,7 @@ export function eventSubject(e: EventRow, path: string): SeoSubject {
 // --- Team profiles -----------------------------------------------------------
 
 export function teamSubject(p: LeaderRow): SeoSubject {
-  const path = `/team/${p.id}`
+  const path = leaderPath(p)
   const role = [p.position, p.organization].filter(Boolean).join(", ")
   return {
     key: `team:${p.id}`,
@@ -334,7 +335,7 @@ export function teamSubject(p: LeaderRow): SeoSubject {
     label: p.name,
     path,
     title: `${p.name}${p.position ? ` — ${p.position}` : ""}`,
-    description: clip(p.bio, 160) || `${p.name}${role ? `, ${role}` : ""} at the Virtual Asset Industry Alliance of Pakistan.`,
+    description: clip(p.summary, 160) || clip(p.bio, 160) || `${p.name}${role ? `, ${role}` : ""} at the Virtual Asset Industry Alliance of Pakistan.`,
     image: p.photo,
     imageAlt: p.name,
     ogType: "profile",
