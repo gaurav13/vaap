@@ -105,6 +105,7 @@ const GROUPS: { heading: string; links: { href: string; label: string; icon: typ
   {
     heading: "Referrals & Rewards",
     links: [
+      { href: "/admin/my-referrals", label: "My Referral Performance", icon: Award },
       { href: "/admin/referrals", label: "Referral Console", icon: Share2 },
       { href: "/admin/commissions", label: "Commission & Rewards", icon: Percent, adminOnly: true },
       { href: "/admin/rewards", label: "Rewards & Payouts", icon: Coins, adminOnly: true },

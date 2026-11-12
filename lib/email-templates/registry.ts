@@ -38,6 +38,12 @@ const base = { accentColor: DEFAULT_ACCENT, headerLabel: DEFAULT_HEADER_LABEL, c
 
 const NAME: EmailVariable = { name: "name", description: "Recipient's name", sample: "Ayesha Khan" }
 const CATEGORY: EmailVariable = { name: "category", description: "Membership category", sample: "Corporate Members" }
+const LEADERSHIP_VARS: EmailVariable[] = [
+  NAME,
+  { name: "position", description: "Position applied for", sample: "Advisory Board" },
+  { name: "reference", description: "Application reference", sample: "VAAP-LDR-000012" },
+  { name: "statusUrl", description: "Sign-in protected status page", sample: "https://vaap.org.pk/leadership/apply" },
+]
 
 export const EMAIL_TEMPLATES = [
   {
@@ -627,6 +633,76 @@ export const EMAIL_TEMPLATES = [
       ctaLabel: "",
       ctaUrl: "",
       footnote: "",
+    },
+  },
+  {
+    key: "leadership.application-received",
+    name: "Leadership Application Received",
+    category: "Applications",
+    trigger: "An applicant submits a leadership or advisory application",
+    recipient: "Applicant",
+    variables: LEADERSHIP_VARS,
+    defaults: {
+      ...base,
+      subject: "VAAP Leadership Application Received",
+      heading: "Application received",
+      body: "Dear {{name}},\n\nThank you for applying for a leadership or advisory position at VAAP.\n\nWe have successfully received your application for the position of **{{position}}**. Your reference is **{{reference}}**.\n\nOur team will review your application and notify you once a decision has been made.\n\nBest regards,\nVAAP Team",
+      ctaLabel: "View application status",
+      ctaUrl: "{{statusUrl}}",
+      footnote: "You will need to sign in to your VAAP account to view your application status.",
+    },
+  },
+  {
+    key: "leadership.approved",
+    name: "Leadership Application Approved",
+    category: "Applications",
+    trigger: "An admin approves and publishes a leadership application (requires verified membership)",
+    recipient: "Applicant",
+    variables: LEADERSHIP_VARS,
+    defaults: {
+      ...base,
+      subject: "Your VAAP Leadership Application Has Been Approved",
+      heading: "Congratulations, {{name}}",
+      body: "Dear {{name}},\n\nCongratulations! We are pleased to inform you that your application for **{{position}}** at VAAP has been approved.\n\nWe look forward to your contribution to VAAP's initiatives, industry development, and community engagement.\n\nBest regards,\nVAAP Team",
+      ctaLabel: "View application status",
+      ctaUrl: "{{statusUrl}}",
+    },
+  },
+  {
+    key: "leadership.rejected",
+    name: "Leadership Application Not Approved",
+    category: "Applications",
+    trigger: "An admin rejects a leadership application",
+    recipient: "Applicant",
+    variables: [...LEADERSHIP_VARS, { name: "reason", description: "Reason entered by the reviewer (optional)", sample: "We are not adding advisors in this area at present." }],
+    defaults: {
+      ...base,
+      subject: "Update on Your VAAP Leadership Application",
+      heading: "Application update",
+      body: "Dear {{name}},\n\nThank you for your interest in joining VAAP's leadership and advisory network.\n\nAfter reviewing your application, we regret to inform you that we are unable to proceed with your application at this time.\n\nWe appreciate your interest in supporting VAAP and encourage you to remain engaged with our initiatives.\n\nBest regards,\nVAAP Team",
+    },
+  },
+  {
+    key: "admin.leadership-application",
+    name: "New Leadership Application (Admin Alert)",
+    category: "Admin Alerts",
+    trigger: "Someone submits a leadership or advisory application",
+    recipient: "Support Team (configurable)",
+    variables: [
+      ...LEADERSHIP_VARS,
+      { name: "email", description: "Applicant's contact email", sample: "ayesha@example.com" },
+      { name: "organization", description: "Organisation", sample: "Khan Digital Assets Ltd" },
+      { name: "membership", description: "Membership status declared", sample: "Existing Member" },
+      { name: "submittedAt", description: "Submission date and time", sample: "08 Nov 2026, 14:32 PKT" },
+      { name: "reviewUrl", description: "Admin review link", sample: "/admin/leadership/12" },
+    ],
+    defaults: {
+      ...base,
+      subject: "New leadership application: {{name}} — {{position}}",
+      heading: "New leadership application",
+      body: "**{{name}}** has applied for **{{position}}**.\n\n**Reference:** {{reference}}\n**Email:** {{email}}\n**Organisation:** {{organization}}\n**Membership:** {{membership}}\n**Submitted:** {{submittedAt}}\n\nPlease review the application and membership status in the Admin Dashboard.",
+      ctaLabel: "Review application",
+      ctaUrl: "{{reviewUrl}}",
     },
   },
   {

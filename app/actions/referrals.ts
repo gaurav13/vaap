@@ -14,7 +14,7 @@ import {
 import { COMMUNITY_AUDIENCE, adminAudiencesFor, type NotificationScope } from "@/lib/notification-audience"
 import { getSession } from "@/lib/session"
 import { ensureKolReferralCode, isVerifiedKolUser } from "@/lib/kol"
-import { canOwnReferralCode } from "@/lib/permissions"
+import { canOwnReferralCode, isAdminAreaRole } from "@/lib/permissions"
 import { buildReferralCode } from "@/lib/referral"
 import { and, desc, eq, inArray, isNull, or, sql, type SQL } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
@@ -124,6 +124,60 @@ export async function getMyReferralDashboard() {
     payments,
   }
 }
+
+const PENDING_REFERRAL = ["invited", "application_started", "application_submitted", "payment_pending", "under_review"]
+const APPROVED_REFERRAL = ["approved", "reward_eligible", "reward_approved"]
+const COMPLETED_REFERRAL = ["paid"]
+const CLOSED_REFERRAL = ["rejected", "cancelled"]
+const REFERRAL_TARGETS = [1, 5, 10, 25, 50, 100]
+
+// Read-only performance view for the admin area. Every query is pinned to the
+// signed-in user's id, so a Staff Admin can never read another referrer's data.
+export async function getMyReferralPerformance() {
+  const current = await requireUser()
+  if (!isAdminAreaRole(current.role) || !canOwnReferralCode(current.role)) throw new Error("Forbidden")
+
+  const ensured = await getOrCreateMyReferralCode()
+  const dashboard = await getMyReferralDashboard()
+  const attributions = dashboard.attributions
+
+  const countIn = (statuses: string[]) => attributions.filter((a) => statuses.includes(a.status)).length
+  const approved = countIn(APPROVED_REFERRAL)
+  const completed = countIn(COMPLETED_REFERRAL)
+  const conversions = approved + completed
+  const total = attributions.length
+
+  return {
+    code: dashboard.code ?? (ensured.ok ? ensured.code : null),
+    active: dashboard.active,
+    stats: {
+      clicks: dashboard.stats.clicks,
+      totalReferrals: total,
+      registeredMembers: attributions.filter((a) => !!a.membershipId).length,
+      pending: countIn(PENDING_REFERRAL),
+      approved,
+      completed,
+      closed: countIn(CLOSED_REFERRAL),
+      conversions,
+      conversionRate: total ? Math.round((conversions / total) * 100) : 0,
+      clickConversionRate: dashboard.stats.clicks ? Math.round((total / dashboard.stats.clicks) * 100) : 0,
+      totalEarned: dashboard.stats.totalEarned,
+      pendingRewards: dashboard.stats.pending,
+      approvedRewards: dashboard.stats.approvedAmount,
+      paidRewards: dashboard.stats.paid,
+    },
+    targets: REFERRAL_TARGETS.map((goal) => ({ goal, achieved: conversions >= goal })),
+    recent: attributions.slice(0, 15).map((a) => ({
+      id: a.id,
+      memberEmail: a.memberEmail,
+      status: a.status,
+      membershipId: a.membershipId,
+      createdAt: a.createdAt,
+    })),
+  }
+}
+
+export type MyReferralPerformance = Awaited<ReturnType<typeof getMyReferralPerformance>>
 
 // Role-based notification feeds.
 //   member scope: the caller's own private notifications + community updates.

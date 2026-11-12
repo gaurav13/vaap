@@ -8,6 +8,12 @@ export const ADMIN_ALERTS = [
     templateKey: "admin.kol-application",
   },
   {
+    type: "leadership",
+    label: "New leadership applications",
+    description: "When someone applies for a leadership or advisory position.",
+    templateKey: "admin.leadership-application",
+  },
+  {
     type: "article",
     label: "New article submissions",
     description: "When a member submits an article for review.",

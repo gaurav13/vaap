@@ -7,6 +7,7 @@ import {
   generateLeadershipSections,
   publishLeadershipProfile,
   rejectLeadershipChanges,
+  retryLeadershipNotification,
   saveLeadershipDraft,
   type getLeadershipStudio,
 } from "@/app/actions/leadership"
@@ -200,6 +201,14 @@ export function LeadershipStudio({ data }: { data: StudioData }) {
 
           {(data.submission || data.membership) && <EligibilityPanel data={data} />}
 
+          {data.notifications && (
+            <NotificationsPanel
+              data={data}
+              busy={disabled}
+              onRetry={(event) => run(`retry-${event}`, () => retryLeadershipNotification(data.id, event))}
+            />
+          )}
+
           {data.submission && (
             <details className="rounded-xl border border-line bg-card p-4 text-sm" open={isApplication}>
               <summary className="cursor-pointer font-semibold text-heading">Original application</summary>
@@ -270,6 +279,79 @@ const MEMBERSHIP_STATE_LABELS: Record<string, string> = {
   expired: "Membership expired",
   suspended: "Membership suspended",
   rejected: "Membership application rejected",
+}
+
+const EMAIL_EVENTS = [
+  { event: "received", label: "Application received" },
+  { event: "approved", label: "Approval" },
+  { event: "rejected", label: "Rejection" },
+] as const
+
+function NotificationsPanel({
+  data,
+  busy,
+  onRetry,
+}: {
+  data: StudioData
+  busy: boolean
+  onRetry: (event: (typeof EMAIL_EVENTS)[number]["event"]) => void
+}) {
+  const log = data.notifications ?? {}
+  const canRetry = (event: string) =>
+    event === "received" || (event === "approved" && data.published) || (event === "rejected" && data.status === "rejected")
+
+  return (
+    <section className="flex flex-col gap-3 rounded-xl border border-line bg-card p-4 text-sm">
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="font-semibold text-heading">Applicant emails</h2>
+        <a href="/admin/emails" className="text-xs text-green hover:underline">
+          Edit templates
+        </a>
+      </div>
+      <ul className="flex flex-col gap-3">
+        {EMAIL_EVENTS.map(({ event, label }) => {
+          const entry = log[event]
+          const sent = entry?.status === "sent"
+          return (
+            <li key={event} className="flex flex-col gap-1">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-heading">{label}</span>
+                <span
+                  className={
+                    !entry
+                      ? "text-xs text-muted-2"
+                      : sent
+                        ? "rounded-full bg-green/10 px-2 py-0.5 text-xs font-medium text-green"
+                        : "rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive"
+                  }
+                >
+                  {!entry ? "Not sent" : sent ? "Delivered" : entry.status === "skipped" ? "Not delivered" : "Failed"}
+                </span>
+              </div>
+              {entry && (
+                <span className="text-xs text-muted-2">
+                  {new Date(entry.at).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}
+                  {entry.attempts > 1 ? ` · ${entry.attempts} attempts` : ""}
+                </span>
+              )}
+              {entry?.error && <span className="break-words text-xs text-destructive">{entry.error}</span>}
+              {entry && !sent && canRetry(event) && (
+                <button
+                  type="button"
+                  onClick={() => onRetry(event)}
+                  disabled={busy}
+                  className="flex w-fit items-center gap-1 rounded-lg border border-line px-2.5 py-1 text-xs font-semibold text-heading hover:border-green disabled:opacity-50"
+                >
+                  <RefreshCw className="size-3" aria-hidden="true" />
+                  Retry
+                </button>
+              )}
+            </li>
+          )
+        })}
+      </ul>
+    </section>
+  )
 }
 
 function EligibilityPanel({ data }: { data: StudioData }) {

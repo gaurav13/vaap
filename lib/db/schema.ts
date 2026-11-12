@@ -359,6 +359,7 @@ export const leadership = pgTable("leadership", {
   applicantUserId: text("applicantUserId"),
   submission: jsonb("submission").$type<Record<string, string>>(),
   draft: jsonb("draft").$type<Record<string, string>>(),
+  notifications: jsonb("notifications").$type<Record<string, { status: string; at: string; attempts: number; recipient: string; error?: string }>>(),
   reviewNote: text("reviewNote").notNull().default(""),
   submittedAt: timestamp("submittedAt"),
   reviewedAt: timestamp("reviewedAt"),

@@ -8,6 +8,13 @@ import { getSession } from "@/lib/session"
 import { sanitizeRichText } from "@/lib/sanitize"
 import { generateProfileSections } from "@/lib/leadership-ai"
 import { getMembershipStanding } from "@/lib/membership-state"
+import { after } from "next/server"
+import {
+  LEADERSHIP_EMAIL_EVENTS,
+  alertAdminsOfLeadershipApplication,
+  notifyLeadershipApplicant,
+  type LeadershipEmailEvent,
+} from "@/lib/leadership-notifications"
 import {
   AI_SECTIONS,
   APPLICATION_KINDS,
@@ -235,6 +242,9 @@ export async function submitLeadershipApplication(_prev: ActionResult | null, fo
     .returning({ id: leadership.id })
 
   await record(row.id, user, "submitted", submission)
+  const applicant = { id: row.id, name: c.name, kind, contactEmail, applicantUserId: user.id }
+  after(() => notifyLeadershipApplicant(applicant, "received"))
+  alertAdminsOfLeadershipApplication({ ...applicant, organization: c.organization, membershipStatus })
   revalidatePath("/admin/leadership")
   return { ok: true, message: "Application received. The VAAP team will review it and contact you." }
 }
@@ -266,6 +276,7 @@ export async function getLeadershipStudio(id: number) {
     live,
     draft: row.draft ? ({ ...live, ...row.draft } as ProfileContent) : null,
     submission: row.submission ?? null,
+    notifications: row.applicantUserId ? (row.notifications ?? {}) : null,
     contactEmail: row.contactEmail ?? "",
     contactPhone: row.contactPhone ?? "",
     reviewNote: row.reviewNote,
@@ -350,6 +361,10 @@ export async function publishLeadershipProfile(id: number, input: Record<string,
     })
     .where(eq(leadership.id, id))
   await record(id, actor, "published", parsed.content)
+  // Only the first approval of an applicant notifies; later profile edits don't.
+  if (!row.published && row.applicantUserId) {
+    await notifyLeadershipApplicant({ ...row, name: parsed.content.name, kind: parsed.content.kind }, "approved")
+  }
   const newPath = leaderPath({ id, slug, kind: parsed.content.kind })
   revalidateLeadership(oldPath, newPath, `/team/${id}`, `/admin/leadership/${id}`)
   return { ok: true, message: `Published at ${newPath}` }
@@ -375,9 +390,26 @@ export async function rejectLeadershipChanges(id: number, note: string): Promise
     .set({ status: "rejected", reviewNote: reason, reviewedAt: new Date(), reviewedBy: actor.id, updatedAt: new Date() })
     .where(eq(leadership.id, id))
   await record(id, actor, "rejected", null, reason)
+  if (row.applicantUserId) await notifyLeadershipApplicant({ ...row, reviewNote: reason }, "rejected")
   revalidatePath("/admin/leadership")
   revalidatePath(`/admin/leadership/${id}`)
   return { ok: true, message: "Application rejected." }
+}
+
+export async function retryLeadershipNotification(id: number, event: LeadershipEmailEvent): Promise<ActionResult> {
+  const actor = await requireEditor()
+  if (!LEADERSHIP_EMAIL_EVENTS.includes(event)) return { ok: false, error: "Unknown notification." }
+  const row = await getLeader(id)
+  if (!row?.applicantUserId) return { ok: false, error: "Application not found." }
+  if (row.notifications?.[event]?.status === "sent") return { ok: false, error: "This email was already delivered." }
+  const matchesDecision =
+    event === "received" || (event === "approved" && row.published) || (event === "rejected" && row.status === "rejected")
+  if (!matchesDecision) return { ok: false, error: "This email no longer matches the application's current status." }
+
+  const sent = await notifyLeadershipApplicant(row, event)
+  await record(id, actor, `email_retry:${event}`, null, sent ? "delivered" : "failed")
+  revalidatePath(`/admin/leadership/${id}`)
+  return sent ? { ok: true, message: "Email sent." } : { ok: false, error: "Email still could not be delivered. See Email Logs for details." }
 }
 
 export async function deleteLeadershipProfile(id: number): Promise<ActionResult> {

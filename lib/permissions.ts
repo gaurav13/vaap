@@ -62,6 +62,7 @@ export const STAFF_ADMIN_ROUTES = [
   "/admin/kols",
   "/admin/activity",
   "/admin/notifications",
+  "/admin/my-referrals",
 ] as const
 
 export function isStaffAdminRoute(pathname: string): boolean {
