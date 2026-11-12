@@ -112,10 +112,10 @@ export function VaapGovernance() {
             {"A member-driven, transparent and inclusive structure to represent, coordinate and advance Pakistan's virtual asset industry."}
           </p>
           <Link
-            href="/membership"
+            href="/about#leadership"
             className="mt-5 inline-flex w-fit items-center gap-2 rounded-md bg-green px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-green-hover"
           >
-            Join VAAP
+            View Board Members
             <ArrowRight className="size-4" aria-hidden />
           </Link>
 
