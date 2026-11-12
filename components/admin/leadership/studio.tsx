@@ -13,6 +13,7 @@ import {
 import { AI_SECTIONS, LEADERSHIP_SECTIONS, STATUS_LABELS, type AiSection, type ProfileContent, type ProfileField } from "@/lib/leadership"
 import { RichTextField } from "@/components/admin/rich-text-editor"
 import { PhotoUpload } from "@/components/leadership/photo-upload"
+import { DeleteLeadershipButton } from "./delete-button"
 
 type StudioData = NonNullable<Awaited<ReturnType<typeof getLeadershipStudio>>>
 
@@ -90,6 +91,7 @@ export function LeadershipStudio({ data }: { data: StudioData }) {
           <h1 className="font-serif text-2xl font-bold text-heading text-balance">{content.name || "Untitled profile"}</h1>
         </div>
         <div className="flex flex-wrap gap-2">
+          <DeleteLeadershipButton id={data.id} name={content.name} variant="button" redirectTo="/admin/leadership" />
           {data.published && (
             <a href={data.path} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-lg border border-line px-3 py-2 text-sm text-heading hover:border-green">
               Live profile <ExternalLink className="size-3.5" aria-hidden="true" />

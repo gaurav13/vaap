@@ -316,6 +316,27 @@ export async function rejectLeadershipChanges(id: number, note: string): Promise
   return { ok: true, message: "Application rejected." }
 }
 
+export async function deleteLeadershipProfile(id: number): Promise<ActionResult> {
+  const actor = await requireEditor()
+  const row = await getLeader(id)
+  if (!row) return { ok: false, error: "Profile not found." }
+
+  await db.delete(leadershipRevisions).where(eq(leadershipRevisions.leadershipId, id))
+  await db.delete(leadership).where(eq(leadership.id, id))
+  try {
+    await db.insert(auditLogs).values({
+      actorId: actor.id,
+      actorName: actor.name ?? "",
+      action: "leadership.deleted",
+      target: `${id}:${row.name}`.slice(0, 200),
+    })
+  } catch (e) {
+    console.error("[leadership] audit log failed:", (e as Error).message)
+  }
+  revalidateLeadership(`/team/${id}`, `/admin/leadership/${id}`)
+  return { ok: true, message: `Deleted ${row.name || "profile"}.` }
+}
+
 export async function listLeadershipQueue() {
   await requireEditor()
   return db

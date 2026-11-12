@@ -2,6 +2,7 @@ import Link from "next/link"
 import { ArrowRight, Sparkles } from "lucide-react"
 import { STATUS_LABELS } from "@/lib/leadership"
 import { cn } from "@/lib/utils"
+import { DeleteLeadershipButton } from "./delete-button"
 
 type Row = {
   id: number
@@ -40,8 +41,8 @@ export function LeadershipQueue({ rows, title = "Applications & drafts" }: { row
       ) : (
         <ul className="flex flex-col divide-y divide-line">
           {open.map((r) => (
-            <li key={r.id}>
-              <Link href={`/admin/leadership/${r.id}`} className="group flex items-center gap-3 py-2.5">
+            <li key={r.id} className="flex items-center gap-2">
+              <Link href={`/admin/leadership/${r.id}`} className="group flex min-w-0 flex-1 items-center gap-3 py-2.5">
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-medium text-heading group-hover:text-green">{r.name}</span>
                   <span className="block text-xs text-muted-2">
@@ -54,6 +55,7 @@ export function LeadershipQueue({ rows, title = "Applications & drafts" }: { row
                 </span>
                 <ArrowRight className="size-4 text-muted-2 group-hover:text-green" aria-hidden="true" />
               </Link>
+              <DeleteLeadershipButton id={r.id} name={r.name} />
             </li>
           ))}
         </ul>
