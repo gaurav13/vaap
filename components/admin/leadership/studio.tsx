@@ -10,7 +10,17 @@ import {
   saveLeadershipDraft,
   type getLeadershipStudio,
 } from "@/app/actions/leadership"
-import { AI_SECTIONS, LEADERSHIP_SECTIONS, STATUS_LABELS, type AiSection, type ProfileContent, type ProfileField } from "@/lib/leadership"
+import {
+  AI_SECTIONS,
+  ELIGIBILITY_KEYS,
+  LEADERSHIP_COMMITMENTS,
+  LEADERSHIP_SECTIONS,
+  MEMBERSHIP_INTENTS,
+  STATUS_LABELS,
+  type AiSection,
+  type ProfileContent,
+  type ProfileField,
+} from "@/lib/leadership"
 import { RichTextField } from "@/components/admin/rich-text-editor"
 import { PhotoUpload } from "@/components/leadership/photo-upload"
 import { DeleteLeadershipButton } from "./delete-button"
@@ -188,12 +198,14 @@ export function LeadershipStudio({ data }: { data: StudioData }) {
             </section>
           )}
 
+          {(data.submission || data.membership) && <EligibilityPanel data={data} />}
+
           {data.submission && (
             <details className="rounded-xl border border-line bg-card p-4 text-sm" open={isApplication}>
               <summary className="cursor-pointer font-semibold text-heading">Original application</summary>
               <dl className="mt-3 flex flex-col gap-2">
                 {Object.entries(data.submission)
-                  .filter(([k, v]) => v && !["photo", "summary"].includes(k))
+                  .filter(([k, v]) => v && !["photo", "summary"].includes(k) && !ELIGIBILITY_KEYS.has(k))
                   .map(([k, v]) => (
                     <div key={k}>
                       <dt className="text-xs uppercase tracking-wide text-muted-2">{k}</dt>
@@ -247,6 +259,74 @@ export function LeadershipStudio({ data }: { data: StudioData }) {
         </aside>
       </div>
     </div>
+  )
+}
+
+const MEMBERSHIP_STATE_LABELS: Record<string, string> = {
+  active: "Verified — active member",
+  "not-member": "Not registered",
+  "payment-pending": "Registration started — payment pending",
+  "under-review": "Registration under review",
+  expired: "Membership expired",
+  suspended: "Membership suspended",
+  rejected: "Membership application rejected",
+}
+
+function EligibilityPanel({ data }: { data: StudioData }) {
+  const s = data.submission ?? {}
+  const intent = MEMBERSHIP_INTENTS.find((m) => m.value === s.membershipStatus)
+  const verified = data.membership?.state === "active"
+  const yes = (key: string) => (s[key] === "yes" ? "Confirmed" : "Not recorded")
+  const rows: [string, string][] = [
+    ["Industry experience", s.yearsExperience ? `${s.yearsExperience} years` : "Not recorded"],
+    ["Primary expertise", s.expertise || "Not recorded"],
+    ["Experience confirmation", yes("commitExperience")],
+    ["Membership status", intent?.label ?? "Not recorded"],
+    ["Five-hour monthly commitment", yes("commitHours")],
+    ["Internal collaboration", yes("commitCollaboration")],
+    ["Confidentiality agreement", yes("commitConfidentiality")],
+  ]
+
+  return (
+    <section className="flex flex-col gap-3 rounded-xl border border-line bg-card p-4 text-sm">
+      <h2 className="font-semibold text-heading">Eligibility &amp; commitment</h2>
+      <div
+        className={
+          verified
+            ? "rounded-lg border border-green/30 bg-green/10 px-3 py-2 text-green"
+            : "rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-amber-900"
+        }
+      >
+        <span className="block text-xs uppercase tracking-wide opacity-80">Membership verification</span>
+        <span className="font-medium">
+          {data.membership ? (MEMBERSHIP_STATE_LABELS[data.membership.state] ?? data.membership.state) : "No applicant account linked"}
+        </span>
+        {data.membership?.membershipId && <span className="block text-xs">ID {data.membership.membershipId}</span>}
+      </div>
+      {data.membership && !verified && !data.published && (
+        <p className="text-xs leading-relaxed text-muted-2">
+          Final approval is blocked until membership is verified. Direct the applicant to{" "}
+          <a href="/membership/apply" target="_blank" rel="noreferrer" className="text-green hover:underline">
+            membership registration
+          </a>{" "}
+          and approve it in Members.
+        </p>
+      )}
+      <dl className="flex flex-col gap-2">
+        {rows.map(([label, value]) => (
+          <div key={label} className="flex items-start justify-between gap-3">
+            <dt className="text-muted-2">{label}</dt>
+            <dd className={value === "Not recorded" ? "text-right text-muted-2" : "text-right font-medium text-heading"}>{value}</dd>
+          </div>
+        ))}
+      </dl>
+      {s.commitmentsConfirmedAt && (
+        <p className="text-xs text-muted-2">
+          {LEADERSHIP_COMMITMENTS.length} commitments confirmed{" "}
+          {new Date(s.commitmentsConfirmedAt).toLocaleDateString("en-GB", { dateStyle: "medium" })}
+        </p>
+      )}
+    </section>
   )
 }
 

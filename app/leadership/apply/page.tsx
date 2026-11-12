@@ -9,6 +9,8 @@ import { ApplySidebar } from "@/components/leadership/apply-sidebar"
 import { SiteHeaderServer } from "@/components/site-header-server"
 import { SiteFooter } from "@/components/site-footer"
 import { getHeaderUser } from "@/lib/header-user"
+import { LeadershipEligibility } from "@/components/leadership/eligibility"
+import { getMembershipStanding } from "@/lib/membership-state"
 
 export const metadata: Metadata = {
   title: "Apply for VAAP Leadership",
@@ -20,6 +22,10 @@ export default async function LeadershipApplyPage() {
   const [session, user] = await Promise.all([getSession(), getHeaderUser()])
   const existing = session?.user ? await getMyLeadershipApplication() : null
   const underReview = existing && (existing.status === "pending" || existing.status === "in_review")
+  const needsMembership =
+    underReview && existing.membershipStatus === "future" && session?.user
+      ? (await getMembershipStanding(session.user.id, session.user.email ?? "")).state !== "active"
+      : false
 
   return (
     <>
@@ -56,6 +62,7 @@ export default async function LeadershipApplyPage() {
 
         <div className="vaap-container grid gap-8 py-10 md:py-14 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-12">
           <div className="flex min-w-0 flex-col gap-6">
+            <LeadershipEligibility />
             {!session?.user ? (
               <div className="flex flex-col items-start gap-5 rounded-2xl border border-line bg-card p-6 shadow-sm md:p-8">
                 <span className="flex size-11 items-center justify-center rounded-full bg-mint text-green">
@@ -95,6 +102,22 @@ export default async function LeadershipApplyPage() {
                   Submitted {existing.submittedAt?.toLocaleDateString("en-GB", { dateStyle: "medium" })}. We will contact
                   you once it has been reviewed.
                 </p>
+                {needsMembership && (
+                  <div className="flex w-full flex-col gap-3 rounded-xl border border-line-light bg-mint-2 p-4 text-sm leading-relaxed text-body">
+                    <p>
+                      <span className="font-semibold text-heading">Membership required for appointment. </span>
+                      If the VAAP team conditionally accepts your application, complete your VAAP membership registration
+                      and billing. Your appointment is finalised once your membership is verified.
+                    </p>
+                    <Link
+                      href="/membership/apply"
+                      className="group inline-flex w-fit items-center gap-2 rounded-md bg-green px-4 py-2 text-sm font-bold text-primary-foreground transition-colors hover:bg-green-hover"
+                    >
+                      Register for membership
+                      <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" aria-hidden="true" />
+                    </Link>
+                  </div>
+                )}
               </div>
             ) : (
               <>

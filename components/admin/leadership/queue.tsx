@@ -11,6 +11,7 @@ type Row = {
   status: string
   published: boolean
   hasDraft: unknown
+  membershipStatus?: string | null
   submittedAt: Date | null
   updatedAt: Date
 }
@@ -47,6 +48,8 @@ export function LeadershipQueue({ rows, title = "Applications & drafts" }: { row
                   <span className="block truncate font-medium text-heading group-hover:text-green">{r.name}</span>
                   <span className="block text-xs text-muted-2">
                     {r.kind}
+                    {r.membershipStatus === "existing" && " · Existing member"}
+                    {r.membershipStatus === "future" && " · Future member"}
                     {r.submittedAt && ` · applied ${r.submittedAt.toLocaleDateString("en-GB", { dateStyle: "medium" })}`}
                   </span>
                 </span>

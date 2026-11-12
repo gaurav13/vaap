@@ -3,7 +3,7 @@
 import { useActionState, useState } from "react"
 import { Award, Briefcase, CheckCircle2, Loader2, Users } from "lucide-react"
 import { submitLeadershipApplication } from "@/app/actions/leadership"
-import { APPLICATION_KINDS } from "@/lib/leadership"
+import { APPLICATION_KINDS, EXPERTISE_AREAS, LEADERSHIP_COMMITMENTS, MEMBERSHIP_INTENTS } from "@/lib/leadership"
 import { PhotoUpload } from "@/components/leadership/photo-upload"
 
 const input =
@@ -136,6 +136,21 @@ export function LeadershipApplicationForm({ defaultEmail, defaultName }: { defau
           <Field id="position" title="Current role at organization" optional>
             <input id="position" name="position" maxLength={120} className={input} />
           </Field>
+          <Field id="yearsExperience" title="Years of relevant industry experience">
+            <input id="yearsExperience" name="yearsExperience" type="number" inputMode="numeric" required min={0} max={60} step={1} className={input} />
+          </Field>
+          <Field id="expertise" title="Primary area of professional expertise">
+            <select id="expertise" name="expertise" required defaultValue="" className={input}>
+              <option value="" disabled>
+                Select an area
+              </option>
+              {EXPERTISE_AREAS.map((a) => (
+                <option key={a} value={a}>
+                  {a}
+                </option>
+              ))}
+            </select>
+          </Field>
         </div>
         <div className="flex flex-col gap-1.5">
           <span className={label}>Profile photograph</span>
@@ -185,8 +200,44 @@ export function LeadershipApplicationForm({ defaultEmail, defaultName }: { defau
         </div>
       </Section>
 
+      <Section
+        step={6}
+        title="Are you currently a VAAP member?"
+        description="Non-members can apply. No payment is needed before the initial review."
+      >
+        <div role="radiogroup" aria-label="VAAP membership" className="grid gap-3 sm:grid-cols-2">
+          {MEMBERSHIP_INTENTS.map((m, i) => (
+            <label
+              key={m.value}
+              className="relative flex cursor-pointer flex-col gap-1 rounded-xl border border-line bg-card p-4 pr-10 transition-colors hover:border-green/60 has-[:checked]:border-green has-[:checked]:bg-mint-2 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-green/30"
+            >
+              <input type="radio" name="membershipStatus" value={m.value} required={i === 0} className="peer sr-only" />
+              <span className="text-sm font-semibold text-heading">{m.label}</span>
+              <span className="text-xs leading-relaxed text-muted-2">{m.description}</span>
+              <CheckCircle2
+                className="absolute right-3 top-3 size-5 text-green opacity-0 transition-opacity peer-checked:opacity-100"
+                aria-hidden="true"
+              />
+            </label>
+          ))}
+        </div>
+        <p className="text-xs leading-relaxed text-muted-2">
+          Existing members are verified against VAAP membership records for your account. If accepted, future members
+          complete the standard membership registration and billing before final appointment.
+        </p>
+      </Section>
+
       <div className="flex flex-col gap-5 rounded-2xl border border-line bg-card p-5 shadow-sm md:p-7">
-        <label className="flex items-start gap-3 text-sm leading-relaxed text-body">
+        <fieldset className="flex flex-col gap-3">
+          <legend className="mb-1 font-serif text-lg font-semibold text-heading">Commitments</legend>
+          {LEADERSHIP_COMMITMENTS.map((c) => (
+            <label key={c.key} className="flex items-start gap-3 text-sm leading-relaxed text-body">
+              <input type="checkbox" name={c.key} required className="mt-1 size-4 shrink-0 accent-green" />
+              {c.label}
+            </label>
+          ))}
+        </fieldset>
+        <label className="flex items-start gap-3 border-t border-line-light pt-4 text-sm leading-relaxed text-body">
           <input type="checkbox" name="consent" required className="mt-1 size-4 shrink-0 accent-green" />
           I confirm this information is accurate and agree that VAAP may publish an edited version of my profile if approved.
         </label>
