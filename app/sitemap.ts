@@ -3,6 +3,7 @@ import { and, eq } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { pages, news, events, articles, leadership } from "@/lib/db/schema"
 import { getMenuItems } from "@/lib/site-settings"
+import { leaderPath } from "@/lib/leadership"
 import { getCoreRouteState } from "@/lib/core-routes"
 import { getPublicKols } from "@/lib/kol"
 import { getAllSeoOverrides, getSeoGlobals } from "@/lib/seo/config"
@@ -91,8 +92,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   try {
-    const people = await db.select({ id: leadership.id, createdAt: leadership.createdAt }).from(leadership).where(eq(leadership.published, true))
-    for (const p of people) add(`/team/${p.id}`, p.createdAt ?? now, `team:${p.id}`)
+    const people = await db
+      .select({ id: leadership.id, slug: leadership.slug, kind: leadership.kind, updatedAt: leadership.updatedAt })
+      .from(leadership)
+      .where(eq(leadership.published, true))
+    for (const p of people) add(leaderPath(p), p.updatedAt ?? now, `team:${p.id}`)
   } catch {
     // Best-effort.
   }

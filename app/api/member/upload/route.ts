@@ -27,8 +27,9 @@ export async function POST(request: Request) {
     return Response.json({ error: "Choose an image to upload." }, { status: 400 })
   }
 
-  // Members may only upload event banners and article images; uploadPageImage rejects PDFs outside "publications".
-  const folder = form.get("folder") === "articles" ? "articles" : "events"
+  // Members may only upload event banners, article images and leadership photos; uploadPageImage rejects PDFs outside "publications".
+  const requested = form.get("folder")
+  const folder = requested === "articles" || requested === "leadership" ? requested : "events"
 
   try {
     const url = await uploadPageImage({

@@ -2,6 +2,8 @@
 // Imported by both the admin UI (EntityManager) and the server actions so a
 // single field definition drives the form, the list rendering, and parsing.
 
+import { leaderPath } from "@/lib/leadership"
+
 export type FieldType = "text" | "textarea" | "select" | "checkbox" | "number" | "datetime" | "image" | "richtext" | "file"
 
 export type FieldDef = {
@@ -128,7 +130,7 @@ export const ENTITIES: Record<EntityKey, EntityConfig> = {
       { name: "published", label: "Published", type: "checkbox" },
     ],
     list: { title: "name", subtitle: "position", badge: "kind" },
-    viewUrl: (row) => `/team/${row.id}`,
+    viewUrl: (row) => leaderPath(row as { id: number; slug?: string | null; kind?: string | null }),
   },
   committees: {
     label: "Committees",

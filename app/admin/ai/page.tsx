@@ -12,6 +12,8 @@ import { UsersTab } from "@/components/admin/ai/tabs/users-tab"
 import { SettingsTab } from "@/components/admin/ai/tabs/settings-tab"
 import { ApiTab } from "@/components/admin/ai/tabs/api-tab"
 import { AuditTab } from "@/components/admin/ai/tabs/audit-tab"
+import { LeadershipQueue } from "@/components/admin/leadership/queue"
+import { listLeadershipQueue } from "@/app/actions/leadership"
 
 export const metadata = { title: "Ask VAAP AI Management | VAAP Admin" }
 
@@ -51,6 +53,7 @@ export default async function AdminAiPage({ searchParams }: { searchParams: Sear
       )}
       {tab === "knowledge" && <KnowledgeTab isSuperAdmin={isSuperAdmin} />}
       {tab === "improvement" && <ImprovementTab range={range} />}
+      {tab === "leadership" && <LeadershipQueue rows={await listLeadershipQueue()} title="AI profile studio queue" />}
       {tab === "cost" && <CostTab range={range} page={page} status={one("status") ?? ""} />}
       {tab === "users" && <UsersTab range={range} />}
       {tab === "settings" && <SettingsTab />}
