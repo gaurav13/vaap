@@ -32,8 +32,8 @@ export default async function LeadershipApplyPage() {
       <SiteHeaderServer active="About" user={user} />
       <main className="bg-background">
         <section className="bg-navy-dark text-primary-foreground">
-          <div className="vaap-container flex flex-col gap-6 pb-10 pt-10 md:pb-12 md:pt-14">
-            <nav aria-label="Breadcrumb" className="text-sm text-primary-foreground/60">
+          <div className="vaap-container flex flex-col gap-4 py-6 md:py-8">
+            <nav aria-label="Breadcrumb" className="text-xs text-primary-foreground/60">
               <ol className="flex items-center gap-2">
                 <li>
                   <Link href="/about#leadership" className="transition-colors hover:text-primary-foreground">
@@ -46,32 +46,35 @@ export default async function LeadershipApplyPage() {
                 </li>
               </ol>
             </nav>
-            <div className="flex flex-col gap-4">
-              <p className="text-xs font-bold uppercase tracking-[0.24em] text-green-light">Leadership appointments</p>
-              <h1 className="max-w-3xl font-serif text-4xl font-bold leading-tight text-balance md:text-5xl">
-                Apply to serve on VAAP leadership
-              </h1>
-              <p className="max-w-2xl leading-relaxed text-primary-foreground/75 text-pretty">
-                Help shape Pakistan&apos;s virtual asset industry. Every application is reviewed by the VAAP team, and
-                no profile is published until it has been approved.
-              </p>
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between lg:gap-10">
+              <div className="flex flex-col gap-2">
+                <h1 className="font-serif text-2xl font-bold leading-tight text-balance md:text-3xl">
+                  Apply to serve on VAAP leadership
+                </h1>
+                <p className="max-w-xl text-sm leading-relaxed text-primary-foreground/75 text-pretty">
+                  Help shape Pakistan&apos;s virtual asset industry. Every application is reviewed by the VAAP team, and
+                  no profile is published until it has been approved.
+                </p>
+              </div>
+              <dl className="flex flex-wrap gap-x-8 gap-y-3 lg:shrink-0 lg:border-l lg:border-primary-foreground/15 lg:pl-8">
+                {[
+                  ["Positions", "Executive & Advisory"],
+                  ["Commitment", "5+ hrs / month"],
+                  ["Membership", "Required"],
+                ].map(([term, detail]) => (
+                  <div key={term} className="flex flex-col gap-0.5">
+                    <dt className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary-foreground/55">
+                      {term}
+                    </dt>
+                    <dd className="text-sm font-medium">{detail}</dd>
+                  </div>
+                ))}
+              </dl>
             </div>
-            <dl className="grid gap-px overflow-hidden rounded-lg border border-primary-foreground/15 bg-primary-foreground/15 sm:grid-cols-3">
-              {[
-                ["Positions", "Executive, Advisory & Industry Advisors"],
-                ["Time commitment", "Minimum 5 hours per month, voluntary"],
-                ["Membership", "Required before final appointment"],
-              ].map(([term, detail]) => (
-                <div key={term} className="flex flex-col gap-1 bg-navy-dark px-5 py-4">
-                  <dt className="text-xs font-semibold uppercase tracking-[0.16em] text-primary-foreground/55">{term}</dt>
-                  <dd className="text-sm font-medium leading-relaxed">{detail}</dd>
-                </div>
-              ))}
-            </dl>
           </div>
         </section>
 
-        <div className="vaap-container grid gap-8 py-10 md:py-14 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-12">
+        <div className="vaap-container grid gap-8 py-8 md:py-10 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-12">
           <div className="flex min-w-0 flex-col gap-6">
             <LeadershipEligibility />
             {!session?.user ? (
