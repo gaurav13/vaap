@@ -1,16 +1,20 @@
 "use server"
 
-import { and, desc, eq, inArray, ne } from "drizzle-orm"
+import { and, desc, eq, inArray, ne, sql } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { db } from "@/lib/db"
-import { auditLogs, leadership, leadershipRevisions } from "@/lib/db/schema"
+import { auditLogs, leadership, leadershipRevisions, user as authUser } from "@/lib/db/schema"
 import { getSession } from "@/lib/session"
 import { sanitizeRichText } from "@/lib/sanitize"
 import { generateProfileSections } from "@/lib/leadership-ai"
+import { getMembershipStanding } from "@/lib/membership-state"
 import {
   AI_SECTIONS,
   APPLICATION_KINDS,
+  EXPERTISE_AREAS,
+  LEADERSHIP_COMMITMENTS,
   LEADERSHIP_SECTIONS,
+  MEMBERSHIP_INTENTS,
   PROFILE_FIELDS,
   leaderPath,
   slugifyName,
@@ -115,13 +119,29 @@ async function getLeader(id: number) {
   return row ?? null
 }
 
+/** Live membership check for an applicant, using the shared membership source of truth. */
+async function applicantMembership(row: Pick<Leader, "applicantUserId" | "contactEmail">) {
+  if (!row.applicantUserId) return null
+  const [account] = await db.select({ email: authUser.email }).from(authUser).where(eq(authUser.id, row.applicantUserId)).limit(1)
+  const email = account?.email ?? row.contactEmail ?? ""
+  const standing = await getMembershipStanding(row.applicantUserId, email)
+  return { state: standing.state, membershipId: standing.member?.membershipId ?? null }
+}
+
 // --- Applicant --------------------------------------------------------------
 
 export async function getMyLeadershipApplication() {
   const session = await getSession()
   if (!session?.user) return null
   const [row] = await db
-    .select({ id: leadership.id, status: leadership.status, kind: leadership.kind, submittedAt: leadership.submittedAt, reviewNote: leadership.reviewNote })
+    .select({
+      id: leadership.id,
+      status: leadership.status,
+      kind: leadership.kind,
+      submittedAt: leadership.submittedAt,
+      reviewNote: leadership.reviewNote,
+      membershipStatus: sql<string | null>`${leadership.submission}->>'membershipStatus'`,
+    })
     .from(leadership)
     .where(eq(leadership.applicantUserId, session.user.id))
     .orderBy(desc(leadership.id))
@@ -156,6 +176,28 @@ export async function submitLeadershipApplication(_prev: ActionResult | null, fo
   const contactEmail = String(formData.get("contactEmail") ?? user.email ?? "").trim().slice(0, 200)
   const contactPhone = String(formData.get("contactPhone") ?? "").trim().slice(0, 40)
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)) return { ok: false, error: "Enter a valid contact email." }
+  const years = Number(formData.get("yearsExperience"))
+  if (!Number.isInteger(years) || years < 0 || years > 60) return { ok: false, error: "Enter your years of relevant industry experience (0–60)." }
+  const expertise = String(formData.get("expertise") ?? "")
+  if (!(EXPERTISE_AREAS as readonly string[]).includes(expertise)) return { ok: false, error: "Choose your primary area of expertise." }
+
+  const membershipStatus = String(formData.get("membershipStatus") ?? "")
+  if (!MEMBERSHIP_INTENTS.some((m) => m.value === membershipStatus)) return { ok: false, error: "Tell us whether you are a VAAP member." }
+  let membershipIdAtSubmit = ""
+  if (membershipStatus === "existing") {
+    const standing = await getMembershipStanding(user.id, user.email ?? contactEmail)
+    if (standing.state !== "active" || !standing.member) {
+      return {
+        ok: false,
+        error: "We couldn't find an active VAAP membership for your account. Choose \"Future Member\" to apply now and register after acceptance.",
+      }
+    }
+    membershipIdAtSubmit = standing.member.membershipId
+  }
+
+  if (LEADERSHIP_COMMITMENTS.some((c) => formData.get(c.key) !== "on")) {
+    return { ok: false, error: "Please confirm all leadership commitments." }
+  }
   if (formData.get("consent") !== "on") return { ok: false, error: "Please confirm the information is accurate." }
 
   const bioHtml = c.bio
@@ -164,12 +206,21 @@ export async function submitLeadershipApplication(_prev: ActionResult | null, fo
     .filter(Boolean)
     .map((p) => `<p>${p}</p>`)
     .join("")
-  const submission: Record<string, string> = { ...c, bio: bioHtml }
+  const profile: Record<string, string> = { ...c, bio: bioHtml }
+  const submission: Record<string, string> = {
+    ...profile,
+    yearsExperience: String(years),
+    expertise,
+    membershipStatus,
+    membershipIdAtSubmit,
+    commitmentsConfirmedAt: new Date().toISOString(),
+    ...Object.fromEntries(LEADERSHIP_COMMITMENTS.map((k) => [k.key, "yes"])),
+  }
 
   const [row] = await db
     .insert(leadership)
     .values({
-      ...submission,
+      ...profile,
       name: c.name,
       slug: await uniqueSlug(c.name),
       published: false,
@@ -205,8 +256,10 @@ export async function getLeadershipStudio(id: number) {
     .orderBy(desc(leadershipRevisions.id))
     .limit(40)
   const live = liveContent(row)
+  const membership = await applicantMembership(row)
   return {
     id: row.id,
+    membership,
     status: row.status,
     published: row.published,
     path: leaderPath(row),
@@ -268,6 +321,17 @@ export async function publishLeadershipProfile(id: number, input: Record<string,
   if (!row) return { ok: false, error: "Profile not found." }
   const parsed = cleanContent(input)
   if ("error" in parsed) return { ok: false, error: parsed.error }
+
+  // Final appointment of an applicant requires a verified, active membership.
+  if (!row.published && row.applicantUserId) {
+    const membership = await applicantMembership(row)
+    if (membership?.state !== "active") {
+      return {
+        ok: false,
+        error: "Membership not verified. The applicant must complete VAAP membership registration (/membership/apply) and be approved before final appointment.",
+      }
+    }
+  }
 
   const oldPath = leaderPath(row)
   const slug = row.slug ?? (await uniqueSlug(parsed.content.name, id))
@@ -347,6 +411,7 @@ export async function listLeadershipQueue() {
       status: leadership.status,
       published: leadership.published,
       hasDraft: leadership.draft,
+      membershipStatus: sql<string | null>`${leadership.submission}->>'membershipStatus'`,
       submittedAt: leadership.submittedAt,
       updatedAt: leadership.updatedAt,
     })

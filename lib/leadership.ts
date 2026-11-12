@@ -77,6 +77,44 @@ export const AI_SECTIONS = [
 
 export type AiSection = (typeof AI_SECTIONS)[number]["key"]
 
+export const EXPERTISE_AREAS = [
+  "Fintech",
+  "Blockchain",
+  "Virtual Assets",
+  "Banking",
+  "Technology",
+  "Regulatory Affairs",
+  "Legal & Compliance",
+  "Other related industry",
+] as const
+
+export const MEMBERSHIP_INTENTS = [
+  { value: "existing", label: "Existing Member", description: "I am already a registered VAAP member." },
+  {
+    value: "future",
+    label: "Future Member",
+    description: "I am not currently a VAAP member, but I agree to register for membership if my leadership or advisory application is accepted.",
+  },
+] as const
+
+export const LEADERSHIP_COMMITMENTS = [
+  { key: "commitExperience", label: "I confirm that I have relevant professional industry experience." },
+  { key: "commitMembership", label: "I am already a VAAP member or agree to become a member if accepted." },
+  { key: "commitHours", label: "I agree to voluntarily contribute a minimum of 5 hours per month." },
+  { key: "commitCollaboration", label: "I agree to participate in relevant internal discussions and contribute my professional expertise." },
+  { key: "commitConfidentiality", label: "I agree to maintain the confidentiality of non-public VAAP information." },
+] as const
+
+/** Eligibility keys stored in `submission`; shown in their own admin panel, never published or fed to AI. */
+export const ELIGIBILITY_KEYS = new Set<string>([
+  "yearsExperience",
+  "expertise",
+  "membershipStatus",
+  "membershipIdAtSubmit",
+  "commitmentsConfirmedAt",
+  ...LEADERSHIP_COMMITMENTS.map((c) => c.key),
+])
+
 export const LEADERSHIP_STATUSES = ["pending", "in_review", "approved", "rejected"] as const
 export type LeadershipStatus = (typeof LEADERSHIP_STATUSES)[number]
 
