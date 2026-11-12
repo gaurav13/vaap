@@ -9,6 +9,7 @@ import { PhotoUpload } from "@/components/leadership/photo-upload"
 const input =
   "w-full rounded-lg border border-line bg-card px-3.5 py-2.5 text-sm text-heading placeholder:text-muted-2 transition-colors focus:border-green focus:outline-none focus:ring-2 focus:ring-green/20"
 const label = "text-sm font-medium text-heading"
+const TOTAL_STEPS = 6
 
 const KIND_DETAILS: Record<string, { icon: typeof Users; description: string }> = {
   "Executive Committee": { icon: Users, description: "Lead VAAP strategy, operations and governance." },
@@ -59,18 +60,16 @@ function Section({
   children: React.ReactNode
 }) {
   return (
-    <fieldset className="flex flex-col gap-5 rounded-2xl border border-line bg-card p-5 shadow-sm md:p-7">
+    <fieldset className="overflow-hidden rounded-xl border border-line bg-card">
       <legend className="sr-only">{title}</legend>
-      <div className="flex items-start gap-3 border-b border-line-light pb-4">
-        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-green text-sm font-bold text-primary-foreground">
-          {step}
-        </span>
-        <div className="flex flex-col gap-0.5">
-          <h2 className="font-serif text-lg font-semibold text-heading">{title}</h2>
-          {description && <p className="text-sm leading-relaxed text-muted-2">{description}</p>}
-        </div>
+      <div className="flex flex-col gap-1 border-b border-line bg-surface px-6 py-4 md:px-8">
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-green">
+          Step {step} of {TOTAL_STEPS}
+        </p>
+        <h2 className="font-serif text-lg font-semibold text-heading">{title}</h2>
+        {description && <p className="text-sm leading-relaxed text-muted-2">{description}</p>}
       </div>
-      {children}
+      <div className="flex flex-col gap-5 px-6 py-6 md:px-8">{children}</div>
     </fieldset>
   )
 }
@@ -227,9 +226,12 @@ export function LeadershipApplicationForm({ defaultEmail, defaultName }: { defau
         </p>
       </Section>
 
-      <div className="flex flex-col gap-5 rounded-2xl border border-line bg-card p-5 shadow-sm md:p-7">
+      <div className="flex flex-col gap-5 rounded-xl border border-line bg-card px-6 py-6 md:px-8">
         <fieldset className="flex flex-col gap-3">
-          <legend className="mb-1 font-serif text-lg font-semibold text-heading">Commitments</legend>
+          <legend className="mb-2 flex flex-col gap-1">
+            <span className="text-xs font-bold uppercase tracking-[0.2em] text-green">Declaration</span>
+            <span className="font-serif text-lg font-semibold text-heading">Commitments</span>
+          </legend>
           {LEADERSHIP_COMMITMENTS.map((c) => (
             <label key={c.key} className="flex items-start gap-3 text-sm leading-relaxed text-body">
               <input type="checkbox" name={c.key} required className="mt-1 size-4 shrink-0 accent-green" />
