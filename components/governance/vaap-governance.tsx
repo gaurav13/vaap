@@ -121,7 +121,7 @@ export function VaapGovernance() {
               <UsersRound className="size-7 shrink-0 text-white" strokeWidth={1.75} aria-hidden />
               <span>
                 <span className="block text-[15px] font-bold uppercase tracking-wide text-white">
-                  Executive Committee
+                  Advisory Board Members
                 </span>
                 <span className="block text-xs text-white/75">Leadership &amp; Oversight</span>
               </span>
@@ -134,7 +134,7 @@ export function VaapGovernance() {
               <Lightbulb className="size-6 shrink-0 text-green" strokeWidth={1.75} aria-hidden />
               <span>
                 <span className="block text-sm font-bold uppercase tracking-wide text-heading">
-                  Advisory Committee Members
+                  Industry Advisor Members
                 </span>
                 <span className="block text-xs text-body">Expert Guidance &amp; Counsel</span>
               </span>
