@@ -131,9 +131,9 @@ const PERMISSIONS: Record<UserRole, Permission[]> = {
     "payouts.request",
     "dashboard.staff",
   ],
-  committee_member: ["committee.view", "referrals.own", "rewards.own", "dashboard.staff"],
-  kol: ["referrals.own", "rewards.own"],
-  member: [],
+  committee_member: ["articles.create", "committee.view", "referrals.own", "rewards.own", "dashboard.staff"],
+  kol: ["articles.create", "referrals.own", "rewards.own"],
+  member: ["articles.create"],
 }
 
 export function can(role: UserRole | string | null | undefined, permission: Permission): boolean {
