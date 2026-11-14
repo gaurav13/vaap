@@ -53,6 +53,7 @@ import { MembershipCardPayment } from "@/components/membership/apply/card-paymen
 import { cardProcessingFee, CARD_FEE_LABEL } from "@/lib/fees"
 import type { PublicPromotion } from "@/lib/promotions-shared"
 import { PromoCountdown } from "@/components/membership/promo-countdown"
+import { PromoPricePanel } from "@/components/membership/promo-price-panel"
 import QRCode from "qrcode"
 
 const ICONS: Record<string, LucideIcon> = {
@@ -809,6 +810,8 @@ function PlanDetailPanel({
           })}
         </div>
       )}
+
+      {plan.promotion && <PromoPricePanel promotion={plan.promotion} />}
 
       <div className="mt-8 grid gap-8 md:grid-cols-2">
         {benefits.length > 0 && (
