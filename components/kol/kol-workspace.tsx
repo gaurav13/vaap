@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { KolStatusPill, PlatformIcon, VerifiedBadge } from "@/components/kol/kol-ui"
+import { postImageUpload, prepareImageForUpload, UPLOAD_BYTE_LIMIT } from "@/lib/client-image"
 
 export type WorkspaceProfile = KolApplicationInput & {
   slug: string
@@ -40,12 +41,21 @@ const blankPlatform = (): KolPlatform => ({
 })
 
 async function uploadFile(file: File, kind: "photo" | "evidence") {
+  if (kind === "photo") {
+    const url = await postImageUpload("/api/kol/upload", file, { kind })
+    return { url, key: undefined }
+  }
+  const prepared = file.type.startsWith("image/") ? await prepareImageForUpload(file) : file
+  if (prepared.size > UPLOAD_BYTE_LIMIT) {
+    throw new Error("This file is too large to upload. Please use a file under 1MB.")
+  }
   const body = new FormData()
-  body.append("file", file)
+  body.append("file", prepared)
   body.append("kind", kind)
   const res = await fetch("/api/kol/upload", { method: "POST", body })
+  if (res.status === 413) throw new Error("This file is too large to upload. Please use a file under 1MB.")
   const data = (await res.json().catch(() => ({}))) as { url?: string; key?: string; error?: string }
-  if (!res.ok || !data.url) throw new Error(data.error || "Upload failed.")
+  if (!res.ok || !data.url) throw new Error(data.error || `Upload failed (error ${res.status}). Please try again.`)
   return data
 }
 
