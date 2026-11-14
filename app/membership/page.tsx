@@ -14,6 +14,7 @@ import { db } from "@/lib/db"
 import { membershipPlans } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
 import { getMembershipSettings } from "@/lib/site-settings"
+import { withPromotions } from "@/lib/promotions"
 import { seoMetadata } from "@/lib/seo"
 import { staticSubjectByPath } from "@/lib/seo/subjects"
 import { SeoJsonLd } from "@/components/seo/json-ld"
@@ -43,9 +44,9 @@ export default async function MembershipPage() {
     answerHtml: renderRichContent(row.answer),
   }))
 
-  const plans: MembershipPlan[] = rows
-    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
-    .map((row) => ({
+  const priced = await withPromotions(rows.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)))
+  const plans: MembershipPlan[] = priced.map((row) => ({
+      promotion: row.promotion,
       id: row.id,
       icon: row.icon,
       title: row.title,

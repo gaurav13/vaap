@@ -13,6 +13,7 @@ import { SeoJsonLd } from "@/components/seo/json-ld"
 import { cookies } from "next/headers"
 import { normalizeReferralCode, REFERRAL_COOKIE } from "@/lib/referral"
 import { resolveReferralCode } from "@/lib/referral-engine"
+import { withPromotions } from "@/lib/promotions"
 
 async function loadResume(token: string | undefined): Promise<{ category: string; draft: ResumeApplication } | null> {
   const payload = verifyToken(token, "resume")
@@ -87,7 +88,9 @@ export default async function ApplyPage({
     loadReferralCode(sp.ref, cookieStore.get(REFERRAL_COOKIE)?.value),
   ])
 
-  const plans: ApplyPlan[] = rows.map((row) => ({
+  const priced = await withPromotions(rows)
+  const plans: ApplyPlan[] = priced.map((row) => ({
+    promotion: row.promotion,
     id: row.id,
     icon: row.icon,
     title: row.title,

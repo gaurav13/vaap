@@ -3,6 +3,8 @@
 import { stripe } from "@/lib/stripe"
 import { getMembershipPlans } from "@/app/actions/cms"
 import { cardProcessingFee, CARD_FEE_LABEL } from "@/lib/fees"
+import { getLivePromotions, pricePlan } from "@/lib/promotions"
+import { CHECKOUT_GRACE_MINUTES, formatPKR } from "@/lib/promotions-shared"
 
 // Parse a fee label like "PKR 50,000" into an integer amount of rupees.
 function feeToNumber(value: string | null | undefined): number {
@@ -34,11 +36,15 @@ export async function createMembershipCheckout(input: {
   const plan = plans.find((p) => p.id === input.planId)
   if (!plan) return { ok: false, error: "The selected membership could not be found." }
 
-  const basePkr = feeToNumber(plan.admissionFee) + feeToNumber(plan.annualFee)
-  if (basePkr <= 0) {
+  if (feeToNumber(plan.admissionFee) + feeToNumber(plan.annualFee) <= 0) {
     // Nothing to charge for a complimentary membership.
     return { ok: true, free: true, amount: 0 }
   }
+
+  // Promotions are resolved here, on the server, with no grace window: a new
+  // checkout only gets the discount while the offer is actually live.
+  const pricing = pricePlan(plan, await getLivePromotions())
+  const basePkr = pricing.finalPkr
 
   // Card payments carry a processing surcharge (see lib/fees.ts). It is added as
   // a separate, clearly labelled line item so the applicant sees exactly what
@@ -66,6 +72,11 @@ export async function createMembershipCheckout(input: {
             unit_amount: basePkr * 100,
             product_data: {
               name: `${plan.title} — VAAP Membership`,
+              ...(pricing.promotion
+                ? {
+                    description: `${pricing.promotion.name}: ${pricing.promotion.label} (was ${formatPKR(pricing.basePkr)})`,
+                  }
+                : {}),
             },
           },
           quantity: 1,
@@ -86,7 +97,20 @@ export async function createMembershipCheckout(input: {
         planTitle: plan.title,
         applicantName: name,
         applicantEmail: email,
+        basePkr: String(pricing.basePkr),
+        ...(pricing.promotion
+          ? {
+              promotionId: String(pricing.promotion.id),
+              promotionName: pricing.promotion.name.slice(0, 450),
+              discountPkr: String(pricing.discountPkr),
+            }
+          : {}),
       },
+      // A discounted session is the price lock: it stays payable for the grace
+      // window only, so an offer can't be redeemed long after it ends.
+      ...(pricing.promotion
+        ? { expires_at: Math.floor(Date.now() / 1000) + CHECKOUT_GRACE_MINUTES * 60 }
+        : {}),
     })
 
     if (!session.client_secret) {

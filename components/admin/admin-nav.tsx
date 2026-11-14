@@ -38,6 +38,7 @@ import {
   UsersRound,
   Vote,
   Tv,
+  Tag,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { VaapLogo } from "@/components/vaap-logo"
@@ -79,6 +80,7 @@ const GROUPS: { heading: string; links: { href: string; label: string; icon: typ
       { href: "/admin/members", label: "Members", icon: IdCard },
       { href: "/admin/membership-funnel", label: "Registered vs Paid", icon: Users, adminOnly: true },
       { href: "/admin/membership-plans", label: "Membership Plans", icon: Wallet },
+      { href: "/admin/membership-promotions", label: "Membership Promotions", icon: Tag, adminOnly: true },
       { href: "/admin/membership-faqs", label: "Membership FAQs", icon: HelpCircle },
       { href: "/admin/ai", label: "AI Assistant Admin", icon: LayoutDashboard },
       { href: "/admin/ai-knowledge", label: "AI Knowledge Center", icon: BookOpen },

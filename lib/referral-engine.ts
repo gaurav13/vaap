@@ -174,7 +174,14 @@ export async function processMembershipApproval(params: {
       .where(eq(membershipApplications.id, attr.applicationId))
       .limit(1)
     if (app) {
-      fees = { admission: parseMoney(app.admissionFee), annual: parseMoney(app.annualFee), renewal: 0 }
+      // Commissions follow what was actually paid, so a promotional discount
+      // comes off the annual fee first, then the admission fee.
+      let discount = app.discountAmount ?? 0
+      const annual = parseMoney(app.annualFee)
+      const annualOff = Math.min(discount, annual)
+      discount -= annualOff
+      const admission = parseMoney(app.admissionFee)
+      fees = { admission: Math.max(0, admission - discount), annual: annual - annualOff, renewal: 0 }
     }
   }
 

@@ -19,11 +19,15 @@ import {
   Settings,
   ShieldCheck,
   Star,
+  Tag,
   User,
   Users,
   type LucideIcon,
 } from "lucide-react"
 import type { Membership } from "@/lib/site-settings"
+import { formatPKR, type PublicPromotion } from "@/lib/promotions-shared"
+import { PromoCountdown } from "@/components/membership/promo-countdown"
+import { PromoPricePanel } from "@/components/membership/promo-price-panel"
 
 const ICONS: Record<string, LucideIcon> = {
   Building2,
@@ -61,7 +65,22 @@ export type MembershipPlan = {
   term: string
   benefits: string[]
   eligibility: string[]
+  promotion?: PublicPromotion | null
 }
+
+function PromoBadge({ promotion, onDark }: { promotion: PublicPromotion; onDark: boolean }) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
+        onDark ? "bg-white text-green" : "bg-gold text-white"
+      }`}
+    >
+      <Tag className="size-2.5" aria-hidden />
+      {promotion.label}
+    </span>
+  )
+}
+
 
 const CONTENT_FONT_CLASS: Record<Membership["contentFont"], string> = {
   sans: "font-sans",
@@ -127,6 +146,8 @@ function PlanDetail({
       )}
 
       <p className={`text-body leading-relaxed ${compact ? "text-sm" : "mt-5"}`}>{plan.description}</p>
+
+      {plan.promotion && <PromoPricePanel promotion={plan.promotion} />}
 
       {fees.length > 0 && (
         <div className="mt-6 grid gap-4 sm:grid-cols-3">
@@ -331,6 +352,14 @@ export function MembershipTypes({ plans, header }: { plans: MembershipPlan[]; he
                           Featured
                         </span>
                       )}
+                      {plan.promotion?.showBadge && (
+                        <span className="mt-1.5 ml-1.5 inline-flex">
+                          <PromoBadge promotion={plan.promotion} onDark={isActive} />
+                        </span>
+                      )}
+                      {plan.promotion?.showCountdown && (
+                        <PromoCountdown endsAt={plan.promotion.endsAt} tone={isActive ? "dark" : "light"} className="mt-1 flex" />
+                      )}
                     </span>
                     <ChevronRight
                       className={`size-4 shrink-0 ${isActive ? "text-white" : "text-muted-foreground"}`}
@@ -394,7 +423,11 @@ export function MembershipTypes({ plans, header }: { plans: MembershipPlan[]; he
                           Featured
                         </span>
                       )}
+                      {plan.promotion?.showBadge && <PromoBadge promotion={plan.promotion} onDark={isOpen} />}
                     </span>
+                    {plan.promotion?.showCountdown && (
+                      <PromoCountdown endsAt={plan.promotion.endsAt} tone={isOpen ? "dark" : "light"} className="mt-1 flex" />
+                    )}
                     <span className={`mt-0.5 block text-xs leading-tight ${isOpen ? "text-white/80" : "text-body"}`}>
                       {plan.subtitle}
                     </span>
