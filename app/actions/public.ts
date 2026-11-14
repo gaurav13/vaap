@@ -11,6 +11,10 @@ import { notify } from "@/lib/notifications"
 import { sendTemplateEmail } from "@/lib/email-templates/service"
 import { CONTACT_EMAIL } from "@/lib/contact"
 import { getCryptoPayment } from "@/lib/site-settings"
+import { stripe } from "@/lib/stripe"
+import { getMembershipPlans } from "@/app/actions/cms"
+import { getLivePromotions, pricePlan } from "@/lib/promotions"
+import { CHECKOUT_GRACE_MS, formatPKR } from "@/lib/promotions-shared"
 import { formatAlertDate, sendAdminAlert } from "@/lib/admin-alerts"
 import { registrationAlertKey, releaseRegistrationEmailClaims } from "@/lib/email-dedupe"
 import { redirect } from "next/navigation"
@@ -635,6 +639,47 @@ export async function saveIncompleteApplication(input: IncompleteInput) {
 // Card / crypto card details are intentionally never persisted — only the
 // chosen payment method and (for crypto) the transaction ID are stored.
 // Completing an application also provisions the applicant a member login.
+/**
+ * The discount the applicant is entitled to, decided on the server only.
+ * Card: read from the Stripe session, which locked the price when it was created.
+ * Crypto: the live promotion, honouring payments made just before it ended.
+ */
+async function resolveAgreedPromotion(
+  category: string,
+  paymentMethod: string,
+  txid: string | null,
+): Promise<{ promotionId: number; promotionName: string; discountPkr: number; totalPkr: number } | null> {
+  try {
+    if (paymentMethod === "card") {
+      if (!txid?.startsWith("cs_")) return null
+      const session = await stripe.checkout.sessions.retrieve(txid)
+      const promotionId = Number(session.metadata?.promotionId)
+      if (!promotionId || session.payment_status !== "paid") return null
+      return {
+        promotionId,
+        promotionName: session.metadata?.promotionName || "Promotion",
+        discountPkr: Number(session.metadata?.discountPkr) || 0,
+        totalPkr: Math.round((session.amount_total ?? 0) / 100),
+      }
+    }
+    if (paymentMethod === "crypto") {
+      const plan = (await getMembershipPlans()).find((p) => p.title === category)
+      if (!plan) return null
+      const pricing = pricePlan(plan, await getLivePromotions(new Date(), CHECKOUT_GRACE_MS))
+      if (!pricing.promotion) return null
+      return {
+        promotionId: pricing.promotion.id,
+        promotionName: pricing.promotion.name,
+        discountPkr: pricing.discountPkr,
+        totalPkr: pricing.finalPkr,
+      }
+    }
+  } catch (err) {
+    console.error("[promotions] could not resolve agreed price:", err)
+  }
+  return null
+}
+
 export async function submitFullApplication(input: ApplicationInput) {
   const name = clean(input.name)
   const email = clean(input.email)
@@ -687,6 +732,20 @@ export async function submitFullApplication(input: ApplicationInput) {
     totalAmount: paymentRequired ? clean(input.totalAmount) || null : "No payment required",
     message: paymentRequired ? `Application for ${category}.` : `Invited application for ${category} — no payment required.`,
     completed: true,
+    promotionId: null as number | null,
+    promotionName: null as string | null,
+    discountAmount: null as number | null,
+  }
+
+  if (paymentRequired) {
+    const agreed = await resolveAgreedPromotion(category, paymentMethod, values.txid)
+    if (agreed) {
+      values.promotionId = agreed.promotionId
+      values.promotionName = agreed.promotionName
+      values.discountAmount = agreed.discountPkr
+      values.totalAmount = formatPKR(agreed.totalPkr)
+      values.message = `Application for ${category} (${agreed.promotionName}: ${formatPKR(agreed.discountPkr)} discount).`
+    }
   }
 
   try {

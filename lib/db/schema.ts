@@ -195,7 +195,32 @@ export const membershipApplications = pgTable("membership_applications", {
   // Set by a Super Admin after checking a manual (crypto) payment on-chain.
   paymentVerifiedAt: timestamp("paymentVerifiedAt"),
   paymentVerifiedBy: text("paymentVerifiedBy"),
+  // Promotion honoured at checkout. The discount is locked in here so editing or
+  // ending the promotion later never changes what this applicant agreed to pay.
+  promotionId: integer("promotionId"),
+  promotionName: text("promotionName"),
+  discountAmount: integer("discountAmount"),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
+})
+
+export const membershipPromotions = pgTable("membership_promotions", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description").notNull().default(""),
+  planIds: integer("planIds").array().notNull().default([]),
+  discountType: text("discountType").notNull().default("percent"), // percent | fixed
+  discountValue: integer("discountValue").notNull(),
+  startsAt: timestamp("startsAt", { withTimezone: true }).notNull(),
+  endsAt: timestamp("endsAt", { withTimezone: true }).notNull(),
+  timeZone: text("timeZone").notNull().default("Asia/Karachi"),
+  showCountdown: boolean("showCountdown").notNull().default(true),
+  showBadge: boolean("showBadge").notNull().default(true),
+  status: text("status").notNull().default("draft"), // draft | published | paused | ended
+  expiredLoggedAt: timestamp("expiredLoggedAt", { withTimezone: true }),
+  createdBy: text("createdBy"),
+  updatedBy: text("updatedBy"),
+  createdAt: timestamp("createdAt", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt", { withTimezone: true }).notNull().defaultNow(),
 })
 
 // Admin-issued codes that unlock invite-only membership categories.

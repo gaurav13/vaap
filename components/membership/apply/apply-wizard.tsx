@@ -33,6 +33,7 @@ import {
   ShieldCheck,
   ShoppingCart,
   Star,
+  Tag,
   User,
   Users,
   Wallet,
@@ -50,6 +51,8 @@ import { checkInvitationCode } from "@/app/actions/invitations"
 import { planAccess } from "@/lib/membership-access"
 import { MembershipCardPayment } from "@/components/membership/apply/card-payment"
 import { cardProcessingFee, CARD_FEE_LABEL } from "@/lib/fees"
+import type { PublicPromotion } from "@/lib/promotions-shared"
+import { PromoCountdown } from "@/components/membership/promo-countdown"
 import QRCode from "qrcode"
 
 const ICONS: Record<string, LucideIcon> = {
@@ -95,6 +98,7 @@ export type ApplyPlan = {
   term: string
   benefits: string[]
   eligibility: string[]
+  promotion?: PublicPromotion | null
 }
 
 const STEPS = ["Select Membership", "Information", "Payment", "Review", "Complete"] as const
@@ -126,8 +130,26 @@ function formatPKR(amount: number): string {
   return `PKR ${amount.toLocaleString("en-US")}`
 }
 
+// Display only: the server re-prices every checkout and submission.
 function totalNumberForPlan(plan: ApplyPlan): number {
+  if (plan.promotion) return plan.promotion.finalPkr
   return feeToNumber(plan.admissionFee) + feeToNumber(plan.annualFee)
+}
+
+function PromoSummaryRow({ plan }: { plan: ApplyPlan }) {
+  if (!plan.promotion) return null
+  return (
+    <div className="flex items-start justify-between gap-4 rounded-lg bg-gold/10 px-3 py-2">
+      <span className="flex flex-col">
+        <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-gold">
+          <Tag className="size-3.5" aria-hidden />
+          {plan.promotion.name} ({plan.promotion.label})
+        </span>
+        {plan.promotion.showCountdown && <PromoCountdown endsAt={plan.promotion.endsAt} className="mt-1" />}
+      </span>
+      <span className="shrink-0 text-sm font-semibold text-green">- {formatPKR(plan.promotion.discountPkr)}</span>
+    </div>
+  )
 }
 
 function totalForPlan(plan: ApplyPlan): string {
@@ -1581,6 +1603,7 @@ function StepPayment({
             <div className="mt-4 flex flex-col gap-3 border-t border-line pt-4">
               <SummaryRow label="Admission Fee (one-time)" value={plan.admissionFee || "—"} />
               <SummaryRow label="Annual Fee" value={plan.annualFee || "—"} />
+              <PromoSummaryRow plan={plan} />
               {(() => {
                 const base = totalNumberForPlan(plan)
                 const fee = cardProcessingFee(base)
@@ -1831,6 +1854,7 @@ function StepReview({
             )}
             <SummaryRow label="Admission Fee (one-time)" value={plan.admissionFee || "—"} />
             <SummaryRow label="Annual Fee" value={plan.annualFee || "—"} />
+            <PromoSummaryRow plan={plan} />
             {form.paymentMethod === "card" &&
               (() => {
                 const fee = cardProcessingFee(totalNumberForPlan(plan))

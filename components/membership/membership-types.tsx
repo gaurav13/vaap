@@ -19,11 +19,14 @@ import {
   Settings,
   ShieldCheck,
   Star,
+  Tag,
   User,
   Users,
   type LucideIcon,
 } from "lucide-react"
 import type { Membership } from "@/lib/site-settings"
+import { formatPKR, type PublicPromotion } from "@/lib/promotions-shared"
+import { PromoCountdown } from "@/components/membership/promo-countdown"
 
 const ICONS: Record<string, LucideIcon> = {
   Building2,
@@ -61,6 +64,47 @@ export type MembershipPlan = {
   term: string
   benefits: string[]
   eligibility: string[]
+  promotion?: PublicPromotion | null
+}
+
+function PromoBadge({ promotion, onDark }: { promotion: PublicPromotion; onDark: boolean }) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
+        onDark ? "bg-white text-green" : "bg-gold text-white"
+      }`}
+    >
+      <Tag className="size-2.5" aria-hidden />
+      {promotion.label}
+    </span>
+  )
+}
+
+function PromoPricePanel({ promotion }: { promotion: PublicPromotion }) {
+  return (
+    <div className="mt-6 flex flex-col gap-3 rounded-xl border border-gold/40 bg-gold/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="min-w-0">
+        <p className="flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-wider text-gold">
+          <Tag className="size-3.5" aria-hidden />
+          {promotion.name}
+          <span className="rounded-full bg-gold px-2 py-0.5 text-[10px] text-white">{promotion.label}</span>
+        </p>
+        {promotion.description && <p className="mt-1 text-sm leading-relaxed text-body">{promotion.description}</p>}
+        {promotion.showCountdown && <PromoCountdown endsAt={promotion.endsAt} className="mt-2" />}
+      </div>
+      <div className="shrink-0 sm:text-right">
+        <p className="text-xs text-muted-foreground">
+          <span className="sr-only">Standard price </span>
+          <s>{formatPKR(promotion.basePkr)}</s>
+        </p>
+        <p className="font-serif text-2xl font-bold leading-tight text-heading">
+          <span className="sr-only">Promotional price </span>
+          {formatPKR(promotion.finalPkr)}
+        </p>
+        <p className="text-xs font-semibold text-green">You save {formatPKR(promotion.discountPkr)}</p>
+      </div>
+    </div>
+  )
 }
 
 const CONTENT_FONT_CLASS: Record<Membership["contentFont"], string> = {
@@ -127,6 +171,8 @@ function PlanDetail({
       )}
 
       <p className={`text-body leading-relaxed ${compact ? "text-sm" : "mt-5"}`}>{plan.description}</p>
+
+      {plan.promotion && <PromoPricePanel promotion={plan.promotion} />}
 
       {fees.length > 0 && (
         <div className="mt-6 grid gap-4 sm:grid-cols-3">
@@ -331,6 +377,14 @@ export function MembershipTypes({ plans, header }: { plans: MembershipPlan[]; he
                           Featured
                         </span>
                       )}
+                      {plan.promotion?.showBadge && (
+                        <span className="mt-1.5 ml-1.5 inline-flex">
+                          <PromoBadge promotion={plan.promotion} onDark={isActive} />
+                        </span>
+                      )}
+                      {plan.promotion?.showCountdown && (
+                        <PromoCountdown endsAt={plan.promotion.endsAt} tone={isActive ? "dark" : "light"} className="mt-1 flex" />
+                      )}
                     </span>
                     <ChevronRight
                       className={`size-4 shrink-0 ${isActive ? "text-white" : "text-muted-foreground"}`}
@@ -394,7 +448,11 @@ export function MembershipTypes({ plans, header }: { plans: MembershipPlan[]; he
                           Featured
                         </span>
                       )}
+                      {plan.promotion?.showBadge && <PromoBadge promotion={plan.promotion} onDark={isOpen} />}
                     </span>
+                    {plan.promotion?.showCountdown && (
+                      <PromoCountdown endsAt={plan.promotion.endsAt} tone={isOpen ? "dark" : "light"} className="mt-1 flex" />
+                    )}
                     <span className={`mt-0.5 block text-xs leading-tight ${isOpen ? "text-white/80" : "text-body"}`}>
                       {plan.subtitle}
                     </span>
