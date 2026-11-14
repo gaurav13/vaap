@@ -53,7 +53,7 @@ import { MembershipCardPayment } from "@/components/membership/apply/card-paymen
 import { cardProcessingFee, CARD_FEE_LABEL } from "@/lib/fees"
 import type { PublicPromotion } from "@/lib/promotions-shared"
 import { PromoCountdown } from "@/components/membership/promo-countdown"
-import { PromoPricePanel } from "@/components/membership/promo-price-panel"
+import { PromoFeeCard } from "@/components/membership/promo-price-panel"
 import QRCode from "qrcode"
 
 const ICONS: Record<string, LucideIcon> = {
@@ -792,9 +792,19 @@ function PlanDetailPanel({
       {plan.description && <p className="mt-5 leading-relaxed text-body">{plan.description}</p>}
 
       {fees.length > 0 && (
-        <div className="mt-6 grid gap-4 sm:grid-cols-3">
+        <div className={`mt-6 grid gap-4 ${plan.promotion ? "sm:grid-cols-2" : "sm:grid-cols-3"}`}>
           {fees.map((fee) => {
             const FeeIcon = fee.icon
+            if (fee.label === "Annual Fee" && plan.promotion)
+              return (
+                <PromoFeeCard
+                  key={fee.label}
+                  promotion={plan.promotion}
+                  label={fee.label}
+                  icon={FeeIcon}
+                  className="sm:col-span-2"
+                />
+              )
             return (
               <div key={fee.label} className="flex items-center gap-3 rounded-xl border border-line bg-muted/40 p-4">
                 <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-mint text-green">
@@ -810,8 +820,6 @@ function PlanDetailPanel({
           })}
         </div>
       )}
-
-      {plan.promotion && <PromoPricePanel promotion={plan.promotion} />}
 
       <div className="mt-8 grid gap-8 md:grid-cols-2">
         {benefits.length > 0 && (
