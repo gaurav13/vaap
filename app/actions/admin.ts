@@ -419,6 +419,9 @@ export async function setApplicationStatus(
           .set({
             status: "active",
             goodStanding: true,
+            // A newly approved application supersedes an earlier soft delete;
+            // left set, the member dashboard would ignore the activated row.
+            deletedAt: null,
             userId: linkedUserId,
             category: application.category,
             membershipId: firstActivation ? membershipId : existing.membershipId,
