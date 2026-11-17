@@ -21,6 +21,7 @@ import { desc, eq, and, isNull, sql } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { ENTITIES, type EntityKey, type FieldDef } from "@/lib/cms/entities"
 import { notifyCommunity } from "@/lib/notifications"
+import { queueKnowledgeSync } from "@/lib/ai-assistant/site-sync"
 
 const TABLES = {
   publications,
@@ -172,6 +173,7 @@ export async function saveEntity(key: EntityKey, id: number | null, formData: Fo
 
   for (const path of config.revalidate) revalidatePath(path)
   revalidatePath(`/admin/${adminSlug(key)}`)
+  queueKnowledgeSync("pages", "membership", "news", "events", "leadership")
   return { ok: true }
 }
 
@@ -183,6 +185,7 @@ export async function deleteEntity(key: EntityKey, id: number) {
   await log(actor, `deleted ${config.singular}`, String(id))
   for (const path of config.revalidate) revalidatePath(path)
   revalidatePath(`/admin/${adminSlug(key)}`)
+  queueKnowledgeSync("pages", "membership", "news", "events", "leadership")
   return { ok: true }
 }
 
@@ -202,6 +205,7 @@ export async function reorderEntity(key: EntityKey, ids: number[]) {
   await log(actor, `reordered ${config.label}`, `${ids.length} items`)
   for (const path of config.revalidate) revalidatePath(path)
   revalidatePath(`/admin/${adminSlug(key)}`)
+  queueKnowledgeSync("pages", "membership", "news", "events", "leadership")
   return { ok: true }
 }
 

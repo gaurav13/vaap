@@ -35,7 +35,7 @@ export async function ImprovementTab({ range }: { range: Range }) {
                   href={`/admin/ai?tab=corrections&log=${u.id}`}
                   className="shrink-0 rounded-md border border-border px-3 py-1.5 font-medium text-heading hover:bg-muted"
                 >
-                  Write correction
+                  Approve &amp; Save to AI Knowledge
                 </Link>
               </li>
             ))}
@@ -106,7 +106,7 @@ export async function ImprovementTab({ range }: { range: Range }) {
                     <span>{dateTime(f.createdAt)}</span>
                     {f.rating < 0 && f.usageLogId ? (
                       <Link href={`/admin/ai?tab=corrections&log=${f.usageLogId}`} className="font-medium text-green hover:underline">
-                        Write correction
+                        Approve &amp; Save to AI Knowledge
                       </Link>
                     ) : null}
                   </div>

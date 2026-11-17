@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { runDueAutomations } from "@/lib/email-automations/engine"
 import { runKolMaintenance } from "@/lib/kol"
+import { syncSiteKnowledge } from "@/lib/ai-assistant/site-sync"
 import { getAutomation, runAutomationScan } from "@/lib/social-agent/service"
 import { publishDueScheduled, refreshExpiringConnections } from "@/lib/social-agent/publishing"
 
@@ -24,5 +25,6 @@ export async function GET(request: Request) {
     .catch((error) => ({ error: error instanceof Error ? error.message : "failed" }))
   const scheduled = await publishDueScheduled().catch((error) => ({ error: error instanceof Error ? error.message : "failed" }))
   const tokens = await refreshExpiringConnections().catch((error) => ({ error: error instanceof Error ? error.message : "failed" }))
-  return NextResponse.json({ ok: true, results, kol, social, scheduled, tokens })
+  const knowledge = await syncSiteKnowledge().catch((error) => ({ error: error instanceof Error ? error.message : "failed" }))
+  return NextResponse.json({ ok: true, results, kol, social, scheduled, tokens, knowledge })
 }
