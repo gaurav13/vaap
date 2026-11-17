@@ -196,6 +196,7 @@ export function ApplicationsManager({ items, isAdmin = false }: { items: Applica
                     month: "short",
                     day: "numeric",
                     year: "numeric",
+                    timeZone: "UTC",
                   })}
                 </p>
               </div>
