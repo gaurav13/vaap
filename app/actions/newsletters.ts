@@ -3,104 +3,128 @@
 import { and, desc, eq, inArray, sql } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { db } from "@/lib/db"
-import { newsletterCampaigns, newsletterRecipients, newsletterSubscribers, type NewsletterAudience } from "@/lib/db/schema"
+import { newsletterCampaigns, newsletterRecipients, newsletterSubscribers } from "@/lib/db/schema"
 import { logActivity, requireManager, requireOperator } from "@/lib/rbac"
 import { sendEmail } from "@/lib/mailer"
-import { describeAudience, renderNewsletter, resolveAudience, sanitizeNewsletterHtml, startCampaign } from "@/lib/newsletter/engine"
+import { renderNewsletter, startCampaign } from "@/lib/newsletter/engine"
+import { resolveAudience, searchDirectory } from "@/lib/newsletter/audience"
+import { normalizeContent } from "@/lib/newsletter/validate"
+import { EMAIL_RE, type AudienceSelection, type CampaignContent } from "@/lib/newsletter/content"
 
 type Result<T = object> = ({ ok: true } & T) | { ok: false; error: string }
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const URL_RE = /^https?:\/\/\S+$/i
+export type CampaignKind = "newsletter" | "custom"
+export type CampaignInput = { content: CampaignContent; audience: AudienceSelection; isMarketing: boolean }
 
 function fail(err: unknown): { ok: false; error: string } {
   return { ok: false, error: err instanceof Error ? err.message : "Something went wrong." }
 }
 
-function readAudience(fd: FormData): NewsletterAudience {
-  const type = String(fd.get("audienceType") ?? "all")
-  if (type === "members" || type === "non-members" || type === "all") return { type }
-  const categories = fd.getAll("categories").map(String).filter(Boolean)
-  const segments = fd
-    .getAll("segments")
-    .map(String)
-    .filter((s): s is "subscribers" | "registered" => s === "subscribers" || s === "registered")
-  return { type: "custom", categories, segments }
-}
-
-function readCampaign(fd: FormData) {
-  const title = String(fd.get("title") ?? "").trim()
-  const subject = String(fd.get("subject") ?? "").trim()
-  const ctaUrl = String(fd.get("ctaUrl") ?? "").trim()
-  const bannerUrl = String(fd.get("bannerUrl") ?? "").trim()
-  if (!title) throw new Error("Title is required.")
-  if (title.length > 200 || subject.length > 200) throw new Error("Title and subject must be under 200 characters.")
-  if (ctaUrl && !URL_RE.test(ctaUrl)) throw new Error("Button link must start with http:// or https://")
-  if (bannerUrl && !URL_RE.test(bannerUrl) && !bannerUrl.startsWith("/")) throw new Error("Banner image must be a valid URL.")
-  return {
-    title,
-    subject: subject || title,
-    previewText: String(fd.get("previewText") ?? "").trim().slice(0, 300),
-    bannerUrl: bannerUrl || null,
-    bodyHtml: sanitizeNewsletterHtml(String(fd.get("bodyHtml") ?? "")),
-    ctaLabel: String(fd.get("ctaLabel") ?? "").trim().slice(0, 80) || null,
-    ctaUrl: ctaUrl || null,
-    audience: readAudience(fd),
-  }
-}
+const PATHS = ["/admin/newsletters", "/admin/custom-emails"]
+const refresh = () => PATHS.forEach((p) => revalidatePath(p))
 
 async function getEditable(id: number) {
   const [row] = await db.select().from(newsletterCampaigns).where(eq(newsletterCampaigns.id, id))
-  if (!row) throw new Error("Newsletter not found.")
-  if (row.status !== "draft" && row.status !== "scheduled") throw new Error("This newsletter has already been sent and can no longer be edited.")
+  if (!row) throw new Error("Email not found.")
+  if (row.status !== "draft" && row.status !== "scheduled") throw new Error("This email has already been sent and can no longer be edited.")
   return row
 }
 
-export async function saveNewsletter(id: number | null, fd: FormData): Promise<Result<{ id: number }>> {
+function toRow(input: CampaignInput, kind: CampaignKind) {
+  const c = normalizeContent(input.content)
+  return {
+    ...c,
+    kind,
+    // Newsletters are always marketing; custom emails can be service messages.
+    isMarketing: kind === "newsletter" ? true : Boolean(input.isMarketing),
+    audience: input.audience,
+  }
+}
+
+/** Staff and Admins can draft. Sending is separate and Admin-only. */
+export async function saveCampaign(id: number | null, kind: CampaignKind, input: CampaignInput): Promise<Result<{ id: number }>> {
   try {
     const actor = await requireOperator()
-    const data = readCampaign(fd)
+    const data = toRow(input, kind)
     if (id) {
-      await getEditable(id)
-      await db.update(newsletterCampaigns).set({ ...data, updatedByName: actor.name, updatedAt: new Date() }).where(eq(newsletterCampaigns.id, id))
-      await logActivity(actor, "newsletter.update", { entityType: "newsletter", entityId: id, target: data.title })
-      revalidatePath("/admin/newsletters")
+      const existing = await getEditable(id)
+      // A scheduled email edited by Staff goes back to draft so an Admin re-approves it.
+      const status = existing.status === "scheduled" && actor.role === "staff" ? "draft" : existing.status
+      await db.update(newsletterCampaigns).set({ ...data, status, updatedByName: actor.name, updatedAt: new Date() }).where(eq(newsletterCampaigns.id, id))
+      await logActivity(actor, `${kind}.update`, { entityType: kind, entityId: id, target: data.title })
+      refresh()
       return { ok: true, id }
     }
     const [row] = await db
       .insert(newsletterCampaigns)
       .values({ ...data, createdBy: actor.id, createdByName: actor.name, updatedByName: actor.name })
       .returning({ id: newsletterCampaigns.id })
-    await logActivity(actor, "newsletter.create", { entityType: "newsletter", entityId: row.id, target: data.title })
-    revalidatePath("/admin/newsletters")
+    await logActivity(actor, `${kind}.create`, { entityType: kind, entityId: row.id, target: data.title })
+    refresh()
     return { ok: true, id: row.id }
   } catch (err) {
     return fail(err)
   }
 }
 
-export async function previewAudience(fd: FormData): Promise<Result<{ total: number; members: number; nonMembers: number; suppressed: number; label: string }>> {
+export async function previewAudienceReport(audience: AudienceSelection, isMarketing: boolean) {
   try {
     await requireOperator()
-    const audience = readAudience(fd)
-    const r = await resolveAudience(audience)
-    return { ok: true, total: r.contacts.length, members: r.members, nonMembers: r.nonMembers, suppressed: r.suppressed, label: describeAudience(audience) }
+    const { report } = await resolveAudience(audience, { marketing: isMarketing })
+    return { ok: true as const, report }
   } catch (err) {
     return fail(err)
   }
 }
 
-export async function sendNewsletterTest(id: number, email: string): Promise<Result> {
+/** Names and emails are personal data, so the full list is Admin-only. */
+export async function listAudienceRecipients(audience: AudienceSelection, isMarketing: boolean) {
+  try {
+    await requireManager()
+    const { report, recipients } = await resolveAudience(audience, { marketing: isMarketing })
+    return {
+      ok: true as const,
+      report,
+      truncated: recipients.length > 5000,
+      recipients: recipients.slice(0, 5000).map((r) => ({ email: r.email, name: r.name, status: r.statusLabel })),
+    }
+  } catch (err) {
+    return fail(err)
+  }
+}
+
+export async function searchContacts(query: string) {
+  try {
+    await requireManager()
+    const rows = await searchDirectory(query.slice(0, 100))
+    return { ok: true as const, contacts: rows.map((r) => ({ email: r.email, name: r.name, status: r.statusLabel })) }
+  } catch (err) {
+    return fail(err)
+  }
+}
+
+/** Server-rendered so the preview is exactly what recipients receive. */
+export async function renderCampaignPreview(content: CampaignContent, isMarketing: boolean) {
   try {
     const actor = await requireOperator()
+    const c = normalizeContent(content, { forPreview: true })
+    const { html, subject } = renderNewsletter({ ...c, isMarketing }, { name: actor.name || "Ayesha Khan" })
+    return { ok: true as const, html, subject }
+  } catch (err) {
+    return fail(err)
+  }
+}
+
+export async function sendCampaignTest(id: number, email: string): Promise<Result> {
+  try {
+    const actor = await requireManager()
     const to = email.trim().toLowerCase()
     if (!EMAIL_RE.test(to)) throw new Error("Enter a valid email address.")
     const [row] = await db.select().from(newsletterCampaigns).where(eq(newsletterCampaigns.id, id))
-    if (!row) throw new Error("Newsletter not found.")
+    if (!row) throw new Error("Email not found.")
     const { html, text } = renderNewsletter(row, { name: actor.name })
     const delivered = await sendEmail({ to, subject: `[Test] ${row.subject}`, html, text, isTest: true })
     if (!delivered) throw new Error("The test email could not be delivered.")
-    await logActivity(actor, "newsletter.test", { entityType: "newsletter", entityId: id, target: to })
+    await logActivity(actor, `${row.kind}.test`, { entityType: row.kind, entityId: id, target: to })
     return { ok: true }
   } catch (err) {
     return fail(err)
@@ -108,87 +132,102 @@ export async function sendNewsletterTest(id: number, email: string): Promise<Res
 }
 
 // Sending, scheduling and cancelling reach real inboxes, so they need an Admin.
-export async function scheduleNewsletter(id: number, when: string | null): Promise<Result> {
+export async function scheduleCampaign(id: number, when: string | null): Promise<Result<{ recipients: number }>> {
   try {
     const actor = await requireManager()
     const row = await getEditable(id)
-    if (!row.subject.trim() || !row.bodyHtml.trim()) throw new Error("Add a subject and content before sending.")
-    const { contacts } = await resolveAudience(row.audience)
-    if (contacts.length === 0) throw new Error("The selected audience has no reachable recipients.")
+    if (!row.subject.trim()) throw new Error("Add a subject before sending.")
+    if (!row.bodyHtml.trim() && !(row.blocks ?? []).length) throw new Error("Add some content before sending.")
+    const { report } = await resolveAudience(row.audience, { marketing: row.isMarketing })
+    if (report.final === 0) throw new Error("The selected audience has no reachable recipients.")
 
     if (when) {
       const at = new Date(when)
       if (Number.isNaN(at.getTime()) || at.getTime() < Date.now() - 60_000) throw new Error("Pick a time in the future.")
-      await db.update(newsletterCampaigns).set({ status: "scheduled", scheduledAt: at, updatedByName: actor.name, updatedAt: new Date() }).where(eq(newsletterCampaigns.id, id))
-      await logActivity(actor, "newsletter.schedule", { entityType: "newsletter", entityId: id, target: row.title, details: at.toISOString() })
+      await db
+        .update(newsletterCampaigns)
+        .set({ status: "scheduled", scheduledAt: at, sentByName: actor.name, updatedByName: actor.name, updatedAt: new Date() })
+        .where(eq(newsletterCampaigns.id, id))
+      await logActivity(actor, `${row.kind}.schedule`, { entityType: row.kind, entityId: id, target: row.title, details: `${at.toISOString()} · ${report.final} recipients` })
     } else {
+      await db.update(newsletterCampaigns).set({ sentByName: actor.name }).where(eq(newsletterCampaigns.id, id))
       const started = await startCampaign(id)
-      if (!started) throw new Error("This newsletter is already being sent.")
-      await logActivity(actor, "newsletter.send", { entityType: "newsletter", entityId: id, target: row.title, details: `${contacts.length} recipients` })
+      if (!started) throw new Error("This email is already being sent.")
+      await logActivity(actor, `${row.kind}.send`, { entityType: row.kind, entityId: id, target: row.title, details: `${report.final} recipients` })
     }
-    revalidatePath("/admin/newsletters")
-    return { ok: true }
+    refresh()
+    return { ok: true, recipients: report.final }
   } catch (err) {
     return fail(err)
   }
 }
 
-export async function cancelNewsletter(id: number): Promise<Result> {
+export async function cancelCampaign(id: number): Promise<Result> {
   try {
     const actor = await requireManager()
     const [row] = await db
       .update(newsletterCampaigns)
       .set({ status: "cancelled", updatedByName: actor.name, updatedAt: new Date() })
       .where(and(eq(newsletterCampaigns.id, id), inArray(newsletterCampaigns.status, ["scheduled", "sending"])))
-      .returning({ title: newsletterCampaigns.title })
-    if (!row) throw new Error("Only scheduled or sending newsletters can be cancelled.")
+      .returning({ title: newsletterCampaigns.title, kind: newsletterCampaigns.kind })
+    if (!row) throw new Error("Only scheduled or sending emails can be cancelled.")
     await db
       .update(newsletterRecipients)
       .set({ status: "skipped", lastError: "Campaign cancelled" })
       .where(and(eq(newsletterRecipients.campaignId, id), eq(newsletterRecipients.status, "queued")))
-    await logActivity(actor, "newsletter.cancel", { entityType: "newsletter", entityId: id, target: row.title })
-    revalidatePath("/admin/newsletters")
+    await logActivity(actor, `${row.kind}.cancel`, { entityType: row.kind, entityId: id, target: row.title })
+    refresh()
     return { ok: true }
   } catch (err) {
     return fail(err)
   }
 }
 
-export async function deleteNewsletter(id: number): Promise<Result> {
+/** Only unsent drafts can be deleted; sent records stay for the audit trail. */
+export async function deleteCampaign(id: number): Promise<Result> {
   try {
     const actor = await requireOperator()
     const row = await getEditable(id)
+    if (row.status === "scheduled" && actor.role === "staff") throw new Error("Only an Admin can delete a scheduled email.")
     await db.delete(newsletterCampaigns).where(eq(newsletterCampaigns.id, id))
-    await logActivity(actor, "newsletter.delete", { entityType: "newsletter", entityId: id, target: row.title })
-    revalidatePath("/admin/newsletters")
+    await logActivity(actor, `${row.kind}.delete`, { entityType: row.kind, entityId: id, target: row.title })
+    refresh()
     return { ok: true }
   } catch (err) {
     return fail(err)
   }
 }
 
-export async function duplicateNewsletter(id: number): Promise<Result<{ id: number }>> {
+export async function duplicateCampaign(id: number): Promise<Result<{ id: number }>> {
   try {
     const actor = await requireOperator()
     const [src] = await db.select().from(newsletterCampaigns).where(eq(newsletterCampaigns.id, id))
-    if (!src) throw new Error("Newsletter not found.")
+    if (!src) throw new Error("Email not found.")
     const [row] = await db
       .insert(newsletterCampaigns)
       .values({
+        kind: src.kind,
         title: `${src.title} (copy)`,
         subject: src.subject,
         previewText: src.previewText,
+        subheading: src.subheading,
         bannerUrl: src.bannerUrl,
         bodyHtml: src.bodyHtml,
+        blocks: src.blocks,
         ctaLabel: src.ctaLabel,
         ctaUrl: src.ctaUrl,
+        ctaColor: src.ctaColor,
+        footerHtml: src.footerHtml,
+        isMarketing: src.isMarketing,
+        templateId: src.templateId,
         audience: src.audience,
         createdBy: actor.id,
         createdByName: actor.name,
         updatedByName: actor.name,
       })
       .returning({ id: newsletterCampaigns.id })
-    revalidatePath("/admin/newsletters")
+    await logActivity(actor, `${src.kind}.duplicate`, { entityType: src.kind, entityId: row.id, target: src.title })
+    refresh()
     return { ok: true, id: row.id }
   } catch (err) {
     return fail(err)
@@ -207,7 +246,7 @@ export async function retryFailedRecipients(id: number): Promise<Result<{ count:
       await db.update(newsletterCampaigns).set({ status: "sending", completedAt: null, updatedAt: new Date() }).where(eq(newsletterCampaigns.id, id))
     }
     await logActivity(actor, "newsletter.retry", { entityType: "newsletter", entityId: id, details: `${rows.length} recipients` })
-    revalidatePath("/admin/newsletters")
+    refresh()
     return { ok: true, count: rows.length }
   } catch (err) {
     return fail(err)
@@ -223,6 +262,7 @@ export async function getNewsletterStats(id: number) {
       sent: sql<number>`count(*) filter (where ${newsletterRecipients.status} = 'sent')::int`,
       failed: sql<number>`count(*) filter (where ${newsletterRecipients.status} = 'failed')::int`,
       bounced: sql<number>`count(*) filter (where ${newsletterRecipients.status} = 'bounced')::int`,
+      skipped: sql<number>`count(*) filter (where ${newsletterRecipients.status} = 'skipped')::int`,
       opened: sql<number>`count(*) filter (where ${newsletterRecipients.openedAt} is not null)::int`,
       clicked: sql<number>`count(*) filter (where ${newsletterRecipients.clickedAt} is not null)::int`,
       unsubscribed: sql<number>`count(*) filter (where ${newsletterRecipients.unsubscribedAt} is not null)::int`,
@@ -236,6 +276,22 @@ export async function getNewsletterStats(id: number) {
     .orderBy(desc(newsletterRecipients.id))
     .limit(20)
   return { stats: s, recentFailures }
+}
+
+/** The recipients a sent campaign was actually queued for (Admin-only: personal data). */
+export async function getCampaignRecipients(id: number) {
+  try {
+    await requireManager()
+    const rows = await db
+      .select({ email: newsletterRecipients.email, name: newsletterRecipients.name, segment: newsletterRecipients.segmentLabel, status: newsletterRecipients.status, sentAt: newsletterRecipients.sentAt })
+      .from(newsletterRecipients)
+      .where(eq(newsletterRecipients.campaignId, id))
+      .orderBy(newsletterRecipients.id)
+      .limit(5000)
+    return { ok: true as const, rows: rows.map((r) => ({ ...r, sentAt: r.sentAt?.toISOString() ?? null })) }
+  } catch (err) {
+    return fail(err)
+  }
 }
 
 // --- Subscribers (non-member opt-ins) ----------------------------------------
@@ -261,7 +317,7 @@ export async function addNewsletterSubscribers(raw: string, consentNote: string)
           .returning({ id: newsletterSubscribers.id })
       : []
     await logActivity(actor, "newsletter.subscribers.add", { entityType: "newsletter", details: `${inserted.length} added` })
-    revalidatePath("/admin/newsletters")
+    refresh()
     return { ok: true, added: inserted.length, skipped: lines.length - inserted.length }
   } catch (err) {
     return fail(err)
@@ -273,7 +329,7 @@ export async function setSubscriberStatus(id: number, status: "subscribed" | "un
     const actor = await requireManager()
     await db.update(newsletterSubscribers).set({ status }).where(eq(newsletterSubscribers.id, id))
     await logActivity(actor, `newsletter.subscriber.${status}`, { entityType: "newsletter_subscriber", entityId: id })
-    revalidatePath("/admin/newsletters")
+    refresh()
     return { ok: true }
   } catch (err) {
     return fail(err)

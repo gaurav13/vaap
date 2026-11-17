@@ -1,6 +1,7 @@
 [
   "/",
   "/about",
+  "/account/confirm-email",
   "/community",
   "/contact",
   "/ecosystem",
