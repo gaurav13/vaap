@@ -1426,6 +1426,14 @@ export const aiKnowledgeSources = pgTable("ai_knowledge_sources", {
   reviewedAt: timestamp("reviewedAt"),
   reviewNote: text("reviewNote").notNull().default(""),
   createdBy: text("createdBy"),
+  // Website sync: stable key per synced record (e.g. leadership:12), so repeated syncs update in place.
+  syncKey: text("syncKey").unique(),
+  contentHash: text("contentHash"),
+  // Changed text for review-only sources; the approved chunks stay live until an admin approves it.
+  pendingContent: text("pendingContent"),
+  requiresReview: boolean("requiresReview").notNull().default(false),
+  lastSyncedAt: timestamp("lastSyncedAt"),
+  syncError: text("syncError"),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 })
@@ -1536,6 +1544,9 @@ export const aiAnswerCorrections = pgTable("ai_answer_corrections", {
   useCount: integer("useCount").notNull().default(0),
   lastUsedAt: timestamp("lastUsedAt"),
   topic: text("topic").notNull().default("general"),
+  // Who issued the answer (e.g. "VAAP management") and who it applies to (e.g. "all", "members").
+  source: text("source").notNull().default(""),
+  audience: text("audience").notNull().default("all"),
   status: text("status").notNull().default("draft"), // draft | pending | approved | rejected | withdrawn
   version: integer("version").notNull().default(1),
   createdBy: text("createdBy"),
