@@ -1,6 +1,7 @@
 {
   "crons": [
     { "path": "/api/governance/xrpl-worker", "schedule": "0 3 * * *" },
-    { "path": "/api/cron/email-automations", "schedule": "0 9 * * *" }
+    { "path": "/api/cron/email-automations", "schedule": "0 9 * * *" },
+    { "path": "/api/cron/newsletters", "schedule": "*/10 * * * *" }
   ]
 }
