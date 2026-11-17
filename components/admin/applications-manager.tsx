@@ -288,7 +288,7 @@ export function ApplicationsManager({ items, isAdmin = false }: { items: Applica
                 </p>
               )}
 
-              <div className="mt-4 flex gap-2">
+              <div className="mt-4 flex flex-wrap gap-2">
                 <button
                   type="button"
                   disabled={pending || a.status === "approved"}
@@ -321,7 +321,7 @@ export function ApplicationsManager({ items, isAdmin = false }: { items: Applica
                     disabled={pending}
                     onClick={() => remove(a.id, a.name, a.status === "approved")}
                     aria-label={`Delete ${a.name}'s application`}
-                    className="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-destructive/40 px-3.5 py-2 text-sm font-semibold text-destructive transition-colors hover:bg-destructive hover:text-white disabled:opacity-40"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-destructive/40 bg-destructive/5 px-3.5 py-2 text-sm font-semibold text-destructive transition-colors hover:bg-destructive hover:text-white disabled:opacity-40"
                   >
                     <Trash2 className="size-4" /> Delete
                   </button>

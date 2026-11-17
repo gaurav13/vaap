@@ -1,6 +1,7 @@
 "use server"
 
 import { db } from "@/lib/db"
+import { checkDeliverableEmail } from "@/lib/email-guard"
 import { news, events, eventRsvps, membershipApplications, contactMessages, user } from "@/lib/db/schema"
 import { auth } from "@/lib/auth"
 import { desc, eq, gte, and, isNotNull, sql } from "drizzle-orm"
@@ -358,6 +359,8 @@ export async function rsvpToEvent(formData: FormData): Promise<RsvpResult> {
   if (!Number.isFinite(eventId)) return { ok: false, error: "Invalid event." }
   if (!name) return { ok: false, error: "Please enter your name." }
   if (!isValidEmail(email)) return { ok: false, error: "Please enter a valid email address." }
+  const deliverable = await checkDeliverableEmail(email)
+  if (!deliverable.ok) return { ok: false, error: deliverable.error }
 
   const ev = await getEventById(eventId)
   if (!ev) return { ok: false, error: "This event is no longer available." }
@@ -455,6 +458,8 @@ export async function submitMembershipApplication(formData: FormData) {
   if (!name || !email) {
     return { ok: false, error: "Name and email are required." }
   }
+  const deliverable = await checkDeliverableEmail(email)
+  if (!deliverable.ok) return { ok: false, error: deliverable.error }
 
   await db.insert(membershipApplications).values({
     name,
@@ -582,6 +587,7 @@ export async function saveIncompleteApplication(input: IncompleteInput) {
   const category = clean(input.category) || "Corporate Membership"
 
   if (!name || !email) return { ok: false as const }
+  if (!(await checkDeliverableEmail(email)).ok) return { ok: false as const }
   if ((await accessForCategory(category)) === "admin") return { ok: false as const }
 
   const values = {
@@ -691,6 +697,8 @@ export async function submitFullApplication(input: ApplicationInput) {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return { ok: false as const, error: "Please enter a valid email address." }
   }
+  const deliverable = await checkDeliverableEmail(email)
+  if (!deliverable.ok) return { ok: false as const, error: deliverable.error }
 
   const access = await accessForCategory(category)
   if (access === "admin") {
@@ -898,6 +906,8 @@ export async function submitContactMessage(formData: FormData) {
   if (!name || !email || !message) {
     return { ok: false, error: "Please fill in all required fields." }
   }
+  const deliverable = await checkDeliverableEmail(email)
+  if (!deliverable.ok) return { ok: false, error: deliverable.error }
 
   await db.insert(contactMessages).values({ name, email, subject, message })
 

@@ -24,7 +24,10 @@ export type SessionUser = {
 export const getSession = cache(async function getSession() {
   const session = await auth.api.getSession({ headers: await headers() })
   if (!session?.user) return null
-  const u = session.user as unknown as SessionUser & { role?: string }
+  const u = session.user as unknown as SessionUser & { role?: string; emailVerified?: boolean }
+  // Unverified accounts get no access to protected features. Staff roles are
+  // exempt so an operator with an old unverified login can't be locked out of admin.
+  if (!u.emailVerified && !isStaff(u.role)) return null
   return {
     ...session,
     user: {
