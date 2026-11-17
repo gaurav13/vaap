@@ -78,6 +78,8 @@ const GROUPS: { heading: string; links: { href: string; label: string; icon: typ
     heading: "Community",
     links: [
       { href: "/admin/members", label: "Members", icon: IdCard },
+      { href: "/admin/membership", label: "Membership Management", icon: ShieldCheck },
+      { href: "/admin/newsletters", label: "Newsletters", icon: Mail },
       { href: "/admin/membership-funnel", label: "Registered vs Paid", icon: Users, adminOnly: true },
       { href: "/admin/membership-plans", label: "Membership Plans", icon: Wallet },
       { href: "/admin/membership-promotions", label: "Membership Promotions", icon: Tag, adminOnly: true },

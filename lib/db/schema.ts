@@ -1711,3 +1711,104 @@ export const socialAccounts = pgTable("social_accounts", {
   updatedBy: text("updatedBy"),
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 })
+
+// --- Membership payment reconciliation & verified email changes ------------
+
+// One row per external payment an admin matched to an application. The unique
+// payment reference is what prevents the same payment being assigned twice.
+export const paymentReconciliations = pgTable("payment_reconciliations", {
+  id: serial("id").primaryKey(),
+  applicationId: integer("application_id").notNull(),
+  memberId: integer("member_id"),
+  provider: text("provider").notNull(), // stripe | crypto | manual
+  paymentRef: text("payment_ref").notNull().unique(),
+  amount: integer("amount"),
+  currency: text("currency"),
+  paymentEmail: text("payment_email"),
+  paidAt: timestamp("paid_at"),
+  previousTxid: text("previous_txid"),
+  note: text("note").notNull().default(""),
+  actorId: text("actor_id").notNull(),
+  actorName: text("actor_name").notNull().default(""),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+})
+
+export const emailChangeRequests = pgTable("email_change_requests", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id"),
+  applicationId: integer("application_id"),
+  oldEmail: text("old_email").notNull(),
+  newEmail: text("new_email").notNull(),
+  tokenHash: text("token_hash").notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  confirmedAt: timestamp("confirmed_at"),
+  cancelledAt: timestamp("cancelled_at"),
+  requestedBy: text("requested_by").notNull(),
+  requestedByName: text("requested_by_name").notNull().default(""),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+})
+
+// --- Newsletter management --------------------------------------------------
+
+export type NewsletterAudience = {
+  type: "all" | "members" | "non-members" | "custom"
+  categories?: string[]
+  segments?: ("subscribers" | "registered")[]
+}
+
+export const newsletterCampaigns = pgTable("newsletter_campaigns", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  subject: text("subject").notNull().default(""),
+  previewText: text("preview_text").notNull().default(""),
+  bannerUrl: text("banner_url"),
+  bodyHtml: text("body_html").notNull().default(""),
+  ctaLabel: text("cta_label"),
+  ctaUrl: text("cta_url"),
+  audience: jsonb("audience").$type<NewsletterAudience>().notNull().default({ type: "all" }),
+  status: text("status").notNull().default("draft"), // draft | scheduled | sending | sent | cancelled
+  scheduledAt: timestamp("scheduled_at"),
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  totalRecipients: integer("total_recipients").notNull().default(0),
+  createdBy: text("created_by"),
+  createdByName: text("created_by_name").notNull().default(""),
+  updatedByName: text("updated_by_name").notNull().default(""),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+})
+
+export const newsletterRecipients = pgTable(
+  "newsletter_recipients",
+  {
+    id: serial("id").primaryKey(),
+    campaignId: integer("campaign_id")
+      .notNull()
+      .references(() => newsletterCampaigns.id, { onDelete: "cascade" }),
+    email: text("email").notNull(),
+    name: text("name").notNull().default(""),
+    isMember: boolean("is_member").notNull().default(false),
+    token: text("token").notNull().unique(),
+    status: text("status").notNull().default("queued"), // queued | sent | failed | bounced | skipped
+    attempts: integer("attempts").notNull().default(0),
+    lastError: text("last_error"),
+    nextAttemptAt: timestamp("next_attempt_at"),
+    sentAt: timestamp("sent_at"),
+    openedAt: timestamp("opened_at"),
+    clickedAt: timestamp("clicked_at"),
+    clickCount: integer("click_count").notNull().default(0),
+    unsubscribedAt: timestamp("unsubscribed_at"),
+  },
+  (t) => [uniqueIndex("newsletter_recipients_campaign_email").on(t.campaignId, t.email), index("newsletter_recipients_status").on(t.status)],
+)
+
+// Non-member contacts who opted in to VAAP announcements.
+export const newsletterSubscribers = pgTable("newsletter_subscribers", {
+  id: serial("id").primaryKey(),
+  email: text("email").notNull().unique(),
+  name: text("name").notNull().default(""),
+  source: text("source").notNull().default("admin"),
+  consentNote: text("consent_note").notNull().default(""),
+  status: text("status").notNull().default("subscribed"), // subscribed | unsubscribed
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+})

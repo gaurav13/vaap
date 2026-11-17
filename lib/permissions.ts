@@ -63,6 +63,7 @@ export const STAFF_ADMIN_ROUTES = [
   "/admin/activity",
   "/admin/notifications",
   "/admin/my-referrals",
+  "/admin/newsletters",
 ] as const
 
 export function isStaffAdminRoute(pathname: string): boolean {
@@ -83,6 +84,7 @@ export const MANAGER_ADMIN_ROUTES = [
   "/admin/membership-faqs",
   "/admin/ai-knowledge",
   "/admin/ai",
+  "/admin/membership",
 ] as const
 
 export function isManagerAdminRoute(pathname: string): boolean {
