@@ -1,5 +1,6 @@
 import { pgTable, text, timestamp, boolean, serial, integer, jsonb, index, uniqueIndex, primaryKey } from "drizzle-orm/pg-core"
 import type { EmailContent } from "@/lib/email-templates/registry"
+import type { AudienceSelection, ContentBlock } from "@/lib/newsletter/content"
 
 // --- Better Auth required tables -------------------------------------------
 // Column names are camelCase to match Better Auth's defaults. Do not rename.
@@ -1750,15 +1751,37 @@ export const emailChangeRequests = pgTable("email_change_requests", {
 
 // --- Newsletter management --------------------------------------------------
 
-export type NewsletterAudience = {
-  type: "all" | "members" | "non-members" | "custom"
+/**
+ * `groups`/`plans`/`include`/`exclude` is the current shape. `type`, `categories`
+ * and `segments` are read only to keep campaigns saved before groups existed working.
+ */
+export type NewsletterAudience = Partial<AudienceSelection> & {
+  type?: "all" | "members" | "non-members" | "custom"
   categories?: string[]
   segments?: ("subscribers" | "registered")[]
 }
 
+export type AudienceSummary = {
+  label: string
+  matching: number
+  duplicates: number
+  excluded: number
+  final: number
+}
+
 export const newsletterCampaigns = pgTable("newsletter_campaigns", {
   id: serial("id").primaryKey(),
+  kind: text("kind").notNull().default("newsletter"), // newsletter | custom
   title: text("title").notNull(),
+  subheading: text("subheading").notNull().default(""),
+  blocks: jsonb("blocks").$type<ContentBlock[]>().notNull().default([]),
+  footerHtml: text("footer_html").notNull().default(""),
+  ctaColor: text("cta_color"),
+  // Marketing emails honour newsletter unsubscribes and consent; transactional ones only hard bounces.
+  isMarketing: boolean("is_marketing").notNull().default(true),
+  templateId: integer("template_id"),
+  sentByName: text("sent_by_name").notNull().default(""),
+  audienceSummary: jsonb("audience_summary").$type<AudienceSummary>(),
   subject: text("subject").notNull().default(""),
   previewText: text("preview_text").notNull().default(""),
   bannerUrl: text("banner_url"),
@@ -1788,6 +1811,7 @@ export const newsletterRecipients = pgTable(
     email: text("email").notNull(),
     name: text("name").notNull().default(""),
     isMember: boolean("is_member").notNull().default(false),
+    segmentLabel: text("segment_label").notNull().default(""),
     token: text("token").notNull().unique(),
     status: text("status").notNull().default("queued"), // queued | sent | failed | bounced | skipped
     attempts: integer("attempts").notNull().default(0),
@@ -1801,6 +1825,30 @@ export const newsletterRecipients = pgTable(
   },
   (t) => [uniqueIndex("newsletter_recipients_campaign_email").on(t.campaignId, t.email), index("newsletter_recipients_status").on(t.status)],
 )
+
+// Reusable admin-authored emails (announcements, reminders, invitations).
+export const customEmailTemplates = pgTable("custom_email_templates", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  title: text("title").notNull().default(""),
+  subject: text("subject").notNull().default(""),
+  previewText: text("preview_text").notNull().default(""),
+  subheading: text("subheading").notNull().default(""),
+  bannerUrl: text("banner_url"),
+  bodyHtml: text("body_html").notNull().default(""),
+  blocks: jsonb("blocks").$type<ContentBlock[]>().notNull().default([]),
+  ctaLabel: text("cta_label"),
+  ctaUrl: text("cta_url"),
+  ctaColor: text("cta_color"),
+  footerHtml: text("footer_html").notNull().default(""),
+  isMarketing: boolean("is_marketing").notNull().default(true),
+  audience: jsonb("audience").$type<NewsletterAudience>().notNull().default({ groups: [] }),
+  createdByName: text("created_by_name").notNull().default(""),
+  updatedByName: text("updated_by_name").notNull().default(""),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at"),
+})
 
 // Non-member contacts who opted in to VAAP announcements.
 export const newsletterSubscribers = pgTable("newsletter_subscribers", {

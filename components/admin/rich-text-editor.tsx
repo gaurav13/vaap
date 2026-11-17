@@ -17,6 +17,9 @@ import {
   Quote,
   Undo2,
   Redo2,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { marked } from "marked"
@@ -220,12 +223,20 @@ export function RichTextField({
   placeholder,
   disabled = false,
   onUploadImage,
+  alignment = false,
+  colors,
+  compact = false,
+  label = "Article content",
 }: {
   value: string
   onChange: (html: string) => void
   placeholder?: string
   disabled?: boolean
   onUploadImage?: (file: File) => Promise<string>
+  alignment?: boolean
+  colors?: readonly { label: string; value: string }[]
+  compact?: boolean
+  label?: string
 }) {
   const editorRef = useRef<HTMLDivElement>(null)
   const imageRef = useRef<HTMLInputElement>(null)
@@ -275,6 +286,17 @@ export function RichTextField({
     if (disabled) return
     restoreSelection()
     document.execCommand(command, false, arg)
+    rememberSelection()
+    sync()
+  }
+
+  function setColor(color: string) {
+    if (disabled) return
+    restoreSelection()
+    // Emit <span style="color"> rather than <font>, which email sanitizers drop.
+    document.execCommand("styleWithCSS", false, "true")
+    document.execCommand("foreColor", false, color)
+    document.execCommand("styleWithCSS", false, "false")
     rememberSelection()
     sync()
   }
@@ -371,6 +393,38 @@ export function RichTextField({
         <ToolbarButton label="Insert link" onClick={onLink}>
           <Link2 className="size-4" />
         </ToolbarButton>
+        {alignment && (
+          <>
+            <span className="mx-1 h-5 w-px bg-line" />
+            <ToolbarButton label="Align left" onClick={() => exec("justifyLeft")}>
+              <AlignLeft className="size-4" />
+            </ToolbarButton>
+            <ToolbarButton label="Align centre" onClick={() => exec("justifyCenter")}>
+              <AlignCenter className="size-4" />
+            </ToolbarButton>
+            <ToolbarButton label="Align right" onClick={() => exec("justifyRight")}>
+              <AlignRight className="size-4" />
+            </ToolbarButton>
+          </>
+        )}
+        {colors && colors.length > 0 && (
+          <>
+            <span className="mx-1 h-5 w-px bg-line" />
+            {colors.map((c) => (
+              <button
+                key={c.value}
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => setColor(c.value)}
+                title={`Text colour: ${c.label}`}
+                aria-label={`Text colour: ${c.label}`}
+                className="flex size-8 items-center justify-center rounded-md hover:bg-mint"
+              >
+                <span className="size-4 rounded-full border border-line" style={{ backgroundColor: c.value }} />
+              </button>
+            ))}
+          </>
+        )}
         {onUploadImage && (
           <ToolbarButton
             label="Insert image"
@@ -418,9 +472,10 @@ export function RichTextField({
           onDrop={onDrop}
           role="textbox"
           aria-multiline="true"
-          aria-label="Article content"
+          aria-label={label}
           className={cn(
-            "min-h-80 max-h-[70vh] w-full overflow-y-auto rounded-b-lg border border-line bg-background px-4 py-4 text-base leading-relaxed text-heading outline-none transition-colors focus:border-green-border focus:ring-2 focus:ring-green/20",
+            compact ? "min-h-28" : "min-h-80",
+            "max-h-[70vh] w-full overflow-y-auto rounded-b-lg border border-line bg-background px-4 py-4 text-base leading-relaxed text-heading outline-none transition-colors focus:border-green-border focus:ring-2 focus:ring-green/20",
             "[&_a]:text-green [&_a]:underline [&_blockquote]:my-4 [&_blockquote]:border-l-4 [&_blockquote]:border-green [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-muted-2",
             "[&_h2]:mb-3 [&_h2]:mt-6 [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:leading-snug [&_h3]:mb-2 [&_h3]:mt-5 [&_h3]:text-xl [&_h3]:font-semibold [&_h4]:mb-2 [&_h4]:mt-4 [&_h4]:font-semibold",
             "[&_img]:my-4 [&_img]:max-h-[28rem] [&_img]:w-full [&_img]:rounded-lg [&_img]:object-contain [&_li]:mb-1 [&_ol]:mb-3 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:mb-3 [&_ul]:mb-3 [&_ul]:list-disc [&_ul]:pl-6",
@@ -447,7 +502,7 @@ export function RichTextField({
           {error}
         </p>
       )}
-      {!disabled && (
+      {!disabled && !compact && (
         <p className="mt-2 text-xs leading-relaxed text-muted-2">
           Paste straight from ChatGPT, Word or Google Docs: headings, bold, lists and links are kept, Markdown symbols like ** and
           # are converted, and fonts and colours are tidied up.{onUploadImage ? " To add a picture, use the image button or drag one into the text." : ""}
