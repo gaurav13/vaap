@@ -88,8 +88,12 @@ export function ApplicationsManager({ items, isAdmin = false }: { items: Applica
     })
   }
 
-  function remove(id: number, name: string) {
-    if (!window.confirm(`Permanently delete ${name}'s application? This cannot be undone.`)) return
+  function remove(id: number, name: string, approved: boolean) {
+    const warning = approved
+      ? `${name}'s application is APPROVED. Deleting it removes the application record only; the issued membership stays active and must be revoked separately.\n\nPermanently delete this application? This cannot be undone.`
+      : `Permanently delete ${name}'s application? This cannot be undone.`
+    if (!window.confirm(warning)) return
+    setError(id, null)
     startTransition(async () => {
       const res = await deleteApplication(id)
       if (!res?.ok) {
@@ -311,11 +315,12 @@ export function ApplicationsManager({ items, isAdmin = false }: { items: Applica
                     Reset
                   </button>
                 )}
-                {isAdmin && (a.status === "rejected" || !a.completed) && (
+                {isAdmin && (
                   <button
                     type="button"
                     disabled={pending}
-                    onClick={() => remove(a.id, a.name)}
+                    onClick={() => remove(a.id, a.name, a.status === "approved")}
+                    aria-label={`Delete ${a.name}'s application`}
                     className="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-destructive/40 px-3.5 py-2 text-sm font-semibold text-destructive transition-colors hover:bg-destructive hover:text-white disabled:opacity-40"
                   >
                     <Trash2 className="size-4" /> Delete

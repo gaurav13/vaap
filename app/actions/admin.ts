@@ -7,6 +7,7 @@ import {
   news,
   events,
   membershipApplications,
+  emailChangeRequests,
   contactMessages,
   contactMessageReplies,
   user,
@@ -565,13 +566,17 @@ export async function sendPaymentReminder(id: number): Promise<{ ok: true } | { 
 // Super-admin deletes an application record. Only permitted for applications
 // that are rejected, or incomplete (never completed the payment stage). This
 // guards against accidental removal of pending or approved applications.
+/** Super Admin only. Removes the application record; an already-issued membership is a separate record and stays intact. */
 export async function deleteApplication(id: number) {
-  const actor = await requireAdmin()
-  await logActivity(actor, "application.delete", { entityType: "application", entityId: id })
+  const actor = await requireSuperAdmin()
+  if (!Number.isInteger(id) || id <= 0) return { ok: false, error: "Invalid application." }
 
   const [application] = await db
     .select({
       id: membershipApplications.id,
+      reference: membershipApplications.reference,
+      name: membershipApplications.name,
+      email: membershipApplications.email,
       status: membershipApplications.status,
       completed: membershipApplications.completed,
     })
@@ -583,14 +588,26 @@ export async function deleteApplication(id: number) {
     return { ok: false, error: "Application not found." }
   }
 
-  const isRejected = application.status === "rejected"
-  const isIncomplete = !application.completed
-  if (!isRejected && !isIncomplete) {
-    return { ok: false, error: "Only rejected or incomplete applications can be deleted." }
-  }
-
+  await db
+    .update(emailChangeRequests)
+    .set({ cancelledAt: new Date() })
+    .where(
+      and(
+        eq(emailChangeRequests.applicationId, id),
+        isNull(emailChangeRequests.confirmedAt),
+        isNull(emailChangeRequests.cancelledAt),
+      ),
+    )
   await db.delete(membershipApplications).where(eq(membershipApplications.id, id))
+
+  await logActivity(actor, "application.delete", {
+    entityType: "application",
+    entityId: id,
+    target: application.reference ?? application.name,
+    details: `${application.name} <${application.email}>, status: ${application.completed ? application.status : "incomplete"}`,
+  })
   revalidatePath("/admin/applications")
+  revalidatePath("/admin")
   return { ok: true }
 }
 
