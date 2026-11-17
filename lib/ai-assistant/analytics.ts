@@ -386,6 +386,36 @@ export async function getPendingKnowledge() {
   }))
 }
 
+/** Website-synced sources grouped by category, plus sensitive changes waiting for Super Admin review. */
+export async function getSiteSyncOverview() {
+  const [byCategory, changes, failures] = await Promise.all([
+    pool.query(`
+      select category, count(*)::int as total, max("lastSyncedAt") as "lastSynced"
+      from ai_knowledge_sources where "syncKey" is not null group by category order by category`),
+    pool.query(`
+      select id, title, "sourceUrl", left(content, 800) as current, left("pendingContent", 800) as proposed, "updatedAt"
+      from ai_knowledge_sources where "pendingContent" is not null order by "updatedAt" desc limit 20`),
+    pool.query(`
+      select id, title, "syncError" from ai_knowledge_sources where "syncError" is not null order by "updatedAt" desc limit 20`),
+  ])
+  return {
+    categories: byCategory.rows.map((r) => ({
+      category: r.category as string,
+      total: n(r.total),
+      lastSynced: r.lastSynced ? (r.lastSynced as Date).toISOString() : null,
+    })),
+    changes: changes.rows.map((r) => ({
+      id: n(r.id),
+      title: r.title as string,
+      sourceUrl: (r.sourceUrl as string | null) ?? null,
+      current: r.current as string,
+      proposed: r.proposed as string,
+      updatedAt: (r.updatedAt as Date).toISOString(),
+    })),
+    failures: failures.rows.map((r) => ({ id: n(r.id), title: r.title as string, error: r.syncError as string })),
+  }
+}
+
 export async function getCorrections(status?: string) {
   const params: unknown[] = []
   let where = ""

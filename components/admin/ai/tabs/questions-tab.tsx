@@ -108,7 +108,7 @@ export async function QuestionsTab({
                       href={`/admin/ai?tab=corrections&log=${r.id}`}
                       className="self-start rounded-md border border-green-border px-3 py-1.5 text-sm font-medium text-green hover:bg-accent"
                     >
-                      Correct this answer
+                      Approve &amp; Save to AI Knowledge
                     </Link>
                   ) : null}
                 </div>

@@ -9,6 +9,7 @@ import { and, desc, eq, inArray, ne } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { formatAlertDate, sendAdminAlert } from "@/lib/admin-alerts"
 import { notifyCommunity } from "@/lib/notifications"
+import { queueKnowledgeSync } from "@/lib/ai-assistant/site-sync"
 
 function slugify(input: string): string {
   return input
@@ -234,6 +235,7 @@ export async function createAdminArticle(input: {
   }
   revalidatePath("/admin/articles")
   revalidatePath("/insights")
+  queueKnowledgeSync("articles")
   if (published) revalidatePath(`/insights/${slug}`)
   return {
     ok: true as const,
@@ -344,6 +346,7 @@ export async function publishArticle(id: number) {
   revalidatePath("/admin/articles")
   revalidatePath("/dashboard/articles")
   revalidatePath("/insights")
+  queueKnowledgeSync("articles")
   return { ok: true as const }
 }
 
@@ -354,6 +357,7 @@ export async function unpublishArticle(id: number) {
   await db.update(articles).set({ status: "approved", updatedAt: new Date() }).where(eq(articles.id, id))
   revalidatePath("/admin/articles")
   revalidatePath("/insights")
+  queueKnowledgeSync("articles")
   return { ok: true as const }
   }
 
@@ -369,6 +373,7 @@ export async function deleteArticle(id: number) {
     revalidatePath("/admin/articles")
     revalidatePath("/dashboard/articles")
     revalidatePath("/insights")
+    queueKnowledgeSync("articles")
     revalidatePath("/")
     return { ok: true as const }
   } catch (err) {

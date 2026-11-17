@@ -19,6 +19,7 @@ import { sendEmail } from "@/lib/mailer"
 import { CONTACT_EMAIL } from "@/lib/contact"
 import { formatAlertDate, sendAdminAlert } from "@/lib/admin-alerts"
 import { notifyCommunity } from "@/lib/notifications"
+import { queueKnowledgeSync } from "@/lib/ai-assistant/site-sync"
 
 type Result = { ok: true; message?: string } | { ok: false; error: string }
 
@@ -188,6 +189,7 @@ export async function updateKolStats(platforms: KolPlatform[], monthlyReach: num
     revalidatePath("/dashboard/kol")
     revalidatePath(`/membership/verified-opinion-leaders/${profile.slug}`)
     revalidatePath("/membership/verified-opinion-leaders")
+    queueKnowledgeSync("kol")
     return { ok: true, message: "Statistics updated. Our team will re-confirm them shortly." }
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : "Could not update statistics." }
@@ -280,6 +282,7 @@ export async function adminSetKolStatus(memberId: number, status: KolStatus, not
     revalidatePath("/admin/kol")
     revalidatePath(`/admin/kol/${memberId}`)
     revalidatePath("/membership/verified-opinion-leaders")
+    queueKnowledgeSync("kol")
     return { ok: true }
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : "Could not update status." }
@@ -308,6 +311,7 @@ export async function adminUpdateKolProfile(memberId: number, input: KolApplicat
     revalidatePath("/admin/kols")
     revalidatePath("/dashboard/kol")
     revalidatePath("/membership/verified-opinion-leaders")
+    queueKnowledgeSync("kol")
     revalidatePath(`/membership/verified-opinion-leaders/${profile.slug}`)
     return { ok: true, message: "Profile updated." }
   } catch (error) {

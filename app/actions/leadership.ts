@@ -1,6 +1,7 @@
 "use server"
 
 import { and, desc, eq, inArray, ne, sql } from "drizzle-orm"
+import { queueKnowledgeSync } from "@/lib/ai-assistant/site-sync"
 import { revalidatePath } from "next/cache"
 import { db } from "@/lib/db"
 import { auditLogs, leadership, leadershipRevisions, user as authUser } from "@/lib/db/schema"
@@ -118,6 +119,7 @@ async function record(leadershipId: number, actor: { id: string; name?: string |
 
 function revalidateLeadership(...paths: string[]) {
   for (const p of ["/", "/about", "/team", "/governance", "/admin/leadership", "/sitemap.xml", ...paths]) revalidatePath(p)
+  queueKnowledgeSync("leadership")
 }
 
 async function getLeader(id: number) {
