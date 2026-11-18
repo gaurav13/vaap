@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { authClient } from "@/lib/auth-client"
 import { Button } from "@/components/ui/button"
 import { VaapLogo } from "@/components/vaap-logo"
+import { TurnstileWidget, turnstileSiteKey } from "@/components/turnstile-widget"
 import Link from "next/link"
 
 function GoogleMark() {
@@ -38,6 +39,10 @@ export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
 
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const [captchaKey, setCaptchaKey] = useState(0)
+  const captchaMissing = Boolean(turnstileSiteKey) && !captchaToken
+  const captchaFetch = { headers: { "x-captcha-response": captchaToken ?? "" } }
   const isSignUp = mode === "sign-up"
   const busy = loading || googleLoading
   const returnTo = safeReturnPath(searchParams.get("redirect"))
@@ -71,7 +76,14 @@ export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
 
     try {
       if (isSignUp) {
-        const { error } = await authClient.signUp.email({ email, password, name, callbackURL: returnTo })
+        const { error } = await authClient.signUp.email({
+          email,
+          password,
+          name,
+          callbackURL: returnTo,
+          fetchOptions: captchaFetch,
+        })
+        setCaptchaKey((k) => k + 1)
         if (error) {
           setError(error.message ?? "Could not create your account.")
           setLoading(false)
@@ -81,9 +93,12 @@ export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
         setLoading(false)
         return
       } else {
-        const { error } = await authClient.signIn.email({ email, password, callbackURL: returnTo })
+        const { error } = await authClient.signIn.email({ email, password, callbackURL: returnTo, fetchOptions: captchaFetch })
+        setCaptchaKey((k) => k + 1)
         if (error) {
-          if (error.status === 403 || error.code === "EMAIL_NOT_VERIFIED") {
+          if (error.code === "VERIFICATION_FAILED" || error.code === "MISSING_RESPONSE") {
+            setError("Security check failed. Please complete it again.")
+          } else if (error.status === 403 || error.code === "EMAIL_NOT_VERIFIED") {
             setNotice(`Your email isn't verified yet. We've sent a new verification link to ${email}. Open it, then sign in.`)
           } else {
             setError("Invalid email or password.")
@@ -204,7 +219,9 @@ export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
           </p>
         )}
 
-        <Button type="submit" size="lg" disabled={busy} className="mt-2">
+        <TurnstileWidget key={captchaKey} onToken={setCaptchaToken} />
+
+        <Button type="submit" size="lg" disabled={busy || captchaMissing} className="mt-2">
           {loading ? "Please wait…" : isSignUp ? "Create account" : "Sign in"}
         </Button>
       </form>

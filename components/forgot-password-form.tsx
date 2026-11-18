@@ -6,6 +6,7 @@ import { useState } from "react"
 import { requestPasswordReset } from "@/lib/auth-client"
 import { Button } from "@/components/ui/button"
 import { VaapLogo } from "@/components/vaap-logo"
+import { TurnstileWidget, turnstileSiteKey } from "@/components/turnstile-widget"
 import Link from "next/link"
 
 export function ForgotPasswordForm() {
@@ -13,6 +14,9 @@ export function ForgotPasswordForm() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const [captchaKey, setCaptchaKey] = useState(0)
+  const captchaMissing = Boolean(turnstileSiteKey) && !captchaToken
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -20,7 +24,12 @@ export function ForgotPasswordForm() {
     setLoading(true)
 
     try {
-      const { error } = await requestPasswordReset({ email, redirectTo: "/reset-password" })
+      const { error } = await requestPasswordReset({
+        email,
+        redirectTo: "/reset-password",
+        fetchOptions: { headers: { "x-captcha-response": captchaToken ?? "" } },
+      })
+      setCaptchaKey((k) => k + 1)
       if (error) {
         setError(
           error.status === 429
@@ -85,7 +94,9 @@ export function ForgotPasswordForm() {
             </p>
           )}
 
-          <Button type="submit" size="lg" disabled={loading} className="mt-2">
+          <TurnstileWidget key={captchaKey} onToken={setCaptchaToken} />
+
+          <Button type="submit" size="lg" disabled={loading || captchaMissing} className="mt-2">
             {loading ? "Sending…" : "Send reset link"}
           </Button>
 

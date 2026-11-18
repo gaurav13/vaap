@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth"
 import { APIError } from "better-auth/api"
+import { captcha } from "better-auth/plugins"
 import { checkDeliverableEmail } from "@/lib/email-guard"
 import { pool } from "@/lib/db"
 import { sendTemplateEmail } from "@/lib/email-templates/service"
@@ -177,6 +178,15 @@ export const auth = betterAuth({
     ...configuredOrigins,
     ...versionedV0Origins,
   ],
+  plugins: process.env.TURNSTILE_SECRET_KEY
+    ? [
+        captcha({
+          provider: "cloudflare-turnstile",
+          secretKey: process.env.TURNSTILE_SECRET_KEY,
+          endpoints: ["/sign-up/email", "/sign-in/email", "/request-password-reset"],
+        }),
+      ]
+    : [],
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 days
     updateAge: 60 * 60 * 24, // 1 day
