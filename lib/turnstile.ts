@@ -7,11 +7,23 @@ export function isTurnstileEnabled() {
   return Boolean(process.env.TURNSTILE_SECRET_KEY)
 }
 
-export async function verifyTurnstile(token: string | null | undefined): Promise<{ ok: true } | { ok: false; error: string }> {
+const allowedHostnames = new Set(
+  (process.env.TURNSTILE_HOSTNAMES ?? "")
+    .split(",")
+    .map((h) => h.trim())
+    .filter(Boolean),
+)
+
+export async function verifyTurnstile(
+  token: string | null | undefined,
+  expectedAction: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
   const secret = process.env.TURNSTILE_SECRET_KEY
   if (!secret) return { ok: true }
 
-  if (!token) return { ok: false, error: "Please complete the security check before submitting." }
+  if (!token || token.length > 2048) {
+    return { ok: false, error: "Please complete the security check before submitting." }
+  }
 
   const h = await headers()
   const ip = h.get("cf-connecting-ip") ?? h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? undefined
@@ -21,8 +33,10 @@ export async function verifyTurnstile(token: string | null | undefined): Promise
 
   try {
     const res = await fetch(VERIFY_URL, { method: "POST", body, signal: AbortSignal.timeout(10_000) })
-    const data = (await res.json()) as { success?: boolean }
-    if (data.success) return { ok: true }
+    if (!res.ok) throw new Error(`siteverify ${res.status}`)
+    const data = (await res.json()) as { success?: boolean; action?: string; hostname?: string }
+    const hostnameOk = allowedHostnames.size === 0 || (!!data.hostname && allowedHostnames.has(data.hostname))
+    if (data.success && data.action === expectedAction && hostnameOk) return { ok: true }
   } catch {
     // Fail closed: a verification outage must not let bots through.
   }

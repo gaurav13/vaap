@@ -921,7 +921,7 @@ export async function submitContactMessage(formData: FormData) {
   if (!name || !email || !message) {
     return { ok: false, error: "Please fill in all required fields." }
   }
-  const human = await verifyTurnstile(String(formData.get(CAPTCHA_FIELD) ?? ""))
+  const human = await verifyTurnstile(String(formData.get(CAPTCHA_FIELD) ?? ""), "contact")
   if (!human.ok) return { ok: false, error: human.error }
   const deliverable = await checkDeliverableEmail(email)
   if (!deliverable.ok) return { ok: false, error: deliverable.error }
