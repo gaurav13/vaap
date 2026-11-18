@@ -4,18 +4,24 @@ import { useState, useTransition } from "react"
 import { CheckCircle2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { submitContactMessage } from "@/app/actions/public"
+import { TurnstileWidget, turnstileSiteKey } from "@/components/turnstile-widget"
 
 export function ContactForm() {
   const [pending, startTransition] = useTransition()
   const [done, setDone] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const [captchaKey, setCaptchaKey] = useState(0)
+  const captchaMissing = Boolean(turnstileSiteKey) && !captchaToken
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setError(null)
     const formData = new FormData(e.currentTarget)
+    formData.set("cf-turnstile-response", captchaToken ?? "")
     startTransition(async () => {
       const res = await submitContactMessage(formData)
+      setCaptchaKey((k) => k + 1)
       if (!res.ok) {
         setError(res.error ?? "Something went wrong.")
         return
@@ -53,9 +59,13 @@ export function ContactForm() {
         </Field>
       </div>
 
+      <div className="mt-5">
+        <TurnstileWidget key={captchaKey} onToken={setCaptchaToken} />
+      </div>
+
       {error && <p className="mt-4 text-sm text-destructive">{error}</p>}
 
-      <Button type="submit" disabled={pending} size="lg" className="mt-6 w-full sm:w-auto">
+      <Button type="submit" disabled={pending || captchaMissing} size="lg" className="mt-6 w-full sm:w-auto">
         {pending ? "Sending…" : "Send Message"}
       </Button>
     </form>

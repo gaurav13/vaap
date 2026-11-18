@@ -2,6 +2,7 @@
 
 import { db } from "@/lib/db"
 import { checkDeliverableEmail } from "@/lib/email-guard"
+import { CAPTCHA_FIELD, verifyTurnstile } from "@/lib/turnstile"
 import { news, events, eventRsvps, membershipApplications, contactMessages, user } from "@/lib/db/schema"
 import { auth } from "@/lib/auth"
 import { getSession } from "@/lib/session"
@@ -920,6 +921,8 @@ export async function submitContactMessage(formData: FormData) {
   if (!name || !email || !message) {
     return { ok: false, error: "Please fill in all required fields." }
   }
+  const human = await verifyTurnstile(String(formData.get(CAPTCHA_FIELD) ?? ""))
+  if (!human.ok) return { ok: false, error: human.error }
   const deliverable = await checkDeliverableEmail(email)
   if (!deliverable.ok) return { ok: false, error: deliverable.error }
 
