@@ -6,6 +6,7 @@ import { Building2, Check, ChevronDown, CreditCard, Mail, Phone, Trash2, Triangl
 import { cn } from "@/lib/utils"
 import { setApplicationStatus, deleteApplication, verifyApplicationPayment } from "@/app/actions/admin"
 import { ApplicationsBulkBar } from "@/components/admin/applications-bulk-bar"
+import { APPLICATION_FILTERS } from "@/lib/application-filters"
 
 type Application = {
   id: number
@@ -35,7 +36,6 @@ type Application = {
   createdAt: string
 }
 
-export const APPLICATION_FILTERS = ["all", "incomplete", "pending", "unpaid", "approved", "rejected", "archived"] as const
 const FILTERS = APPLICATION_FILTERS
 type Filter = (typeof FILTERS)[number]
 

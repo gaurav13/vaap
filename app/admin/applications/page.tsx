@@ -1,12 +1,13 @@
 import { getApplications } from "@/app/actions/admin"
 import { getSession } from "@/lib/session"
 import { isPaymentConfirmed } from "@/lib/rbac"
-import { APPLICATION_FILTERS, ApplicationsManager } from "@/components/admin/applications-manager"
+import { ApplicationsManager } from "@/components/admin/applications-manager"
+import { parseApplicationFilter } from "@/lib/application-filters"
 
 export default async function AdminApplicationsPage({ searchParams }: { searchParams: Promise<{ filter?: string }> }) {
   const [{ filter }, rows, session] = await Promise.all([searchParams, getApplications(), getSession()])
   const role = session?.user?.role ?? "staff"
-  const initialFilter = APPLICATION_FILTERS.find((f) => f === filter) ?? "all"
+  const initialFilter = parseApplicationFilter(filter)
   return (
     <div>
       <h1 className="font-serif text-2xl font-bold text-heading">Membership Applications</h1>
