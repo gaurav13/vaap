@@ -31,6 +31,14 @@ const DISPOSABLE_DOMAINS = new Set([
   "spamgourmet.com",
 ])
 
+/** Reserved or disposable address: used to flag test data in statistics (no DNS lookup). */
+export function isTestEmail(raw: string | null | undefined) {
+  const domain = (raw ?? "").trim().toLowerCase().split("@")[1] ?? ""
+  if (!domain) return false
+  const tld = domain.split(".").pop() ?? ""
+  return RESERVED_DOMAINS.has(domain) || RESERVED_TLDS.has(tld) || DISPOSABLE_DOMAINS.has(domain)
+}
+
 const DNS_TIMEOUT_MS = 4000
 const domainCache = new Map<string, { ok: boolean; at: number }>()
 const CACHE_TTL_MS = 60 * 60 * 1000

@@ -49,7 +49,10 @@ import { ADMIN_AREA_LABELS, canOpenAdminRoute, type AdminAreaRole } from "@/lib/
 const GROUPS: { heading: string; links: { href: string; label: string; icon: typeof Home; adminOnly?: boolean }[] }[] = [
   {
     heading: "Overview",
-    links: [{ href: "/admin", label: "Dashboard", icon: LayoutDashboard }],
+    links: [
+      { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/admin/membership-overview", label: "Membership Overview", icon: UsersRound },
+    ],
   },
   {
     heading: "Content",

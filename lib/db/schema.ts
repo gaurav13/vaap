@@ -201,6 +201,16 @@ export const membershipApplications = pgTable("membership_applications", {
   promotionId: integer("promotionId"),
   promotionName: text("promotionName"),
   discountAmount: integer("discountAmount"),
+  // Formal rejection details, required by bulk reject.
+  rejectionReason: text("rejectionReason"),
+  rejectedBy: text("rejectedBy"),
+  rejectedAt: timestamp("rejectedAt"),
+  // Archived rows leave operational lists but stay in history and statistics.
+  archivedAt: timestamp("archivedAt"),
+  archivedBy: text("archivedBy"),
+  // Soft delete (Super Admin only). Rows are hidden everywhere but never purged.
+  deletedAt: timestamp("deletedAt"),
+  deletedBy: text("deletedBy"),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 })
 

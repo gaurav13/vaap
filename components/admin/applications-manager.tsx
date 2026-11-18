@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { Building2, Check, ChevronDown, CreditCard, Mail, Phone, Trash2, TriangleAlert, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { setApplicationStatus, deleteApplication, verifyApplicationPayment } from "@/app/actions/admin"
+import { ApplicationsBulkBar } from "@/components/admin/applications-bulk-bar"
 
 type Application = {
   id: number
@@ -30,22 +31,56 @@ type Application = {
   status: "pending" | "approved" | "rejected"
   completed: boolean
   paymentConfirmed: boolean
+  archived: boolean
   createdAt: string
 }
 
-const FILTERS = ["all", "incomplete", "pending", "approved", "rejected"] as const
+export const APPLICATION_FILTERS = ["all", "incomplete", "pending", "unpaid", "approved", "rejected", "archived"] as const
+const FILTERS = APPLICATION_FILTERS
+type Filter = (typeof FILTERS)[number]
 
-const FILTER_ACTIVE: Record<(typeof FILTERS)[number], string> = {
+const FILTER_ACTIVE: Record<Filter, string> = {
   all: "bg-navy text-white",
   incomplete: "bg-rose-600 text-white",
   pending: "bg-amber-500 text-white",
+  unpaid: "bg-amber-600 text-white",
   approved: "bg-green text-white",
   rejected: "bg-destructive text-white",
+  archived: "bg-muted-2 text-white",
 }
 
-export function ApplicationsManager({ items, isAdmin = false }: { items: Application[]; isAdmin?: boolean }) {
+// Same definitions as lib/membership-stats so tab counts match every dashboard.
+const MATCHERS: Record<Exclude<Filter, "all" | "archived">, (i: Application) => boolean> = {
+  incomplete: (i) => !i.completed,
+  pending: (i) => i.completed && i.status === "pending",
+  unpaid: (i) => i.completed && i.status === "pending" && !i.paymentConfirmed,
+  approved: (i) => i.completed && i.status === "approved",
+  rejected: (i) => i.completed && i.status === "rejected",
+}
+
+export function ApplicationsManager({
+  items,
+  isAdmin = false,
+  role = isAdmin ? "admin" : "staff",
+  initialFilter = "all",
+}: {
+  items: Application[]
+  isAdmin?: boolean
+  role?: string
+  initialFilter?: Filter
+}) {
   const router = useRouter()
-  const [filter, setFilter] = useState<(typeof FILTERS)[number]>("all")
+  const [filter, setFilter] = useState<Filter>(initialFilter)
+  const [selected, setSelected] = useState<Set<number>>(new Set())
+
+  function toggle(id: number) {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
   const [expanded, setExpanded] = useState<number | null>(null)
   const [pending, startTransition] = useTransition()
   const [errors, setErrors] = useState<Record<number, string>>({})
@@ -105,22 +140,22 @@ export function ApplicationsManager({ items, isAdmin = false }: { items: Applica
     })
   }
 
-  const counts = {
-    all: items.length,
-    incomplete: items.filter((i) => !i.completed).length,
-    pending: items.filter((i) => i.completed && i.status === "pending").length,
-    approved: items.filter((i) => i.status === "approved").length,
-    rejected: items.filter((i) => i.status === "rejected").length,
+  const working = items.filter((i) => !i.archived)
+  const archivedItems = items.filter((i) => i.archived)
+  const counts: Record<Filter, number> = {
+    all: working.length,
+    incomplete: working.filter(MATCHERS.incomplete).length,
+    pending: working.filter(MATCHERS.pending).length,
+    unpaid: working.filter(MATCHERS.unpaid).length,
+    approved: working.filter(MATCHERS.approved).length,
+    rejected: working.filter(MATCHERS.rejected).length,
+    archived: archivedItems.length,
   }
 
   const visible =
-    filter === "all"
-      ? items
-      : filter === "incomplete"
-        ? items.filter((i) => !i.completed)
-        : filter === "pending"
-          ? items.filter((i) => i.completed && i.status === "pending")
-          : items.filter((i) => i.status === filter)
+    filter === "all" ? working : filter === "archived" ? archivedItems : working.filter(MATCHERS[filter])
+  const visibleIds = visible.map((v) => v.id)
+  const allVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => selected.has(id))
 
   return (
     <div className="mt-6">
@@ -129,7 +164,10 @@ export function ApplicationsManager({ items, isAdmin = false }: { items: Applica
           <button
             key={f}
             type="button"
-            onClick={() => setFilter(f)}
+            onClick={() => {
+              setFilter(f)
+              setSelected(new Set())
+            }}
             className={cn(
               "inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium capitalize transition-colors",
               filter === f
@@ -151,6 +189,24 @@ export function ApplicationsManager({ items, isAdmin = false }: { items: Applica
         ))}
       </div>
 
+      {visible.length > 0 && (
+        <label className="mt-4 inline-flex items-center gap-2 text-sm text-body">
+          <input
+            type="checkbox"
+            checked={allVisibleSelected}
+            onChange={() => setSelected(allVisibleSelected ? new Set() : new Set(visibleIds))}
+          />
+          Select all {visible.length} in this view
+        </label>
+      )}
+
+      <ApplicationsBulkBar
+        selected={items.filter((i) => selected.has(i.id))}
+        role={role}
+        showingArchived={filter === "archived"}
+        onClear={() => setSelected(new Set())}
+      />
+
       <div className="mt-6 grid gap-4">
         {visible.length === 0 && (
           <p className="rounded-xl border border-dashed border-line bg-card p-8 text-center text-sm text-muted-2">
@@ -164,6 +220,13 @@ export function ApplicationsManager({ items, isAdmin = false }: { items: Applica
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
+                    <input
+                      type="checkbox"
+                      className="size-4"
+                      checked={selected.has(a.id)}
+                      onChange={() => toggle(a.id)}
+                      aria-label={`Select application from ${a.name}`}
+                    />
                     <h3 className="text-base font-bold text-heading">{a.name}</h3>
                     {a.completed ? <StatusBadge status={a.status} /> : <IncompleteBadge />}
                     {a.reference && (

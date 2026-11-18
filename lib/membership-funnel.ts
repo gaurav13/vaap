@@ -99,6 +99,7 @@ const loadRaw = cache(async function loadRaw() {
         createdAt: membershipApplications.createdAt,
       })
       .from(membershipApplications)
+      .where(isNull(membershipApplications.deletedAt))
       .orderBy(desc(membershipApplications.createdAt))
       .then(syncCardPaymentVerifications),
     db
