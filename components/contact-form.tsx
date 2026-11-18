@@ -60,7 +60,7 @@ export function ContactForm() {
       </div>
 
       <div className="mt-5">
-        <TurnstileWidget key={captchaKey} onToken={setCaptchaToken} />
+        <TurnstileWidget key={captchaKey} action="contact" onToken={setCaptchaToken} />
       </div>
 
       {error && <p className="mt-4 text-sm text-destructive">{error}</p>}

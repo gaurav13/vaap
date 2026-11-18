@@ -40,7 +40,13 @@ export const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? ""
  * Renders a Cloudflare Turnstile challenge. Tokens are single-use, so remount
  * it (change its `key`) after every submit attempt to get a fresh one.
  */
-export function TurnstileWidget({ onToken }: { onToken: (token: string | null) => void }) {
+export function TurnstileWidget({
+  onToken,
+  action,
+}: {
+  onToken: (token: string | null) => void
+  action?: string
+}) {
   const ref = useRef<HTMLDivElement>(null)
   const onTokenRef = useRef(onToken)
   onTokenRef.current = onToken
@@ -56,6 +62,7 @@ export function TurnstileWidget({ onToken }: { onToken: (token: string | null) =
         widgetId = window.turnstile.render(ref.current, {
           sitekey: turnstileSiteKey,
           appearance: "always",
+          ...(action ? { action } : {}),
           callback: (t: string) => onTokenRef.current(t),
           "expired-callback": () => onTokenRef.current(null),
           "error-callback": () => onTokenRef.current(null),
@@ -68,7 +75,7 @@ export function TurnstileWidget({ onToken }: { onToken: (token: string | null) =
       if (widgetId && window.turnstile) window.turnstile.remove(widgetId)
       onTokenRef.current(null)
     }
-  }, [])
+  }, [action])
 
   if (!turnstileSiteKey) return null
   return <div ref={ref} className="min-h-16" aria-label="Security check" />
