@@ -1,6 +1,6 @@
 import "server-only"
 
-import { getSession } from "@/lib/session"
+import { getRawSession, getSession } from "@/lib/session"
 
 export type AssistantAuthState = "signed_out" | "unverified"
 
@@ -15,12 +15,13 @@ export type AssistantAccess =
  * Checked on the server for every AI request, before any question is counted or any AI cost is incurred.
  */
 export async function getAssistantAccess(): Promise<AssistantAccess> {
-  const session = await getSession().catch(() => null)
+  const [session, raw] = await Promise.all([getSession().catch(() => null), getRawSession().catch(() => null)])
   const user = session?.user as (AssistantViewer & { emailVerified?: boolean }) | undefined
-  if (!user?.id) {
+  if (!user?.id && !raw?.user?.id) {
     return { ok: false, state: "signed_out", status: 401, message: "Please sign in to use Ask VAAP AI." }
   }
-  if (!user.emailVerified) {
+  // Staff are let through by getSession without verification; the assistant still requires it.
+  if (!user?.id || !user.emailVerified) {
     return {
       ok: false,
       state: "unverified",

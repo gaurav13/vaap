@@ -4,6 +4,7 @@ import { db } from "@/lib/db"
 import { checkDeliverableEmail } from "@/lib/email-guard"
 import { news, events, eventRsvps, membershipApplications, contactMessages, user } from "@/lib/db/schema"
 import { auth } from "@/lib/auth"
+import { getSession } from "@/lib/session"
 import { desc, eq, gte, and, isNotNull, sql } from "drizzle-orm"
 import { headers, cookies } from "next/headers"
 import { revalidatePath } from "next/cache"
@@ -448,9 +449,20 @@ export async function confirmRsvpAction(formData: FormData) {
   redirect(`/rsvp/confirm?confirmed=${res.event.id}`)
 }
 
+const VERIFY_TO_APPLY = "Please sign in with a verified email address before applying for membership."
+
+// Applications are only accepted from a signed-in account whose email is verified, and always
+// under that account's email, so throwaway or fake addresses can no longer create applications.
+async function verifiedApplicantEmail(): Promise<string | null> {
+  const session = await getSession().catch(() => null)
+  const u = session?.user as { email?: string; emailVerified?: boolean } | undefined
+  return u?.email && u.emailVerified ? u.email.trim().toLowerCase() : null
+}
+
 export async function submitMembershipApplication(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim()
-  const email = String(formData.get("email") ?? "").trim()
+  const email = await verifiedApplicantEmail()
+  if (!email) return { ok: false, error: VERIFY_TO_APPLY }
   const organization = String(formData.get("organization") ?? "").trim()
   const category = String(formData.get("category") ?? "Corporate Members")
   const message = String(formData.get("message") ?? "").trim()
@@ -583,7 +595,8 @@ async function provisionMemberAccount(
 // follow up. Returns the row id so a later full submit completes the same row.
 export async function saveIncompleteApplication(input: IncompleteInput) {
   const name = clean(input.name)
-  const email = clean(input.email)
+  const email = await verifiedApplicantEmail()
+  if (!email) return { ok: false as const }
   const category = clean(input.category) || "Corporate Membership"
 
   if (!name || !email) return { ok: false as const }
@@ -688,7 +701,8 @@ async function resolveAgreedPromotion(
 
 export async function submitFullApplication(input: ApplicationInput) {
   const name = clean(input.name)
-  const email = clean(input.email)
+  const email = await verifiedApplicantEmail()
+  if (!email) return { ok: false as const, error: VERIFY_TO_APPLY }
   const category = clean(input.category) || "Corporate Membership"
 
   if (!name || !email) {

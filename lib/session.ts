@@ -20,9 +20,15 @@ export type SessionUser = {
   image?: string | null
 }
 
+// The session as stored, including accounts whose email is not verified yet.
+// Only use this to tell an unverified user what to do; never to grant access.
+export const getRawSession = cache(async function getRawSession() {
+  return auth.api.getSession({ headers: await headers() })
+})
+
 // Deduplicated per request: the layout, header and page all ask for the session.
 export const getSession = cache(async function getSession() {
-  const session = await auth.api.getSession({ headers: await headers() })
+  const session = await getRawSession()
   if (!session?.user) return null
   const u = session.user as unknown as SessionUser & { role?: string; emailVerified?: boolean }
   // Unverified accounts get no access to protected features. Staff roles are

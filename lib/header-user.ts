@@ -1,5 +1,4 @@
-import { headers } from "next/headers"
-import { auth } from "@/lib/auth"
+import { getSession } from "@/lib/session"
 import type { HeaderUser } from "@/components/site-header"
 
 type SessionLike = {
@@ -22,7 +21,8 @@ export function toHeaderUser(session: SessionLike): HeaderUser {
   }
 }
 
+// Unverified accounts are shown as signed out, so the header never links them into the dashboard.
 export async function getHeaderUser(): Promise<HeaderUser> {
-  const session = await auth.api.getSession({ headers: await headers() })
+  const session = await getSession().catch(() => null)
   return toHeaderUser(session as SessionLike)
 }
