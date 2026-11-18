@@ -6,6 +6,8 @@ import { db } from "@/lib/db"
 import { membershipApplications } from "@/lib/db/schema"
 import { verifyToken } from "@/lib/email-tokens"
 import { getHeaderUser } from "@/lib/header-user"
+import { getRawSession, getSession } from "@/lib/session"
+import { ApplyGate } from "@/components/membership/apply/apply-gate"
 import { getMembershipPlans } from "@/app/actions/cms"
 import { seoMetadata } from "@/lib/seo"
 import { staticSubjectByPath } from "@/lib/seo/subjects"
@@ -82,7 +84,34 @@ export default async function ApplyPage({
 }: {
   searchParams: Promise<{ plan?: string; resume?: string; ref?: string }>
 }) {
-  const [user, rows, sp, cookieStore] = await Promise.all([getHeaderUser(), getMembershipPlans(), searchParams, cookies()])
+  const [user, rows, sp, cookieStore, raw, verified] = await Promise.all([
+    getHeaderUser(),
+    getMembershipPlans(),
+    searchParams,
+    cookies(),
+    getRawSession().catch(() => null),
+    getSession().catch(() => null),
+  ])
+
+  const isVerified = Boolean(verified?.user && (verified.user as { emailVerified?: boolean }).emailVerified)
+  if (!isVerified) {
+    const query = new URLSearchParams()
+    if (sp.plan) query.set("plan", sp.plan)
+    if (sp.ref) query.set("ref", sp.ref)
+    const returnTo = `/membership/apply${query.size ? `?${query}` : ""}`
+    return (
+      <>
+        <SiteHeaderServer active="Membership" user={user} />
+        <main className="bg-muted/40">
+          <div className="mx-auto max-w-6xl px-5 py-16 lg:px-8 lg:py-24">
+            <ApplyGate state={raw?.user ? "unverified" : "signed-out"} returnTo={returnTo} />
+          </div>
+        </main>
+        <SiteFooter />
+      </>
+    )
+  }
+
   const [resume, referralCode] = await Promise.all([
     loadResume(sp.resume),
     loadReferralCode(sp.ref, cookieStore.get(REFERRAL_COOKIE)?.value),
