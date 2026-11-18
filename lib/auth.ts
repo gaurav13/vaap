@@ -1,4 +1,6 @@
 import { betterAuth } from "better-auth"
+import { APIError } from "better-auth/api"
+import { checkDeliverableEmail } from "@/lib/email-guard"
 import { pool } from "@/lib/db"
 import { sendTemplateEmail } from "@/lib/email-templates/service"
 import { notify } from "@/lib/notifications"
@@ -73,7 +75,10 @@ export const auth = betterAuth({
   },
   emailAndPassword: {
     enabled: true,
-    autoSignIn: true,
+    // Accounts stay locked until the email is verified: no session is issued on
+    // sign-up, and password sign-in is refused (403 EMAIL_NOT_VERIFIED) until then.
+    autoSignIn: false,
+    requireEmailVerification: true,
     // Sends the reset link via Gmail SMTP when GMAIL_USER/GMAIL_APP_PASSWORD
     // are set; otherwise falls back to logging the link to the server logs.
     sendResetPassword: async ({ user, url }) => {
@@ -83,11 +88,11 @@ export const auth = betterAuth({
       }
     },
   },
-  // Send a verification email on sign-up. Verification is not *required* to log
-  // in (autoSignIn stays on), so this is a gentle confirm-your-address prompt
-  // rather than a hard gate.
+  // Verification is mandatory. A blocked sign-in re-sends the link so users who
+  // lost the first email can still finish.
   emailVerification: {
     sendOnSignUp: true,
+    sendOnSignIn: true,
     autoSignInAfterVerification: true,
     sendVerificationEmail: async ({ user, url }) => {
       const sent = await sendTemplateEmail({
@@ -114,6 +119,11 @@ export const auth = betterAuth({
   databaseHooks: {
     user: {
       create: {
+        before: async (newUser) => {
+          const check = await checkDeliverableEmail(newUser.email)
+          if (!check.ok) throw new APIError("BAD_REQUEST", { message: check.error })
+          return { data: { ...newUser, email: check.email } }
+        },
         after: async (createdUser) => {
           await notify({
             userId: createdUser.id,

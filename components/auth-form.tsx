@@ -34,6 +34,7 @@ export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
   const [error, setError] = useState<string | null>(
     searchParams.get("error") ? "Google sign-in was cancelled or could not be completed." : null,
   )
+  const [notice, setNotice] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
 
@@ -65,20 +66,28 @@ export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
+    setNotice(null)
     setLoading(true)
 
     try {
       if (isSignUp) {
-        const { error } = await authClient.signUp.email({ email, password, name })
+        const { error } = await authClient.signUp.email({ email, password, name, callbackURL: returnTo })
         if (error) {
           setError(error.message ?? "Could not create your account.")
           setLoading(false)
           return
         }
+        setNotice(`We've sent a verification link to ${email}. Open it to activate your account, then sign in.`)
+        setLoading(false)
+        return
       } else {
-        const { error } = await authClient.signIn.email({ email, password })
+        const { error } = await authClient.signIn.email({ email, password, callbackURL: returnTo })
         if (error) {
-          setError("Invalid email or password.")
+          if (error.status === 403 || error.code === "EMAIL_NOT_VERIFIED") {
+            setNotice(`Your email isn't verified yet. We've sent a new verification link to ${email}. Open it, then sign in.`)
+          } else {
+            setError("Invalid email or password.")
+          }
           setLoading(false)
           return
         }
@@ -182,6 +191,12 @@ export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
             placeholder={isSignUp ? "At least 8 characters" : "••••••••"}
           />
         </div>
+
+        {notice && (
+          <p className="rounded-lg bg-primary/10 px-3.5 py-2.5 text-sm text-foreground" role="status">
+            {notice}
+          </p>
+        )}
 
         {error && (
           <p className="rounded-lg bg-destructive/10 px-3.5 py-2.5 text-sm text-destructive" role="alert">

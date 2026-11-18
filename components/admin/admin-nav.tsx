@@ -49,7 +49,23 @@ import { ADMIN_AREA_LABELS, canOpenAdminRoute, type AdminAreaRole } from "@/lib/
 const GROUPS: { heading: string; links: { href: string; label: string; icon: typeof Home; adminOnly?: boolean }[] }[] = [
   {
     heading: "Overview",
-    links: [{ href: "/admin", label: "Dashboard", icon: LayoutDashboard }],
+    links: [
+      { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+    ],
+  },
+  {
+    heading: "Membership",
+    links: [
+      { href: "/admin/membership-overview", label: "Membership Overview", icon: UsersRound },
+      { href: "/admin/applications", label: "Applications", icon: FileText },
+      { href: "/admin/members", label: "Members", icon: IdCard },
+      { href: "/admin/membership", label: "Membership Management", icon: ShieldCheck },
+      { href: "/admin/membership-funnel", label: "Registered vs Paid", icon: Users, adminOnly: true },
+      { href: "/admin/membership-plans", label: "Membership Plans", icon: Wallet },
+      { href: "/admin/membership-promotions", label: "Membership Promotions", icon: Tag, adminOnly: true },
+      { href: "/admin/membership-faqs", label: "Membership FAQs", icon: HelpCircle },
+      { href: "/admin/invitations", label: "Invitations & Enrolment", icon: KeyRound, adminOnly: true },
+    ],
   },
   {
     heading: "Content",
@@ -78,19 +94,11 @@ const GROUPS: { heading: string; links: { href: string; label: string; icon: typ
   {
     heading: "Community",
     links: [
-      { href: "/admin/members", label: "Members", icon: IdCard },
-      { href: "/admin/membership", label: "Membership Management", icon: ShieldCheck },
       { href: "/admin/newsletters", label: "Newsletters", icon: Mail },
       { href: "/admin/custom-emails", label: "Custom Emails", icon: MailPlus },
-      { href: "/admin/membership-funnel", label: "Registered vs Paid", icon: Users, adminOnly: true },
-      { href: "/admin/membership-plans", label: "Membership Plans", icon: Wallet },
-      { href: "/admin/membership-promotions", label: "Membership Promotions", icon: Tag, adminOnly: true },
-      { href: "/admin/membership-faqs", label: "Membership FAQs", icon: HelpCircle },
       { href: "/admin/ai", label: "AI Assistant Admin", icon: LayoutDashboard },
       { href: "/admin/ai-knowledge", label: "AI Knowledge Center", icon: BookOpen },
       { href: "/admin/social-agent", label: "AI Social Media Agent", icon: Share2, adminOnly: true },
-      { href: "/admin/applications", label: "Applications", icon: FileText },
-      { href: "/admin/invitations", label: "Invitations & Enrolment", icon: KeyRound, adminOnly: true },
       { href: "/admin/kols", label: "KOL Verification", icon: BadgeCheck },
       { href: "/admin/messages", label: "Messages", icon: Inbox },
       { href: "/admin/reports", label: "Reports", icon: ShieldCheck, adminOnly: true },

@@ -54,6 +54,7 @@ export type Permission =
 export const STAFF_ADMIN_ROUTES = [
   "/admin/members",
   "/admin/applications",
+  "/admin/membership-overview",
   "/admin/messages",
   "/admin/events",
   "/admin/participants",

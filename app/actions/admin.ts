@@ -321,7 +321,11 @@ export async function deleteEvent(id: number) {
 export async function getApplications() {
   const actor = await requireStaff()
   const rows = await syncCardPaymentVerifications(
-    await db.select().from(membershipApplications).orderBy(desc(membershipApplications.createdAt)),
+    await db
+      .select()
+      .from(membershipApplications)
+      .where(isNull(membershipApplications.deletedAt))
+      .orderBy(desc(membershipApplications.createdAt)),
   )
   return rows.map((row) => {
     const withPayment = { ...row, paymentConfirmed: isPaymentConfirmed(row) }
@@ -598,7 +602,11 @@ export async function deleteApplication(id: number) {
         isNull(emailChangeRequests.cancelledAt),
       ),
     )
-  await db.delete(membershipApplications).where(eq(membershipApplications.id, id))
+  // Soft delete: hidden from every list and count, kept for the audit trail.
+  await db
+    .update(membershipApplications)
+    .set({ deletedAt: new Date(), deletedBy: actor.id })
+    .where(eq(membershipApplications.id, id))
 
   await logActivity(actor, "application.delete", {
     entityType: "application",

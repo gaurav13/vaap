@@ -20,7 +20,8 @@ import {
 import { count, desc, eq, gte, inArray } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { articles, auditLogs, contactMessages, eventRsvps, events, kolProfiles, membershipApplications, news } from "@/lib/db/schema"
-import { getMemberDirectory, getMembershipFunnel } from "@/lib/membership-funnel"
+import { getMembershipFunnel } from "@/lib/membership-funnel"
+import { getMembershipStats } from "@/lib/membership-stats"
 import { currentOperator } from "@/lib/rbac"
 import { ADMIN_AREA_LABELS, canOpenAdminRoute } from "@/lib/permissions"
 import {
@@ -68,14 +69,13 @@ function paidTrend(dates: (Date | null)[], days = 30) {
 
 async function loadCounts() {
   const now = new Date()
-  const [newsCount, eventCount, upcoming, published, msgsNew, appsPending, rsvpsPending, articlesPending, kolsPending, kolsTotal, rsvpTotal] =
+  const [newsCount, eventCount, upcoming, published, msgsNew, rsvpsPending, articlesPending, kolsPending, kolsTotal, rsvpTotal] =
     await Promise.all([
       db.select({ v: count() }).from(news),
       db.select({ v: count() }).from(events),
       db.select({ v: count() }).from(events).where(gte(events.startsAt, now)),
       db.select({ v: count() }).from(articles).where(eq(articles.status, "published")),
       db.select({ v: count() }).from(contactMessages).where(eq(contactMessages.handled, false)),
-      db.select({ v: count() }).from(membershipApplications).where(eq(membershipApplications.status, "pending")),
       db.select({ v: count() }).from(eventRsvps).where(eq(eventRsvps.status, "pending")),
       db.select({ v: count() }).from(articles).where(inArray(articles.status, ["pending", "submitted", "under_review"])),
       db.select({ v: count() }).from(kolProfiles).where(inArray(kolProfiles.status, ["pending", "under_review", "info_required"])),
@@ -88,7 +88,6 @@ async function loadCounts() {
     upcoming: v(upcoming),
     published: v(published),
     msgsNew: v(msgsNew),
-    appsPending: v(appsPending),
     rsvpsPending: v(rsvpsPending),
     articlesPending: v(articlesPending),
     kolsPending: v(kolsPending),
@@ -114,30 +113,30 @@ export default async function AdminOverview() {
   const isSuper = role === "admin"
 
   // Staff only see their own actions in the feed; Admin and Super Admin see everyone's.
-  const [c, funnel, directory, activity] = await Promise.all([
+  const [c, funnel, ms, activity] = await Promise.all([
     loadCounts(),
     getMembershipFunnel(),
-    getMemberDirectory(),
+    getMembershipStats(),
     loadActivity(role === "staff" ? actor.id : null),
   ])
-  // Every membership number on this page comes from the shared stage classification,
-  // so it matches the tabs on the Members page exactly.
-  const s = directory.stats
-  const paidMembers = s.activePaid
-  const totalMembers = s.totalRegistered
-  const pendingPayments = s.notPaid
+  // Every membership number here comes from lib/membership-stats, the same service
+  // behind Membership Overview and the Applications tabs.
+  const paidMembers = ms.active
+  const totalMembers = ms.registered
+  const pendingPayments = ms.unpaid
 
   const stats: StatCard[] = isSuper ? [
-    { label: "Total Registered Users", value: totalMembers, hint: `${paidMembers} active paid`, href: "/admin/members", icon: Users, tone: "green" },
-    { label: "Active Paid Members", value: paidMembers, hint: `${totalMembers ? Math.round((paidMembers / totalMembers) * 100) : 0}% of users`, href: "/admin/members?stage=active", icon: Layers, tone: "teal" },
-    { label: "Not Paid Users", value: pendingPayments, hint: "Started application, payment unverified", hintTone: "warn", href: "/admin/members?stage=not-paid", icon: CreditCard, tone: "amber" },
-    { label: "Pending Approvals", value: s.pendingApproval + c.rsvpsPending + c.articlesPending + c.kolsPending, hint: `${s.pendingApproval} paid memberships`, href: "/admin/applications", icon: History, tone: "indigo" },
+    { label: "Total Registered Users", value: totalMembers, hint: `${paidMembers} active members`, href: "/admin/membership-overview", icon: Users, tone: "green" },
+    { label: "Active Members", value: paidMembers, hint: `${ms.expired} expired`, href: "/admin/members?stage=active", icon: Layers, tone: "teal" },
+    { label: "Unpaid Applications", value: pendingPayments, hint: "Submitted, payment unverified", hintTone: "warn", href: "/admin/applications?filter=unpaid", icon: CreditCard, tone: "amber" },
+    { label: "Pending Applications", value: ms.pending, hint: `${ms.flags.paidAwaitingApproval} paid, awaiting decision`, href: "/admin/applications?filter=pending", icon: History, tone: "indigo" },
   ] : [
-    { label: "Total Registered Users", value: totalMembers, hint: `${paidMembers} active paid`, href: "/admin/members", icon: Users, tone: "green" },
-    { label: "Incomplete Profiles", value: s.incomplete, hint: "Application not submitted", href: "/admin/members?stage=incomplete", icon: FileText, tone: "indigo" },
-    { label: "Not Paid Users", value: pendingPayments, hint: "Payment unverified", hintTone: "warn", href: "/admin/members?stage=not-paid", icon: CreditCard, tone: "amber" },
-    { label: "Pending Approval", value: s.pendingApproval, hint: "Paid, awaiting review", href: "/admin/members?stage=pending-approval", icon: History, tone: "teal" },
+    { label: "Total Registered Users", value: totalMembers, hint: `${paidMembers} active members`, href: "/admin/membership-overview", icon: Users, tone: "green" },
+    { label: "Incomplete Applications", value: ms.incomplete, hint: "Started, not submitted", href: "/admin/applications?filter=incomplete", icon: FileText, tone: "indigo" },
+    { label: "Unpaid Applications", value: pendingPayments, hint: "Payment unverified", hintTone: "warn", href: "/admin/applications?filter=unpaid", icon: CreditCard, tone: "amber" },
+    { label: "Pending Applications", value: ms.pending, hint: `${ms.flags.paidAwaitingApproval} paid`, href: "/admin/applications?filter=pending", icon: History, tone: "teal" },
   ]
+  const s = { pendingApproval: ms.flags.paidAwaitingApproval }
 
   const UNITS: Record<string, string> = {
     "/admin/members": "Total",
