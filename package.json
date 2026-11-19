@@ -17,15 +17,15 @@
     "test:smoke": "node scripts/smoke-test.mjs"
   },
   "dependencies": {
-    "@ai-sdk/openai": "^4.0.111",
-    "@ai-sdk/react": "^4.0.170",
+    "@ai-sdk/openai": "^4.0.121",
+    "@ai-sdk/react": "^4.0.181",
     "@aws-sdk/client-s3": "^3.1138.0",
     "@base-ui/react": "^1.5.0",
     "@stripe/react-stripe-js": "^6.10.0",
     "@stripe/stripe-js": "^9.16.0",
     "@vercel/analytics": "1.6.1",
     "@vercel/functions": "^3.11.0",
-    "ai": "^7.0.166",
+    "ai": "^7.0.177",
     "better-auth": "^1.7.5",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
