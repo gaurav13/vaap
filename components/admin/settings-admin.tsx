@@ -1128,7 +1128,7 @@ function FrameworkEditor({ initial }: { initial: GovFramework }) {
     })
   }
 
-  const textField = (name: Exclude<keyof GovFramework, "vaapVerified">, label: string, hint?: string) => (
+  const textField = (name: keyof GovFramework, label: string, hint?: string) => (
     <Field label={label} hint={hint}>
       <input
         name={name}

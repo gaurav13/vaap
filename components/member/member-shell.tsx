@@ -110,7 +110,7 @@ const COLLAPSE_STORAGE_KEY = "vaap.member-sidebar.collapsed"
 export type MemberUser = {
   name: string
   email: string
-  role: "member" | "staff" | "committee_head" | "committee_member" | "kol" | "manager" | "admin"
+  role: "member" | "staff" | "committee_head" | "committee_member" | "kol" | "admin"
 }
 
 function isActive(pathname: string, href: string) {
