@@ -5,6 +5,7 @@ import { MissionVision } from "@/components/about/mission-vision"
 import { Leadership } from "@/components/about/leadership"
 import { getHeaderUser } from "@/lib/header-user"
 import { getLeadership } from "@/app/actions/cms"
+import { getLeadershipTypeLabels } from "@/lib/site-settings"
 import { seoMetadata } from "@/lib/seo"
 import { staticSubjectByPath } from "@/lib/seo/subjects"
 import { SeoJsonLd } from "@/components/seo/json-ld"
@@ -14,7 +15,7 @@ export function generateMetadata() {
 }
 
 export default async function AboutPage() {
-  const [user, profiles] = await Promise.all([getHeaderUser(), getLeadership()])
+  const [user, profiles, typeLabels] = await Promise.all([getHeaderUser(), getLeadership(), getLeadershipTypeLabels()])
   return (
     <>
       <SeoJsonLd subject={staticSubjectByPath('/about')} />
@@ -23,7 +24,7 @@ export default async function AboutPage() {
       <main>
         <AboutHero />
         <MissionVision />
-        <Leadership profiles={profiles} />
+        <Leadership profiles={profiles} typeLabels={typeLabels} />
       </main>
       <SiteFooter />
     </>

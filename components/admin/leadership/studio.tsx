@@ -25,6 +25,7 @@ import {
 import { RichTextField } from "@/components/admin/rich-text-editor"
 import { PhotoUpload } from "@/components/leadership/photo-upload"
 import { DeleteLeadershipButton } from "./delete-button"
+import { typeLabel, type LeadershipTypeLabels } from "@/lib/leadership"
 
 type StudioData = NonNullable<Awaited<ReturnType<typeof getLeadershipStudio>>>
 
@@ -40,7 +41,7 @@ const SOCIAL: [ProfileField, string][] = [
   ["email", "Public email"],
 ]
 
-export function LeadershipStudio({ data }: { data: StudioData }) {
+export function LeadershipStudio({ data, typeLabels = {} }: { data: StudioData; typeLabels?: LeadershipTypeLabels }) {
   const router = useRouter()
   const [content, setContent] = useState<ProfileContent>(data.draft ?? data.live)
   const [busy, setBusy] = useState<string | null>(null)
@@ -153,7 +154,7 @@ export function LeadershipStudio({ data }: { data: StudioData }) {
                 <label htmlFor="kind" className="text-sm font-medium text-heading">Leadership group</label>
                 <select id="kind" value={content.kind} onChange={(e) => set("kind", e.target.value)} className={input}>
                   {KINDS.map((k) => (
-                    <option key={k} value={k}>{k}</option>
+                    <option key={k} value={k}>{typeLabel(k, typeLabels)}</option>
                   ))}
                 </select>
               </div>

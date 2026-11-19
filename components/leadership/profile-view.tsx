@@ -3,11 +3,25 @@ import Link from "next/link"
 import { ArrowLeft, Quote } from "lucide-react"
 import { ProfileSocials } from "@/components/profiles/profile-socials"
 import { RichContent } from "@/components/rich-content"
-import { sectionForKind, type ProfileContent } from "@/lib/leadership"
+import { sectionForKind, typeLabel, type LeadershipTypeLabels, type ProfileContent } from "@/lib/leadership"
 
-export function LeadershipProfileView({ profile, preview = false }: { profile: ProfileContent; preview?: boolean }) {
+export function LeadershipProfileView({
+  profile,
+  preview = false,
+  typeLabels,
+}: {
+  profile: ProfileContent
+  preview?: boolean
+  typeLabels?: LeadershipTypeLabels
+}) {
   const section = sectionForKind(profile.kind)
-  const badge = profile.kind === "Advisory Committee Members" ? "Advisory Board" : profile.kind === "Industry Advisor Members" ? "Industry Advisor" : profile.kind
+  const shortName =
+    profile.kind === "Advisory Committee Members" || profile.kind === "Advisory Board Members"
+      ? "Advisory Board"
+      : profile.kind === "Industry Advisor Members"
+        ? "Industry Advisor"
+        : undefined
+  const badge = typeLabel(profile.kind, typeLabels, shortName)
   const subtitle = [profile.title, profile.organization].filter(Boolean).join(", ")
 
   return (

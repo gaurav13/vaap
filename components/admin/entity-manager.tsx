@@ -29,7 +29,16 @@ import { FileUpload } from "@/components/admin/file-upload"
 
 type Row = Record<string, unknown> & { id: number }
 
-export function EntityManager({ entity, items }: { entity: EntityKey; items: Row[] }) {
+export function EntityManager({
+  entity,
+  items,
+  optionLabels,
+}: {
+  entity: EntityKey
+  items: Row[]
+  /** Display names for select options, keyed by field name then stored value. */
+  optionLabels?: Record<string, Record<string, string>>
+}) {
   const config = ENTITIES[entity]
   const router = useRouter()
   const [editing, setEditing] = useState<Row | null>(null)
@@ -146,6 +155,7 @@ export function EntityManager({ entity, items }: { entity: EntityKey; items: Row
               <FieldRenderer
                 key={field.name}
                 field={field}
+                optionLabels={optionLabels?.[field.name]}
                 value={editing?.[field.name]}
                 spacesImages={spacesImages}
                 spacesFiles={spacesFiles}
@@ -189,7 +199,8 @@ export function EntityManager({ entity, items }: { entity: EntityKey; items: Row
             {list.map((item, index) => {
               const title = String(item[config.list.title] ?? "Untitled")
               const subtitle = config.list.subtitle ? String(item[config.list.subtitle] ?? "") : ""
-              const badge = config.list.badge ? String(item[config.list.badge] ?? "") : ""
+              const badgeRaw = config.list.badge ? String(item[config.list.badge] ?? "") : ""
+              const badge = (config.list.badge && optionLabels?.[config.list.badge]?.[badgeRaw]) || badgeRaw
               const flagOn = config.list.flag ? Boolean(item[config.list.flag]) : false
               const isDraft = "published" in item ? item.published === false : item.status === "draft"
               return (
@@ -342,9 +353,11 @@ function FieldRenderer({
   spacesFiles = false,
   imageFolder = "pages",
   onBusyChange,
+  optionLabels,
 }: {
   field: FieldDef
   value: unknown
+  optionLabels?: Record<string, string>
   spacesImages?: boolean
   spacesFiles?: boolean
   imageFolder?: "pages" | "media-coverage"
@@ -422,7 +435,7 @@ function FieldRenderer({
         <select name={field.name} defaultValue={strVal(value) || field.options?.[0]} className={inputCls}>
           {field.options?.map((o) => (
             <option key={o} value={o}>
-              {o}
+              {optionLabels?.[o] ?? o}
             </option>
           ))}
         </select>
