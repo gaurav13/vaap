@@ -178,7 +178,8 @@ export const auth = betterAuth({
     ...configuredOrigins,
     ...versionedV0Origins,
   ],
-  plugins: process.env.TURNSTILE_SECRET_KEY
+  // The v0 preview (dev mode) runs on a hostname Turnstile doesn't allow, so the check only runs in deployed builds.
+  plugins: process.env.TURNSTILE_SECRET_KEY && process.env.NODE_ENV !== "development"
     ? [
         captcha({
           provider: "cloudflare-turnstile",
