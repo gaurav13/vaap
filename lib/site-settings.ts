@@ -404,7 +404,7 @@ export const DEFAULT_REWARD_PAYOUT: RewardPayout = {
   currency: "PKR",
 }
 
-export const SETTING_KEYS = ["menu", "social", "general", "banner", "newsAlert", "govHero", "govFramework", "membership", "footer", "ctaBanner", "siteStatus", "rewardPayout"] as const
+export const SETTING_KEYS = ["menu", "social", "general", "banner", "newsAlert", "govHero", "govFramework", "membership", "footer", "ctaBanner", "siteStatus", "rewardPayout", "leadershipTypes"] as const
 export type SettingKey = (typeof SETTING_KEYS)[number]
 
 function parse<T>(raw: string | undefined, fallback: T): T {
@@ -496,6 +496,14 @@ export async function getCryptoPayment(): Promise<CryptoPayment> {
     xrpTag: typeof stored.xrpTag === "string" ? stored.xrpTag : "",
     instructions: typeof stored.instructions === "string" ? stored.instructions : "",
   }
+}
+
+export async function getLeadershipTypeLabels(): Promise<Record<string, string>> {
+  const map = await readAll()
+  const stored = parse<Record<string, unknown>>(map.leadershipTypes, {})
+  return Object.fromEntries(
+    Object.entries(stored).filter((e): e is [string, string] => typeof e[1] === "string" && e[1].trim() !== ""),
+  )
 }
 
 export async function getRewardPayout(): Promise<RewardPayout> {

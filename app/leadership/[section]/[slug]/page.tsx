@@ -9,6 +9,7 @@ import { seoMetadata } from "@/lib/seo"
 import { teamSubject } from "@/lib/seo/subjects"
 import { SeoJsonLd } from "@/components/seo/json-ld"
 import { LeadershipProfileView } from "@/components/leadership/profile-view"
+import { getLeadershipTypeLabels } from "@/lib/site-settings"
 import { PROFILE_FIELDS, leaderPath, type ProfileContent } from "@/lib/leadership"
 
 type Params = Promise<{ section: string; slug: string }>
@@ -31,7 +32,7 @@ export async function generateMetadata({ params }: { params: Params }) {
 
 export default async function LeadershipProfilePage({ params }: { params: Params }) {
   const { section, slug } = await params
-  const [profile, user] = await Promise.all([getProfile(slug), getHeaderUser()])
+  const [profile, user, typeLabels] = await Promise.all([getProfile(slug), getHeaderUser(), getLeadershipTypeLabels()])
   if (!profile) notFound()
 
   const canonical = leaderPath(profile)
@@ -45,7 +46,7 @@ export default async function LeadershipProfilePage({ params }: { params: Params
       <SeoJsonLd subject={teamSubject(profile)} />
       <SiteHeaderServer active="About" user={user} />
       <main>
-        <LeadershipProfileView profile={content} />
+        <LeadershipProfileView profile={content} typeLabels={typeLabels} />
       </main>
       <SiteFooter />
     </>

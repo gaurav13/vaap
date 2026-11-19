@@ -285,3 +285,16 @@ export async function saveSiteStatus(comingSoon: boolean) {
   await put("siteStatus", value, actor)
   return { ok: true as const }
 }
+
+// Renames are display-only: saved profiles and applications keep their stored Type value.
+export async function saveLeadershipTypeLabels(input: Record<string, string>) {
+  const actor = await requireStaff()
+  const { LEADERSHIP_TYPES, TYPE_LABEL_MAX } = await import("@/lib/leadership")
+  const value: Record<string, string> = {}
+  for (const t of LEADERSHIP_TYPES) {
+    const name = String(input?.[t.value] ?? "").replace(/\s+/g, " ").trim().slice(0, TYPE_LABEL_MAX)
+    if (name && name !== t.label) value[t.value] = name
+  }
+  await put("leadershipTypes", value, actor)
+  return { ok: true as const }
+}

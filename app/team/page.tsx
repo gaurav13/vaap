@@ -2,6 +2,7 @@ import { SiteHeaderServer } from "@/components/site-header-server"
 import { SiteFooter } from "@/components/site-footer"
 import { getHeaderUser } from "@/lib/header-user"
 import { getLeadership } from "@/app/actions/cms"
+import { getLeadershipTypeLabels } from "@/lib/site-settings"
 import { Leadership } from "@/components/about/leadership"
 import { seoMetadata } from "@/lib/seo"
 import { staticSubjectByPath } from "@/lib/seo/subjects"
@@ -12,7 +13,11 @@ export function generateMetadata() {
 }
 
 export default async function TeamPage() {
-  const [user, leadership] = await Promise.all([getHeaderUser(), getLeadership("committee")])
+  const [user, leadership, typeLabels] = await Promise.all([
+    getHeaderUser(),
+    getLeadership("committee"),
+    getLeadershipTypeLabels(),
+  ])
 
   const profiles = leadership.map((p) => ({
     id: p.id,
@@ -49,7 +54,7 @@ export default async function TeamPage() {
             </div>
           </div>
         </section>
-        <Leadership profiles={profiles} />
+        <Leadership profiles={profiles} typeLabels={typeLabels} />
       </main>
       <SiteFooter />
     </>

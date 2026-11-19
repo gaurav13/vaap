@@ -2,7 +2,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 import { RichContent } from "@/components/rich-content"
-import { leaderPath } from "@/lib/leadership"
+import { leaderPath, typeLabel, type LeadershipTypeLabels } from "@/lib/leadership"
 
 type Profile = {
   id: number
@@ -17,7 +17,8 @@ type Profile = {
   href?: string
 }
 
-export function Leadership({ profiles: raw }: { profiles: Profile[] }) {
+export function Leadership({ profiles: raw, typeLabels }: { profiles: Profile[]; typeLabels?: LeadershipTypeLabels }) {
+  const name = (kind: string) => typeLabel(kind, typeLabels)
   const profiles = raw.map((p) => ({ ...p, href: leaderPath(p) }))
   // The Chairman is the profile whose Type is "Chairman" (fallback to the
   // first). Remaining profiles are grouped by Type in admin sort order; any
@@ -42,7 +43,7 @@ export function Leadership({ profiles: raw }: { profiles: Profile[] }) {
         </div>
 
         {/* Chairman */}
-        <h2 className="mt-5 fluid-h2 font-bold text-heading">Chairman</h2>
+        <h2 className="mt-5 fluid-h2 font-bold text-heading">{name("Chairman")}</h2>
         {chairman ? (
           <div className="mt-8 grid grid-cols-1 gap-8 md:grid-cols-[13rem_1fr] lg:grid-cols-[15rem_1fr] lg:gap-12">
             <div className="relative aspect-[4/5] w-52 max-w-full shrink-0 overflow-hidden rounded-2xl border border-line bg-surface md:w-full">
@@ -86,12 +87,18 @@ export function Leadership({ profiles: raw }: { profiles: Profile[] }) {
         )}
 
         {viceChairs.length > 0 ? (
-          <ProfileGroup title="Sr. Vice Chairman & Vice Chairman" members={viceChairs} variant="featured" />
+          <ProfileGroup
+            title={`${name("Sr. Vice Chairman")} & ${name("Vice Chairman")}`}
+            members={viceChairs}
+            variant="featured"
+          />
         ) : null}
 
-        {committee.length > 0 ? <ProfileGroup title="Executive Committee" members={committee} showGovernanceLink /> : null}
+        {committee.length > 0 ? (
+          <ProfileGroup title={name("Executive Committee")} members={committee} showGovernanceLink />
+        ) : null}
 
-        {advisory.length > 0 ? <ProfileGroup title="Advisory Committee Members" members={advisory} /> : null}
+        {advisory.length > 0 ? <ProfileGroup title={name("Advisory Committee Members")} members={advisory} /> : null}
       </div>
     </section>
   )
