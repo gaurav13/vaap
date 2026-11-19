@@ -1,10 +1,34 @@
 // Shared (client + server) leadership helpers: sections, clean URLs and the
 // profile template fields used by the application form, AI studio and site.
 
+/** Leadership types, in governance order (matches the governance structure pyramid). */
+export const LEADERSHIP_KINDS = [
+  "Chairman",
+  "Senior Vice Chairman",
+  "Vice Chairman",
+  "Advisory Board Members",
+  "Industry Advisor Members",
+] as const
+
+export type LeadershipKind = (typeof LEADERSHIP_KINDS)[number]
+
+const LEGACY_KINDS: Record<string, LeadershipKind> = {
+  "Sr. Vice Chairman": "Senior Vice Chairman",
+  "Advisory Committee Members": "Advisory Board Members",
+}
+
+/** Maps older stored type names to the current ones; unknown values are returned unchanged. */
+export function normalizeKind(kind: string | null | undefined): string {
+  const value = kind ?? ""
+  return LEGACY_KINDS[value] ?? value
+}
+
+export const ADVISORY_KINDS = ["Advisory Board Members", "Advisory Committee Members"] as const
+
 export const LEADERSHIP_SECTIONS = [
-  { slug: "office-bearers", label: "Office Bearers", kinds: ["Chairman", "Sr. Vice Chairman", "Vice Chairman"] },
+  { slug: "office-bearers", label: "Office Bearers", kinds: ["Chairman", "Senior Vice Chairman", "Sr. Vice Chairman", "Vice Chairman"] },
   { slug: "executive-committee", label: "Executive Committee", kinds: ["Executive Committee"] },
-  { slug: "advisory-board", label: "Advisory Board", kinds: ["Advisory Committee Members", "Advisory Board Members"] },
+  { slug: "advisory-board", label: "Advisory Board", kinds: ADVISORY_KINDS },
   { slug: "industry-advisors", label: "Industry Advisors", kinds: ["Industry Advisor Members"] },
 ] as const
 
@@ -12,9 +36,8 @@ export type LeadershipSectionSlug = (typeof LEADERSHIP_SECTIONS)[number]["slug"]
 
 /** Positions people can apply for (office bearers are appointed, not applied for). */
 export const APPLICATION_KINDS = [
-  { value: "Executive Committee", label: "Executive Committee" },
-  { value: "Advisory Committee Members", label: "Advisory Board" },
-  { value: "Industry Advisor Members", label: "Industry Advisor" },
+  { value: "Advisory Board Members", label: "Advisory Board Member" },
+  { value: "Industry Advisor Members", label: "Industry Advisor Member" },
 ] as const
 
 export function sectionForKind(kind: string | null | undefined): (typeof LEADERSHIP_SECTIONS)[number] {
