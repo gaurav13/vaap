@@ -31,15 +31,16 @@ const PRINCIPLES = [
 ]
 
 const TIERS = [
-  { label: "Chairman", tone: "lead", width: "w-[62%] md:w-[40%]", bg: "bg-green-hover" },
-  { label: "Senior Vice Chairman", tone: "lead", width: "w-[74%] md:w-[55%]", bg: "bg-green" },
-  { label: "Vice Chairman", tone: "lead", width: "w-[84%] md:w-[70%]", bg: "bg-green/85" },
+  { label: "Chairman", tone: "lead", width: "w-[60%] md:w-[42%]", bg: "bg-green-hover" },
+  { label: "Senior Vice Chairman", tone: "lead", width: "w-[74%] md:w-[58%]", bg: "bg-green" },
+  { label: "Vice Chairman", tone: "lead", width: "w-[86%] md:w-[74%]", bg: "bg-green/80" },
   {
     icon: UsersRound,
     label: "Advisory Board Members",
     sub: "Strategic Guidance & International Perspective",
     tone: "advisory",
-    width: "w-[92%] md:w-[85%]",
+    width: "w-[94%] md:w-[90%]",
+    shape: "rounded-xl border",
   },
   {
     icon: Briefcase,
@@ -47,20 +48,21 @@ const TIERS = [
     sub: "Industry Expertise & Sector Collaboration",
     tone: "advisory",
     width: "w-full",
+    shape: "border-y",
   },
 ] as const
 
 function GovernanceHierarchy() {
   return (
-    <ol aria-label="VAAP governance hierarchy" className="flex flex-col items-center gap-1.5">
+    <ol aria-label="VAAP governance hierarchy" className="flex flex-col items-center gap-2">
       {TIERS.map((tier) => {
         if (tier.tone === "lead") {
           return (
             <li
               key={tier.label}
-              className={`flex h-11 items-center justify-center rounded-md px-3 text-white ${tier.bg} ${tier.width}`}
+              className={`flex h-12 items-center justify-center rounded-xl px-4 text-white shadow-sm md:h-14 ${tier.bg} ${tier.width}`}
             >
-              <span className="text-xs font-bold uppercase tracking-wider md:text-[13px]">{tier.label}</span>
+              <span className="text-center text-sm font-bold uppercase tracking-wider md:text-base">{tier.label}</span>
             </li>
           )
         }
@@ -68,16 +70,16 @@ function GovernanceHierarchy() {
         return (
           <li
             key={tier.label}
-            className={`flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-md border border-line bg-card px-3 py-2 text-center md:flex-row md:gap-2.5 ${tier.width}`}
+            className={`flex min-h-12 flex-col items-center justify-center gap-1 border-line bg-card px-4 py-3 text-center md:min-h-14 md:flex-row md:gap-4 ${tier.shape} ${tier.width}`}
           >
-            <span className="flex items-center gap-2">
-              <Icon className="size-4 shrink-0 text-green" strokeWidth={2} aria-hidden />
-              <span className="text-xs font-bold uppercase tracking-wider text-heading md:text-[13px]">
+            <span className="flex items-center gap-2.5">
+              <Icon className="size-5 shrink-0 text-green" strokeWidth={1.75} aria-hidden />
+              <span className="text-sm font-bold uppercase tracking-wider text-heading md:text-base">
                 {tier.label}
               </span>
             </span>
-            <span aria-hidden className="hidden h-3.5 w-px bg-line md:block" />
-            <span className="text-xs leading-snug text-body">{tier.sub}</span>
+            <span aria-hidden className="hidden h-5 w-px bg-line md:block" />
+            <span className="text-[13px] leading-snug text-body md:text-[15px]">{tier.sub}</span>
           </li>
         )
       })}
