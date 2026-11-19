@@ -2,7 +2,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 import { RichContent } from "@/components/rich-content"
-import { leaderPath } from "@/lib/leadership"
+import { leaderPath, normalizeKind } from "@/lib/leadership"
 
 type Profile = {
   id: number
@@ -18,19 +18,20 @@ type Profile = {
 }
 
 export function Leadership({ profiles: raw }: { profiles: Profile[] }) {
-  const profiles = raw.map((p) => ({ ...p, href: leaderPath(p) }))
+  const profiles = raw.map((p) => ({ ...p, href: leaderPath(p), kind: normalizeKind(p.kind) }))
   // The Chairman is the profile whose Type is "Chairman" (fallback to the
   // first). Remaining profiles are grouped by Type in admin sort order; any
-  // legacy/unknown type falls into the Executive Committee.
+  // legacy/unknown type (e.g. old "Executive Committee") gets its own group.
   const chairman = profiles.find((p) => p.kind === "Chairman") ?? profiles[0] ?? null
   const rest = profiles.filter((p) => p.id !== chairman?.id)
   const viceChairs = [
-    ...rest.filter((p) => p.kind === "Sr. Vice Chairman"),
+    ...rest.filter((p) => p.kind === "Senior Vice Chairman"),
     ...rest.filter((p) => p.kind === "Vice Chairman"),
   ]
-  const advisory = rest.filter((p) => p.kind === "Advisory Committee Members")
-  const grouped = new Set([...viceChairs, ...advisory].map((p) => p.id))
-  const committee = rest.filter((p) => !grouped.has(p.id))
+  const advisory = rest.filter((p) => p.kind === "Advisory Board Members")
+  const industry = rest.filter((p) => p.kind === "Industry Advisor Members")
+  const grouped = new Set([...viceChairs, ...advisory, ...industry].map((p) => p.id))
+  const others = rest.filter((p) => !grouped.has(p.id))
 
   return (
     <section id="leadership" className="scroll-mt-24 bg-background">
@@ -86,12 +87,16 @@ export function Leadership({ profiles: raw }: { profiles: Profile[] }) {
         )}
 
         {viceChairs.length > 0 ? (
-          <ProfileGroup title="Sr. Vice Chairman & Vice Chairman" members={viceChairs} variant="featured" />
+          <ProfileGroup title="Senior Vice Chairman & Vice Chairman" members={viceChairs} variant="featured" />
         ) : null}
 
-        {committee.length > 0 ? <ProfileGroup title="Executive Committee" members={committee} showGovernanceLink /> : null}
+        {advisory.length > 0 ? <ProfileGroup title="Advisory Board Members" members={advisory} showGovernanceLink /> : null}
 
-        {advisory.length > 0 ? <ProfileGroup title="Advisory Committee Members" members={advisory} /> : null}
+        {industry.length > 0 ? (
+          <ProfileGroup title="Industry Advisor Members" members={industry} showGovernanceLink={advisory.length === 0} />
+        ) : null}
+
+        {others.length > 0 ? <ProfileGroup title="Executive Committee" members={others} /> : null}
       </div>
     </section>
   )

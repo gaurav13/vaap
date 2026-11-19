@@ -1,5 +1,6 @@
 import "server-only"
-import { and, desc, eq, gt, isNull, ne } from "drizzle-orm"
+import { and, desc, eq, gt, inArray, isNull, ne, notInArray } from "drizzle-orm"
+import { ADVISORY_KINDS } from "@/lib/leadership"
 import { db } from "@/lib/db"
 import { articles, events, kolProfiles, leadership, members, news, partners } from "@/lib/db/schema"
 import { PUBLIC_SITE_URL } from "@/lib/site-url"
@@ -13,7 +14,6 @@ export type SourceRecord = {
   fields: Record<string, string>
 }
 
-const ADVISORY = "Advisory Committee Members"
 const SITE = PUBLIC_SITE_URL.replace(/^https?:\/\//, "")
 const LIMIT = 50
 
@@ -44,7 +44,7 @@ export async function getSourceRecords(
         .where(
           and(
             eq(leadership.published, true),
-            category === "advisory" ? eq(leadership.kind, ADVISORY) : ne(leadership.kind, ADVISORY),
+            category === "advisory" ? inArray(leadership.kind, [...ADVISORY_KINDS]) : notInArray(leadership.kind, [...ADVISORY_KINDS]),
             numericId !== undefined ? eq(leadership.id, numericId) : undefined,
             opts.since ? gt(leadership.createdAt, opts.since) : undefined,
           ),

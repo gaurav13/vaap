@@ -72,7 +72,7 @@ Payment alone does not grant voting rights; those need separate verification and
     category: "governance",
     url: "/leadership/apply",
     derivedFrom: "app/leadership/apply",
-    body: `Members can apply for the Executive Committee, Advisory Board or Industry Advisor roles at /leadership/apply. Office bearers (Chairman, Sr. Vice Chairman, Vice Chairman) are appointed, not applied for. Applications are reviewed by VAAP administration and you are notified of the outcome; approved profiles are published under /leadership.`,
+    body: `Members can apply to become Advisory Board Members or Industry Advisor Members at /leadership/apply. Office bearers (Chairman, Senior Vice Chairman, Vice Chairman) are appointed, not applied for. Applications are reviewed by VAAP administration and you are notified of the outcome; approved profiles are published under /leadership.`,
   },
   {
     key: "events",
