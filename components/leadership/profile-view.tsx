@@ -3,11 +3,11 @@ import Link from "next/link"
 import { ArrowLeft, Quote } from "lucide-react"
 import { ProfileSocials } from "@/components/profiles/profile-socials"
 import { RichContent } from "@/components/rich-content"
-import { normalizeKind, sectionForKind, type ProfileContent } from "@/lib/leadership"
+import { sectionForKind, type ProfileContent } from "@/lib/leadership"
 
 export function LeadershipProfileView({ profile, preview = false }: { profile: ProfileContent; preview?: boolean }) {
   const section = sectionForKind(profile.kind)
-  const badge = normalizeKind(profile.kind)
+  const badge = profile.kind === "Advisory Committee Members" ? "Advisory Board" : profile.kind === "Industry Advisor Members" ? "Industry Advisor" : profile.kind
   const subtitle = [profile.title, profile.organization].filter(Boolean).join(", ")
 
   return (

@@ -53,7 +53,8 @@ export const auth = betterAuth({
   database: pool,
   baseURL:
     process.env.BETTER_AUTH_URL ??
-    (process.env.VERCEL_ENV === "production"
+    (process.env.VERCEL_ENV === "production" ||
+    (!process.env.VERCEL && process.env.NODE_ENV === "production")
       ? PRODUCTION_URL
       : process.env.VERCEL_PROJECT_PRODUCTION_URL
         ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
@@ -192,16 +193,22 @@ export const auth = betterAuth({
     expiresIn: 60 * 60 * 24 * 7, // 7 days
     updateAge: 60 * 60 * 24, // 1 day
   },
-  ...(process.env.NODE_ENV === "development"
-    ? {
-        advanced: {
+  advanced: {
+    // Production sits behind Cloudflare, so x-forwarded-for carries several
+    // hops and Better Auth won't trust it. cf-connecting-ip is the single
+    // visitor IP Cloudflare sets, which keeps rate limits per visitor.
+    ipAddress: {
+      ipAddressHeaders: ["cf-connecting-ip", "x-real-ip", "x-forwarded-for"],
+    },
+    ...(process.env.NODE_ENV === "development"
+      ? {
           // In dev (v0 preview iframe), force cross-site cookies so the
           // session cookie is stored by the browser.
           defaultCookieAttributes: {
             sameSite: "none" as const,
             secure: true,
           },
-        },
-      }
-    : {}),
+        }
+      : {}),
+  },
 })

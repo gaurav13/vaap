@@ -12,8 +12,9 @@ const label = "text-sm font-medium text-heading"
 const TOTAL_STEPS = 6
 
 const KIND_DETAILS: Record<string, { icon: typeof Users; description: string }> = {
-  "Advisory Board Members": { icon: Award, description: "Strategic guidance and international perspective." },
-  "Industry Advisor Members": { icon: Briefcase, description: "Industry expertise and sector collaboration." },
+  "Executive Committee": { icon: Users, description: "Lead VAAP strategy, operations and governance." },
+  "Advisory Committee Members": { icon: Award, description: "Guide policy, regulation and industry direction." },
+  "Industry Advisor Members": { icon: Briefcase, description: "Share sector expertise on focused initiatives." },
 }
 
 function Field({
@@ -92,7 +93,7 @@ export function LeadershipApplicationForm({ defaultEmail, defaultName }: { defau
   return (
     <form action={action} className="flex flex-col gap-6">
       <Section step={1} title="Position" description="Choose the leadership group you would like to join.">
-        <div role="radiogroup" aria-label="Applying for" className="grid gap-3 sm:grid-cols-2">
+        <div role="radiogroup" aria-label="Applying for" className="grid gap-3 sm:grid-cols-3">
           {APPLICATION_KINDS.map((k, i) => {
             const detail = KIND_DETAILS[k.value]
             const Icon = detail?.icon ?? Users
