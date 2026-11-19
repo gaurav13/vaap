@@ -36,11 +36,8 @@ function loadScript() {
 
 // Site keys are public. The fallback keeps the widget rendering if the
 // build-time env var is missing, since the server still requires a token.
-// Empty in dev mode (the v0 preview), where the server skips the check too.
 export const turnstileSiteKey =
-  process.env.NODE_ENV === "development"
-    ? ""
-    : process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "0x4AAAAAAGGAcZbM4sLvp0Hg"
+  process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "0x4AAAAAAGGAcZbM4sLvp0Hg"
 
 /**
  * Renders a Cloudflare Turnstile challenge. Tokens are single-use, so remount

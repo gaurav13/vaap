@@ -12,14 +12,6 @@ import { normalizeReferralCode, REFERRAL_COOKIE, REFERRAL_COOKIE_MAX_AGE } from 
 // The code is validated against the database later, when the application is
 // submitted, so an unknown code here is harmless.
 export function proxy(request: NextRequest) {
-  // OAuth state cookies are host-only: a Google sign-in started on www would
-  // return to the apex callback without its cookie ("State mismatch").
-  const host = (request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? "").split(":")[0]
-  if (host === "www.vaap.org.pk") {
-    const target = new URL(request.nextUrl.pathname + request.nextUrl.search, "https://vaap.org.pk")
-    return NextResponse.redirect(target, 308)
-  }
-
   const requestHeaders = new Headers(request.headers)
   requestHeaders.set("x-pathname", request.nextUrl.pathname)
   const res = NextResponse.next({ request: { headers: requestHeaders } })

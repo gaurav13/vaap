@@ -161,7 +161,7 @@ export async function requestRenewal() {
   return { ok: true }
 }
 
-export async function requestUpgrade(formData: FormData): Promise<{ ok: boolean; error?: string }> {
+export async function requestUpgrade(formData: FormData) {
   const current = await requireUser()
   const targetCategory = String(formData.get("category") ?? "").trim()
 

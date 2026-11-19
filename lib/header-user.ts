@@ -1,8 +1,6 @@
 import { getSession } from "@/lib/session"
 import type { HeaderUser } from "@/components/site-header"
 
-export type { HeaderUser }
-
 type SessionLike = {
   user?: {
     id: string

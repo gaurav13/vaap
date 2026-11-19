@@ -4,7 +4,7 @@ const VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
 export const CAPTCHA_FIELD = "cf-turnstile-response"
 
 export function isTurnstileEnabled() {
-  return Boolean(process.env.TURNSTILE_SECRET_KEY) && process.env.NODE_ENV !== "development"
+  return Boolean(process.env.TURNSTILE_SECRET_KEY)
 }
 
 const allowedHostnames = new Set(
@@ -19,7 +19,7 @@ export async function verifyTurnstile(
   expectedAction: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const secret = process.env.TURNSTILE_SECRET_KEY
-  if (!secret || !isTurnstileEnabled()) return { ok: true }
+  if (!secret) return { ok: true }
 
   if (!token || token.length > 2048) {
     return { ok: false, error: "Please complete the security check before submitting." }
