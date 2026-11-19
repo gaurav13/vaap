@@ -3,7 +3,7 @@ import { Handshake, Lightbulb, Network, Users } from "lucide-react"
 import { SiteHeaderServer } from "@/components/site-header-server"
 import { SiteFooter } from "@/components/site-footer"
 import { PageHero } from "@/components/page-hero"
-import { Button } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button"
 import { getHeaderUser } from "@/lib/header-user"
 import { seoMetadata } from "@/lib/seo"
 import { staticSubjectByPath } from "@/lib/seo/subjects"
@@ -50,9 +50,9 @@ export default async function CommunityPage() {
               <h2 className="font-serif text-xl font-bold text-heading">Ready to get involved?</h2>
               <p className="mt-1 text-body">Apply for membership and join the community today.</p>
             </div>
-            <Button asChild size="lg">
-              <Link href="/membership">Join VAAP</Link>
-            </Button>
+            <Link href="/membership" className={buttonVariants({ size: "lg" })}>
+              Join VAAP
+            </Link>
           </div>
         </section>
       </main>
