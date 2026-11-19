@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "packageManager": "pnpm@12.3.4",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "node scripts/generate-core-routes.mjs && next dev",
     "build": "node scripts/generate-core-routes.mjs && drizzle-kit push && tsx scripts/seed-admin.ts && next build",
