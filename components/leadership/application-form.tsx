@@ -3,14 +3,7 @@
 import { useActionState, useState } from "react"
 import { Award, Briefcase, CheckCircle2, Loader2, Users } from "lucide-react"
 import { submitLeadershipApplication } from "@/app/actions/leadership"
-import {
-  APPLICATION_KINDS,
-  EXPERTISE_AREAS,
-  LEADERSHIP_COMMITMENTS,
-  MEMBERSHIP_INTENTS,
-  typeLabel,
-  type LeadershipTypeLabels,
-} from "@/lib/leadership"
+import { APPLICATION_KINDS, EXPERTISE_AREAS, LEADERSHIP_COMMITMENTS, MEMBERSHIP_INTENTS } from "@/lib/leadership"
 import { PhotoUpload } from "@/components/leadership/photo-upload"
 
 const input =
@@ -81,15 +74,7 @@ function Section({
   )
 }
 
-export function LeadershipApplicationForm({
-  defaultEmail,
-  defaultName,
-  typeLabels,
-}: {
-  defaultEmail: string
-  defaultName: string
-  typeLabels?: LeadershipTypeLabels
-}) {
+export function LeadershipApplicationForm({ defaultEmail, defaultName }: { defaultEmail: string; defaultName: string }) {
   const [state, action, pending] = useActionState(submitLeadershipApplication, null)
   const [uploading, setUploading] = useState(false)
 
@@ -121,7 +106,7 @@ export function LeadershipApplicationForm({
                 <span className="flex size-9 items-center justify-center rounded-lg bg-mint text-green">
                   <Icon className="size-5" aria-hidden="true" />
                 </span>
-                <span className="text-sm font-semibold text-heading">{typeLabel(k.value, typeLabels, k.label)}</span>
+                <span className="text-sm font-semibold text-heading">{k.label}</span>
                 {detail && <span className="text-xs leading-relaxed text-muted-2">{detail.description}</span>}
                 <CheckCircle2
                   className="absolute right-3 top-3 size-5 text-green opacity-0 transition-opacity peer-checked:opacity-100"

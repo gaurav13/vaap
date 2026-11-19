@@ -17,39 +17,6 @@ export const APPLICATION_KINDS = [
   { value: "Industry Advisor Members", label: "Industry Advisor" },
 ] as const
 
-/**
- * Every leadership Type an admin can rename. `value` is what is saved on each
- * profile and application and never changes; only the display name is editable.
- */
-export const LEADERSHIP_TYPES = [
-  { value: "Chairman", label: "Chairman" },
-  { value: "Sr. Vice Chairman", label: "Sr. Vice Chairman" },
-  { value: "Vice Chairman", label: "Vice Chairman" },
-  { value: "Executive Committee", label: "Executive Committee" },
-  { value: "Advisory Committee Members", label: "Advisory Committee Members" },
-  { value: "Industry Advisor Members", label: "Industry Advisor Members" },
-] as const
-
-/** Admin-chosen display names, keyed by stored Type value. Only renamed Types are present. */
-export type LeadershipTypeLabels = Record<string, string>
-
-export const DEFAULT_TYPE_LABELS: Record<string, string> = Object.fromEntries(LEADERSHIP_TYPES.map((t) => [t.value, t.label]))
-
-const TYPE_ALIASES: Record<string, string> = { "Advisory Board Members": "Advisory Committee Members" }
-
-export const TYPE_LABEL_MAX = 60
-
-/**
- * Display name for a stored Type. A name the admin has set wins; otherwise the
- * caller's `fallback` (e.g. a shorter context label), then the default name.
- */
-export function typeLabel(kind: string | null | undefined, labels?: LeadershipTypeLabels | null, fallback?: string) {
-  const key = TYPE_ALIASES[kind ?? ""] ?? kind ?? ""
-  const custom = labels?.[key]?.trim()
-  if (custom) return custom
-  return fallback ?? DEFAULT_TYPE_LABELS[key] ?? kind ?? ""
-}
-
 export function sectionForKind(kind: string | null | undefined): (typeof LEADERSHIP_SECTIONS)[number] {
   return LEADERSHIP_SECTIONS.find((s) => (s.kinds as readonly string[]).includes(kind ?? "")) ?? LEADERSHIP_SECTIONS[1]
 }

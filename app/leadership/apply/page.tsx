@@ -11,7 +11,6 @@ import { SiteFooter } from "@/components/site-footer"
 import { getHeaderUser } from "@/lib/header-user"
 import { LeadershipEligibility } from "@/components/leadership/eligibility"
 import { getMembershipStanding } from "@/lib/membership-state"
-import { getLeadershipTypeLabels } from "@/lib/site-settings"
 
 export const metadata: Metadata = {
   title: "Apply for VAAP Leadership",
@@ -20,7 +19,7 @@ export const metadata: Metadata = {
 }
 
 export default async function LeadershipApplyPage() {
-  const [session, user, typeLabels] = await Promise.all([getSession(), getHeaderUser(), getLeadershipTypeLabels()])
+  const [session, user] = await Promise.all([getSession(), getHeaderUser()])
   const existing = session?.user ? await getMyLeadershipApplication() : null
   const underReview = existing && (existing.status === "pending" || existing.status === "in_review")
   const needsMembership =
@@ -158,11 +157,7 @@ export default async function LeadershipApplyPage() {
                     {existing.reviewNote}
                   </div>
                 )}
-                <LeadershipApplicationForm
-                  defaultEmail={session.user.email ?? ""}
-                  defaultName={session.user.name ?? ""}
-                  typeLabels={typeLabels}
-                />
+                <LeadershipApplicationForm defaultEmail={session.user.email ?? ""} defaultName={session.user.name ?? ""} />
               </>
             )}
           </div>

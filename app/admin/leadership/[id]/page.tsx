@@ -3,13 +3,12 @@ import { notFound } from "next/navigation"
 import { ChevronLeft } from "lucide-react"
 import { getLeadershipStudio } from "@/app/actions/leadership"
 import { LeadershipStudio } from "@/components/admin/leadership/studio"
-import { getLeadershipTypeLabels } from "@/lib/site-settings"
 
 export const metadata = { title: "Leadership Profile Studio | VAAP Admin" }
 
 export default async function LeadershipStudioPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const [data, typeLabels] = await Promise.all([getLeadershipStudio(Number(id)), getLeadershipTypeLabels()])
+  const data = await getLeadershipStudio(Number(id))
   if (!data) notFound()
 
   return (
@@ -17,7 +16,7 @@ export default async function LeadershipStudioPage({ params }: { params: Promise
       <Link href="/admin/leadership" className="inline-flex w-fit items-center gap-1 text-sm text-muted-2 hover:text-green">
         <ChevronLeft className="size-4" aria-hidden="true" /> Leadership
       </Link>
-      <LeadershipStudio data={data} typeLabels={typeLabels} />
+      <LeadershipStudio data={data} />
     </div>
   )
 }
