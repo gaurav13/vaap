@@ -35,7 +35,7 @@ export const CATEGORIES = [
   {
     key: "advisory",
     label: "Advisory Board",
-    source: "Leadership profiles of type Advisory Board Members",
+    source: "Leadership profiles of type Advisory Committee Members",
     fields: [
       { key: "photo", label: "Profile photograph", kind: "image", sample: "" },
       { key: "name", label: "Name", kind: "text", sample: "Full Name" },
