@@ -7,7 +7,12 @@ import { sectionForKind, type ProfileContent } from "@/lib/leadership"
 
 export function LeadershipProfileView({ profile, preview = false }: { profile: ProfileContent; preview?: boolean }) {
   const section = sectionForKind(profile.kind)
-  const badge = profile.kind === "Advisory Committee Members" ? "Advisory Board" : profile.kind === "Industry Advisor Members" ? "Industry Advisor" : profile.kind
+  const badge =
+    profile.kind === "Advisory Board Members" || profile.kind === "Executive Committee"
+      ? "Advisory Board"
+      : profile.kind === "Industry Advisor Members" || profile.kind === "Advisory Committee Members"
+        ? "Industry Advisor"
+        : profile.kind
   const subtitle = [profile.title, profile.organization].filter(Boolean).join(", ")
 
   return (

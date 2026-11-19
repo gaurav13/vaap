@@ -3,25 +3,35 @@
 
 export const LEADERSHIP_SECTIONS = [
   { slug: "office-bearers", label: "Office Bearers", kinds: ["Chairman", "Sr. Vice Chairman", "Vice Chairman"] },
-  { slug: "executive-committee", label: "Executive Committee", kinds: ["Executive Committee"] },
-  { slug: "advisory-board", label: "Advisory Board", kinds: ["Advisory Committee Members", "Advisory Board Members"] },
-  { slug: "industry-advisors", label: "Industry Advisors", kinds: ["Industry Advisor Members"] },
+  { slug: "advisory-board", label: "Advisory Board Members", kinds: ["Advisory Board Members"] },
+  { slug: "industry-advisors", label: "Industry Advisor Members", kinds: ["Industry Advisor Members"] },
 ] as const
 
 export type LeadershipSectionSlug = (typeof LEADERSHIP_SECTIONS)[number]["slug"]
 
 /** Positions people can apply for (office bearers are appointed, not applied for). */
 export const APPLICATION_KINDS = [
-  { value: "Executive Committee", label: "Executive Committee" },
-  { value: "Advisory Committee Members", label: "Advisory Board" },
+  { value: "Advisory Board Members", label: "Advisory Board" },
   { value: "Industry Advisor Members", label: "Industry Advisor" },
 ] as const
 
 export function sectionForKind(kind: string | null | undefined): (typeof LEADERSHIP_SECTIONS)[number] {
-  return LEADERSHIP_SECTIONS.find((s) => (s.kinds as readonly string[]).includes(kind ?? "")) ?? LEADERSHIP_SECTIONS[1]
+  const value = kind ?? ""
+  // Accept legacy stored kinds until every row has been migrated.
+  if (value === "Executive Committee") {
+    return LEADERSHIP_SECTIONS.find((s) => s.slug === "advisory-board") ?? LEADERSHIP_SECTIONS[1]
+  }
+  if (value === "Advisory Committee Members") {
+    return LEADERSHIP_SECTIONS.find((s) => s.slug === "industry-advisors") ?? LEADERSHIP_SECTIONS[2]
+  }
+  return LEADERSHIP_SECTIONS.find((s) => (s.kinds as readonly string[]).includes(value)) ?? LEADERSHIP_SECTIONS[1]
 }
 
 export function findSection(slug: string) {
+  // Old profile URLs used /leadership/executive-committee/...
+  if (slug === "executive-committee") {
+    return LEADERSHIP_SECTIONS.find((s) => s.slug === "advisory-board") ?? null
+  }
   return LEADERSHIP_SECTIONS.find((s) => s.slug === slug) ?? null
 }
 

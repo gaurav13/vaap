@@ -1,7 +1,7 @@
 "use client"
 
 import { useActionState, useState } from "react"
-import { Award, Briefcase, CheckCircle2, Loader2, Users } from "lucide-react"
+import { Briefcase, CheckCircle2, Loader2, Users } from "lucide-react"
 import { submitLeadershipApplication } from "@/app/actions/leadership"
 import { APPLICATION_KINDS, EXPERTISE_AREAS, LEADERSHIP_COMMITMENTS, MEMBERSHIP_INTENTS } from "@/lib/leadership"
 import { PhotoUpload } from "@/components/leadership/photo-upload"
@@ -12,8 +12,7 @@ const label = "text-sm font-medium text-heading"
 const TOTAL_STEPS = 6
 
 const KIND_DETAILS: Record<string, { icon: typeof Users; description: string }> = {
-  "Executive Committee": { icon: Users, description: "Lead VAAP strategy, operations and governance." },
-  "Advisory Committee Members": { icon: Award, description: "Guide policy, regulation and industry direction." },
+  "Advisory Board Members": { icon: Users, description: "Lead VAAP strategy, operations and governance." },
   "Industry Advisor Members": { icon: Briefcase, description: "Share sector expertise on focused initiatives." },
 }
 

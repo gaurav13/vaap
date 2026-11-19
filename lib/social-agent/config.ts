@@ -22,11 +22,11 @@ export const CATEGORIES = [
   {
     key: "team",
     label: "Team Announcements",
-    source: "Leadership profiles (Chairman, Vice Chairmen, Executive Committee)",
+    source: "Leadership profiles (Chairman, Vice Chairmen, Advisory Board Members)",
     fields: [
       { key: "photo", label: "Profile photograph", kind: "image", sample: "" },
       { key: "name", label: "Name", kind: "text", sample: "Full Name" },
-      { key: "position", label: "VAAP position", kind: "text", sample: "Executive Committee" },
+      { key: "position", label: "VAAP position", kind: "text", sample: "Advisory Board Members" },
       { key: "title", label: "Professional title", kind: "text", sample: "Chief Executive Officer" },
       { key: "organization", label: "Organization", kind: "text", sample: "Organization Name" },
       SITE_FIELD,
@@ -35,11 +35,11 @@ export const CATEGORIES = [
   {
     key: "advisory",
     label: "Advisory Board",
-    source: "Leadership profiles of type Advisory Committee Members",
+    source: "Leadership profiles of type Industry Advisor Members",
     fields: [
       { key: "photo", label: "Profile photograph", kind: "image", sample: "" },
       { key: "name", label: "Name", kind: "text", sample: "Full Name" },
-      { key: "position", label: "VAAP position", kind: "text", sample: "Advisory Board Member" },
+      { key: "position", label: "VAAP position", kind: "text", sample: "Industry Advisor Members" },
       { key: "title", label: "Professional title", kind: "text", sample: "Senior Advisor" },
       { key: "organization", label: "Organization", kind: "text", sample: "Organization Name" },
       SITE_FIELD,

@@ -20,17 +20,21 @@ type Profile = {
 export function Leadership({ profiles: raw }: { profiles: Profile[] }) {
   const profiles = raw.map((p) => ({ ...p, href: leaderPath(p) }))
   // The Chairman is the profile whose Type is "Chairman" (fallback to the
-  // first). Remaining profiles are grouped by Type in admin sort order; any
-  // legacy/unknown type falls into the Executive Committee.
+  // first). Remaining profiles are grouped by Type in admin sort order.
   const chairman = profiles.find((p) => p.kind === "Chairman") ?? profiles[0] ?? null
   const rest = profiles.filter((p) => p.id !== chairman?.id)
   const viceChairs = [
     ...rest.filter((p) => p.kind === "Sr. Vice Chairman"),
     ...rest.filter((p) => p.kind === "Vice Chairman"),
   ]
-  const advisory = rest.filter((p) => p.kind === "Advisory Committee Members")
-  const grouped = new Set([...viceChairs, ...advisory].map((p) => p.id))
-  const committee = rest.filter((p) => !grouped.has(p.id))
+  const advisoryBoard = rest.filter(
+    (p) => p.kind === "Advisory Board Members" || p.kind === "Executive Committee",
+  )
+  const industryAdvisors = rest.filter(
+    (p) => p.kind === "Industry Advisor Members" || p.kind === "Advisory Committee Members",
+  )
+  const grouped = new Set([...viceChairs, ...advisoryBoard, ...industryAdvisors].map((p) => p.id))
+  const other = rest.filter((p) => !grouped.has(p.id))
 
   return (
     <section id="leadership" className="scroll-mt-24 bg-background">
@@ -89,9 +93,17 @@ export function Leadership({ profiles: raw }: { profiles: Profile[] }) {
           <ProfileGroup title="Sr. Vice Chairman & Vice Chairman" members={viceChairs} variant="featured" />
         ) : null}
 
-        {committee.length > 0 ? <ProfileGroup title="Executive Committee" members={committee} showGovernanceLink /> : null}
+        {advisoryBoard.length > 0 || other.length > 0 ? (
+          <ProfileGroup
+            title="Advisory Board Members"
+            members={[...advisoryBoard, ...other]}
+            showGovernanceLink
+          />
+        ) : null}
 
-        {advisory.length > 0 ? <ProfileGroup title="Advisory Committee Members" members={advisory} /> : null}
+        {industryAdvisors.length > 0 ? (
+          <ProfileGroup title="Industry Advisor Members" members={industryAdvisors} />
+        ) : null}
       </div>
     </section>
   )

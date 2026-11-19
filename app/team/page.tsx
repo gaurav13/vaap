@@ -43,7 +43,7 @@ export default async function TeamPage() {
                 Meet the Team
               </h1>
               <p className="mt-4 text-pretty leading-relaxed text-muted-2">
-                The people behind VAAP — our Chairman and Executive Committee. Select any member to view their
+                The people behind VAAP — our Chairman, Advisory Board Members and Industry Advisor Members. Select any member to view their
                 position, background and links.
               </p>
             </div>

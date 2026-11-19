@@ -111,13 +111,13 @@ export const ENTITIES: Record<EntityKey, EntityConfig> = {
   leadership: {
     label: "Leadership",
     singular: "Profile",
-    description: "Executive committee and leadership profiles shown on About & Governance.",
+    description: "Advisory board, industry advisors, and leadership profiles shown on About & Governance.",
     revalidate: ["/about", "/governance", "/"],
     fields: [
       { name: "name", label: "Full name", type: "text", required: true },
       { name: "position", label: "Position", type: "text" },
       { name: "organization", label: "Organization", type: "text" },
-      { name: "kind", label: "Type", type: "select", options: ["Chairman", "Sr. Vice Chairman", "Vice Chairman", "Executive Committee", "Advisory Committee Members"], help: "Chairman is featured at the top, followed by the Sr. Vice Chairman and Vice Chairman, then the Executive Committee and Advisory Committee grids." },
+      { name: "kind", label: "Type", type: "select", options: ["Chairman", "Sr. Vice Chairman", "Vice Chairman", "Advisory Board Members", "Industry Advisor Members"], help: "Chairman is featured at the top, followed by the Sr. Vice Chairman and Vice Chairman, then the Advisory Board Members and Industry Advisor Members grids." },
       { name: "responsibility", label: "Responsibility / portfolio", type: "text" },
       { name: "bio", label: "Bio / message", type: "richtext", fullWidth: true, placeholder: "Write the bio or leadership message." },
       { name: "photo", label: "Photo", type: "image", nullable: true },

@@ -30,7 +30,7 @@ export function GovernanceStructure() {
 
         <div className="flex w-full max-w-md flex-col items-center gap-1.5 rounded-xl bg-green px-6 py-4 text-center text-white">
           <span className="flex items-center gap-2 font-bold">
-            <Users className="size-5" /> Executive Committee
+            <Users className="size-5" /> Advisory Board Members
           </span>
           <span className="text-xs text-white/80">Leadership & Oversight</span>
         </div>

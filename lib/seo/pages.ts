@@ -50,7 +50,7 @@ export const STATIC_PAGES: StaticPageDef[] = [
     label: "Team & Leadership",
     title: "Team",
     description:
-      "Meet the VAAP team — the Chairman and Executive Committee driving the growth, development and responsible adoption of virtual assets in Pakistan.",
+      "Meet the VAAP team — the Chairman, Advisory Board Members and Industry Advisor Members driving the growth, development and responsible adoption of virtual assets in Pakistan.",
     schema: "team",
   },
   {

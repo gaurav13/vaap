@@ -13,7 +13,7 @@ export type SourceRecord = {
   fields: Record<string, string>
 }
 
-const ADVISORY = "Advisory Committee Members"
+const ADVISORY = "Industry Advisor Members"
 const SITE = PUBLIC_SITE_URL.replace(/^https?:\/\//, "")
 const LIMIT = 50
 

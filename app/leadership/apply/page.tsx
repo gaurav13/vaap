@@ -14,7 +14,7 @@ import { getMembershipStanding } from "@/lib/membership-state"
 
 export const metadata: Metadata = {
   title: "Apply for VAAP Leadership",
-  description: "Apply to join the VAAP Executive Committee, Advisory Board or Industry Advisors.",
+  description: "Apply to join the VAAP Advisory Board Members or Industry Advisor Members.",
   alternates: { canonical: "/leadership/apply" },
 }
 
