@@ -3,7 +3,11 @@ import sanitizeHtml from "sanitize-html"
 import { looksLikeMarkdown } from "@/lib/rich-text-plain"
 
 const HTML_TAG = /<\/?(p|br|div|span|strong|b|em|i|u|s|h[1-6]|ul|ol|li|a|img|blockquote|hr|pre|code|table|mark)\b[^>]*>/i
-const SIMPLE_HTML_ONLY = /^(?:\s|<\/?(?:p|br|div|span)\b[^>]*>|[^<])*$/i
+// Matches any "<" that does not start a <p>, <br>, <div> or <span> tag. The previous
+// /^(?:\s|<…>|[^<])*$/ form overlapped \s with [^<] and backtracked exponentially on
+// whitespace before another tag, freezing the single-process server for minutes.
+const NON_SIMPLE_TAG = /<(?!\/?(?:p|br|div|span)\b[^>]*>)/i
+const isSimpleHtmlOnly = (source: string) => !NON_SIMPLE_TAG.test(source)
 const URL_IN_TEXT = /\b((?:https?:\/\/|www\.)[^\s<>"']+[^\s<>"'.,;:!?)\]])/gi
 
 const ALLOWED_TAGS = [
@@ -122,7 +126,7 @@ export function renderRichContent(value: string | null | undefined) {
   const source = (value ?? "").trim()
   if (!source) return ""
   if (!HTML_TAG.test(source)) return sanitize(markdownToHtml(source))
-  if (SIMPLE_HTML_ONLY.test(source)) {
+  if (isSimpleHtmlOnly(source)) {
     const text = simpleHtmlToText(source)
     if (looksLikeMarkdown(text)) return sanitize(markdownToHtml(text))
   }

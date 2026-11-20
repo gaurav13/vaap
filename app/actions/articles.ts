@@ -106,6 +106,13 @@ export async function saveArticleDraft(input: {
       })
       .where(eq(articles.id, input.id))
     revalidatePath("/dashboard/articles")
+    if (existing.status === "published") {
+      revalidatePath("/admin/articles")
+      revalidatePath("/insights")
+      revalidatePath(`/insights/${existing.slug}`)
+      revalidatePath("/")
+      queueKnowledgeSync("articles")
+    }
     return { ok: true as const, id: input.id }
   }
 
@@ -236,7 +243,10 @@ export async function createAdminArticle(input: {
   revalidatePath("/admin/articles")
   revalidatePath("/insights")
   queueKnowledgeSync("articles")
-  if (published) revalidatePath(`/insights/${slug}`)
+  if (published) {
+    revalidatePath(`/insights/${slug}`)
+    revalidatePath("/")
+  }
   return {
     ok: true as const,
     article: {
@@ -346,6 +356,8 @@ export async function publishArticle(id: number) {
   revalidatePath("/admin/articles")
   revalidatePath("/dashboard/articles")
   revalidatePath("/insights")
+  revalidatePath(`/insights/${article.slug}`)
+  revalidatePath("/")
   queueKnowledgeSync("articles")
   return { ok: true as const }
 }
@@ -357,9 +369,11 @@ export async function unpublishArticle(id: number) {
   await db.update(articles).set({ status: "approved", updatedAt: new Date() }).where(eq(articles.id, id))
   revalidatePath("/admin/articles")
   revalidatePath("/insights")
+  revalidatePath(`/insights/${article.slug}`)
+  revalidatePath("/")
   queueKnowledgeSync("articles")
   return { ok: true as const }
-  }
+}
 
 export async function deleteArticle(id: number) {
   try {
