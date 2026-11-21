@@ -17,6 +17,17 @@ import {
 import { cn } from "@/lib/utils"
 import { reviewArticle, publishArticle, unpublishArticle, createAdminArticle, deleteArticle } from "@/app/actions/articles"
 import { FileUpload } from "@/components/admin/file-upload"
+import { RichTextField } from "@/components/admin/rich-text-editor"
+import { uploadPageImageFile } from "@/components/admin/upload-image"
+import { renderRichContent } from "@/lib/rich-content"
+
+function uploadArticleImage(file: File) {
+  return uploadPageImageFile(file, "articles")
+}
+
+function hasContent(html: string) {
+  return /<img\b/i.test(html) || html.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim().length > 0
+}
 
 type Article = {
   id: number
@@ -80,6 +91,7 @@ export function ArticleReview({
   const [creating, setCreating] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [note, setNote] = useState("")
+  const [content, setContent] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
@@ -126,12 +138,17 @@ export function ArticleReview({
   function closeCreate() {
     setCreating(false)
     setUploading(false)
+    setContent("")
     setError(null)
   }
 
   function onCreate(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setError(null)
+    if (!hasContent(content)) {
+      setError("Content cannot be empty.")
+      return
+    }
     const form = e.currentTarget
     const data = new FormData(form)
     startTransition(async () => {
@@ -139,7 +156,7 @@ export function ArticleReview({
         title: String(data.get("title") ?? ""),
         category: String(data.get("category") ?? "Insight"),
         excerpt: String(data.get("excerpt") ?? ""),
-        content: String(data.get("content") ?? ""),
+        content,
         tags: String(data.get("tags") ?? ""),
         image: String(data.get("image") ?? ""),
         published: data.get("published") === "on",
@@ -152,6 +169,7 @@ export function ArticleReview({
       setTab(res.article.status === "published" ? "published" : "approved")
       setCreating(false)
       setUploading(false)
+      setContent("")
     })
   }
 
@@ -240,16 +258,15 @@ export function ArticleReview({
               />
             </label>
 
-            <label className="block">
+            <div>
               <span className="mb-1.5 block text-sm font-semibold text-heading">Content</span>
-              <textarea
-                name="content"
-                required
-                rows={10}
-                className={cn(inputCls, "resize-y")}
-                placeholder="Write the article."
+              <RichTextField
+                value={content}
+                onChange={setContent}
+                onUploadImage={uploadArticleImage}
+                placeholder="Write the article, or paste it from ChatGPT, Word or Google Docs."
               />
-            </label>
+            </div>
 
             <label className="flex items-center gap-2 text-sm text-body">
               <input type="checkbox" name="published" defaultChecked className="size-4 accent-[var(--color-green)]" />
@@ -322,7 +339,10 @@ export function ArticleReview({
 
           {active.excerpt && <p className="mt-5 text-base font-medium text-body">{active.excerpt}</p>}
 
-          <div className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-body">{active.content}</div>
+          <div
+            className="mt-4 text-sm leading-relaxed text-body [&_a]:text-green [&_a]:underline [&_blockquote]:my-4 [&_blockquote]:border-l-4 [&_blockquote]:border-green [&_blockquote]:pl-4 [&_blockquote]:italic [&_h2]:mb-3 [&_h2]:mt-6 [&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-heading [&_h3]:mb-2 [&_h3]:mt-5 [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:text-heading [&_h4]:mb-2 [&_h4]:mt-4 [&_h4]:font-semibold [&_img]:my-4 [&_img]:w-full [&_img]:rounded-lg [&_li]:mb-1 [&_ol]:mb-3 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:mb-3 [&_table]:my-4 [&_table]:w-full [&_td]:border [&_td]:border-line [&_td]:p-2 [&_th]:border [&_th]:border-line [&_th]:p-2 [&_ul]:mb-3 [&_ul]:list-disc [&_ul]:pl-6"
+            dangerouslySetInnerHTML={{ __html: renderRichContent(active.content) }}
+          />
 
           {error && <p className="mt-5 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
