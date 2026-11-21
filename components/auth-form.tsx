@@ -26,15 +26,31 @@ function safeReturnPath(value: string | null) {
   return value && value.startsWith("/") && !value.startsWith("//") && !value.includes("\\") && value.length < 300 ? value : "/dashboard"
 }
 
+const GOOGLE_ERROR_MESSAGES: Record<string, string> = {
+  access_denied: "Google sign-in was cancelled.",
+  state_mismatch: "Your sign-in session expired or was opened in a different tab. Please try again.",
+  please_restart_the_process: "Your sign-in session expired. Please try again.",
+  invalid_code: "Google could not confirm your sign-in. Please try again.",
+  unable_to_get_user_info: "We could not read your Google profile. Please try again.",
+  email_not_found: "Your Google account did not share an email address.",
+  account_not_linked: "This email already has a VAAP account. Sign in with your email and password instead.",
+  unable_to_create_user: "We could not create an account for this Google email. Try signing up with email and password.",
+  unable_to_link_account: "We could not link this Google account to your existing account.",
+}
+
+function googleErrorMessage(code: string | null) {
+  if (!code) return null
+  const key = code.toLowerCase()
+  return `${GOOGLE_ERROR_MESSAGES[key] ?? "Google sign-in could not be completed."} (code: ${key.slice(0, 60)})`
+}
+
 export function AuthForm({ mode }: { mode: "sign-in" | "sign-up" }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [error, setError] = useState<string | null>(
-    searchParams.get("error") ? "Google sign-in was cancelled or could not be completed." : null,
-  )
+  const [error, setError] = useState<string | null>(() => googleErrorMessage(searchParams.get("error")))
   const [notice, setNotice] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
